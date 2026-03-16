@@ -49,7 +49,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+              placeholder={"\u2022".repeat(8)}
               className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
               required
             />
