@@ -1,7 +1,7 @@
 # AEOS – Phase Implementation Tracker
 
 > Autonomous Enterprise Operating System
-> Last updated: 2026-03-16
+> Last updated: 2026-03-17
 
 ---
 
@@ -15,6 +15,7 @@
 | 4 | Billing & Token System | COMPLETE | 2026-03-16 |
 | 5 | Marketing Module Foundation | COMPLETE | 2026-03-16 |
 | 6 | Integrations | COMPLETE | 2026-03-16 |
+| 6.5 | Security Hardening & Reliability | COMPLETE | 2026-03-17 |
 | 7 | Website Scanner | PENDING | — |
 | 8 | Digital Presence Engine | PENDING | — |
 | 9 | Lead Intelligence Engine | PENDING | — |
@@ -52,6 +53,11 @@
 - Frontend: http://localhost:3000
 - Backend: http://localhost:8000
 - API Docs: http://localhost:8000/docs
+
+**Production URLs:**
+- Frontend: https://frontend-lac-six-41.vercel.app (Vercel)
+- Backend: https://aeos-backend.onrender.com (Render)
+- GitHub: https://github.com/AEOS-Claude-Code/AEOS
 
 ---
 
@@ -139,6 +145,41 @@
   - `wordpress_provider.py` — WordPress
   - `shopify_provider.py` — Shopify
 - `frontend/src/app/app/integrations/page.tsx` — Integrations management page
+
+---
+
+## Phase 6.5 — Security Hardening & Reliability
+
+**Scope:** Comprehensive code review of Phases 1-6 with critical/high-priority fixes applied
+
+**Delivered:**
+
+**Backend Security:**
+- Rate limiting on auth endpoints via slowapi (5/min register, 10/min login, 20/min refresh)
+- Timing-attack-safe login using constant-time dummy hash comparison
+- Stronger password validation: min 8 chars, uppercase + lowercase + digit (Pydantic + frontend)
+- Token revocation persistence fix (`db.flush()` after revoking)
+- Global exception handler with error IDs for traceability
+- Request logging middleware with timing (`X-Request-ID` header)
+- Tightened CORS (explicit methods + headers)
+- JWT secret validation at startup in production
+
+**Backend Reliability:**
+- Signal cache isolation: per-workspace with 60s TTL, max 100 entries, expiry eviction
+- SQLAlchemy mutable default fix (`server_default` on JSON columns)
+- Composite database indexes on leads and opportunities tables
+- Unique constraint on (workspace_id, email) for leads
+- Enum validation on query parameters (status, classification, impact, category)
+- Offset pagination on opportunity endpoints
+- Event bus retry with exponential backoff (3 attempts) and failure tracking
+- Graceful shutdown (engine disposal on app teardown)
+
+**Frontend:**
+- `ErrorBoundary` component wrapping all dashboard card rows
+- `DashboardSkeleton` replacing full-page spinner during loading
+- Password strength indicator with visual bar on register page
+- Password confirmation field with mismatch detection
+- Vercel build fix (`.npmrc` with `legacy-peer-deps=true`)
 
 ---
 
