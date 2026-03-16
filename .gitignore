@@ -1,0 +1,31 @@
+# ── Environment ──
+.env
+*.env.local
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# ── Node ──
+node_modules/
+.next/
+out/
+
+# ── Docker ──
+postgres_data/
+redis_data/
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Logs ──
+*.log
