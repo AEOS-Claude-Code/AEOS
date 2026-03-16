@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   Zap,
   LogOut,
+  Globe,
+  Bot,
 } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -28,11 +30,13 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", icon: <LayoutDashboard size={18} />, href: "/app/dashboard" },
   { label: "Marketing", icon: <Megaphone size={18} />, href: "/app/marketing" },
-  { label: "Leads", icon: <Users size={18} />, href: "/app/leads", badge: "5" },
-  { label: "Opportunities", icon: <Sparkles size={18} />, href: "/app/opportunities", badge: "5" },
+  { label: "Leads", icon: <Users size={18} />, href: "/app/leads" },
+  { label: "Opportunities", icon: <Sparkles size={18} />, href: "/app/opportunities" },
+  { label: "Digital Presence", icon: <Globe size={18} />, href: "/app/digital-presence" },
   { label: "Competitors", icon: <Swords size={18} />, href: "/app/competitors" },
   { label: "Integrations", icon: <Plug size={18} />, href: "/app/integrations" },
   { label: "Reports", icon: <FileBarChart size={18} />, href: "/app/reports" },
+  { label: "AI Copilot", icon: <Bot size={18} />, href: "/app/copilot" },
   { label: "Settings", icon: <Settings size={18} />, href: "/app/settings" },
 ];
 

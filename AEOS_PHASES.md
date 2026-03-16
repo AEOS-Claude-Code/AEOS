@@ -1,0 +1,175 @@
+# AEOS – Phase Implementation Tracker
+
+> Autonomous Enterprise Operating System
+> Last updated: 2026-03-16
+
+---
+
+## Phase Status Overview
+
+| Phase | Name | Status | Date Completed |
+|-------|------|--------|----------------|
+| 1 | Project Foundation | COMPLETE | 2026-03-16 |
+| 2 | Authentication & Setup Wizard | COMPLETE | 2026-03-16 |
+| 3 | Core SaaS Foundation | COMPLETE | 2026-03-16 |
+| 4 | Billing & Token System | COMPLETE | 2026-03-16 |
+| 5 | Marketing Module Foundation | COMPLETE | 2026-03-16 |
+| 6 | Integrations | COMPLETE | 2026-03-16 |
+| 7 | Website Scanner | PENDING | — |
+| 8 | Digital Presence Engine | PENDING | — |
+| 9 | Lead Intelligence Engine | PENDING | — |
+| 10 | Opportunity Engine | PENDING | — |
+| 11 | AI Copilot Strategy | PENDING | — |
+| 12 | Competitor Intelligence | PENDING | — |
+| 13 | Reports | PENDING | — |
+| 14 | Admin Console | PENDING | — |
+| 15 | Mobile Architecture | PENDING | — |
+| 16 | Future Modules Architecture | PENDING | — |
+| 17 | Ask AEOS Command Layer | PENDING | — |
+| 18 | Digital Twin & Workflow Layer | PENDING | — |
+| 19 | Deployment | PENDING | — |
+
+---
+
+## Phase 1 — Project Foundation
+
+**Scope:** Monorepo structure, Docker Compose, FastAPI skeleton, Next.js skeleton, PostgreSQL, Redis, base README, .env.example
+
+**Delivered:**
+- `docker-compose.yml` — PostgreSQL 16, Redis 7, FastAPI backend, Celery worker/beat, Next.js frontend
+- `backend/Dockerfile` — Python 3.12-slim with asyncpg, FastAPI, Celery
+- `frontend/Dockerfile` — Node 20-alpine with Next.js 14
+- `backend/app/main.py` — FastAPI app with lifespan, CORS, health routers
+- `backend/app/core/config.py` — Pydantic settings
+- `backend/app/core/database.py` — Async SQLAlchemy engine + session
+- `backend/app/core/redis.py` — Redis client
+- `backend/app/core/celery_app.py` — Celery app
+- `backend/app/api/routers/health.py` — `/api/health`, `/api/health/db`, `/api/health/redis`
+- `.env.example` — All environment variables
+- `README.md` — Architecture, quick start, project structure
+
+**Local URLs:**
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+---
+
+## Phase 2 — Authentication & Setup Wizard
+
+**Scope:** JWT auth (access + refresh), register/login/logout, workspace creation, onboarding flow, readiness model
+
+**Delivered:**
+- `backend/app/auth/models.py` — User, Workspace, Membership, CompanyProfile, OnboardingState SQLAlchemy models
+- `backend/app/auth/schemas.py` — Pydantic request/response schemas for auth
+- `backend/app/auth/service.py` — Auth business logic (register, login, token refresh)
+- `backend/app/auth/router.py` — `/api/v1/auth/register`, `/login`, `/refresh`, `/me`
+- `backend/app/auth/onboarding_router.py` — `/api/v1/onboarding/*` (company, presence, competitors, integrations, complete)
+- `backend/app/auth/dependencies.py` — `get_current_user`, `get_current_workspace`
+- `backend/app/auth/tasks.py` — Celery tasks for post-signup work
+- `frontend/src/lib/auth/AuthProvider.tsx` — JWT auth context + token refresh
+- `frontend/src/app/(auth)/login/page.tsx` — Login page
+- `frontend/src/app/(auth)/register/page.tsx` — Registration page
+- `frontend/src/app/app/onboarding/*` — 5-step Setup Wizard (company, presence, competitors, integrations, complete)
+
+---
+
+## Phase 3 — Core SaaS Foundation
+
+**Scope:** Workspaces, departments, roles, permissions, memberships, Business Graph base schema, event bus
+
+**Delivered:**
+- `backend/app/workspaces/router.py` — Workspace CRUD API
+- `backend/app/engines/event_bus.py` — In-process event bus for engine communication
+- `backend/app/engines/contracts.py` — Shared engine contracts/interfaces
+- `backend/app/core/events/` — Domain event definitions
+- Business Graph base: relational models linking workspaces → users → memberships → departments
+
+---
+
+## Phase 4 — Billing & Token System
+
+**Scope:** Plans, subscriptions, token tracking, token purchases, token alerts, billing UI data
+
+**Delivered:**
+- `backend/app/modules/billing/models.py` — Plan, Subscription, TokenBalance, TokenPurchase, TokenUsageLog models
+- `backend/app/modules/billing/schemas.py` — Billing Pydantic schemas
+- `backend/app/modules/billing/router.py` — `/api/v1/billing/*` (plans, subscription, usage, purchase)
+- `backend/app/modules/billing/service.py` — Billing business logic
+- `frontend/src/components/dashboard/BillingCard.tsx` — Billing status dashboard card
+
+**Plans:** Starter ($19), Growth ($59), Professional ($149), Agency ($299), Enterprise (custom)
+**Token Packs:** 200K ($10), 1M ($35), 5M ($150)
+
+---
+
+## Phase 5 — Marketing Module Foundation
+
+**Scope:** Routes, dashboard shell, leads shell, opportunities shell, competitors shell, integrations shell, reports shell
+
+**Delivered:**
+- `frontend/src/app/app/dashboard/page.tsx` — Executive dashboard with card grid
+- `frontend/src/app/app/leads/page.tsx` — Leads management page
+- `frontend/src/app/app/opportunities/page.tsx` — Opportunities page
+- `frontend/src/app/app/competitors/page.tsx` — Competitors page
+- `frontend/src/app/app/marketing/page.tsx` — Marketing dashboard
+- `frontend/src/app/app/reports/page.tsx` — Reports page
+- `frontend/src/app/app/settings/page.tsx` — Settings page
+- `frontend/src/components/layout/DashboardShell.tsx` — Dashboard layout wrapper
+- `frontend/src/components/layout/Sidebar.tsx` — Navigation sidebar
+- `frontend/src/components/dashboard/` — AIBriefingCard, DigitalPresenceCard, IntegrationStatusCard, StrategicPrioritiesCard, LeadScoreCard, LeadSourcesCard, TopOpportunitiesCard, CompanyIntelligenceCard, AskAeosCard
+- `backend/app/engines/lead_intelligence_engine/` — Models, router, schemas, scoring, service
+- `backend/app/engines/opportunity_intelligence_engine/` — Models, router, schemas, detector
+- `backend/app/engines/strategic_intelligence_engine/` — Router, service, schemas, rules, priorities, risks, roadmap, context_pack
+
+---
+
+## Phase 6 — Integrations
+
+**Scope:** Platform OAuth config structure, workspace integration records, manual inputs, industry-based recommended integrations
+
+**Delivered:**
+- `backend/app/modules/integrations/models.py` — Integration, PROVIDERS registry with industry recommendations
+- `backend/app/modules/integrations/schemas.py` — Integration Pydantic schemas
+- `backend/app/modules/integrations/router.py` — `/api/v1/integrations` (list, connect, disconnect)
+- `backend/app/modules/integrations/service.py` — Integration business logic
+- `backend/app/modules/integrations/providers/` — Provider implementations:
+  - `google_provider.py` — Google Search Console / Analytics / Business
+  - `meta_provider.py` — Facebook / Instagram
+  - `wordpress_provider.py` — WordPress
+  - `shopify_provider.py` — Shopify
+- `frontend/src/app/app/integrations/page.tsx` — Integrations management page
+
+---
+
+## Phase 7 — Website Scanner (NEXT)
+
+**Scope:** Website analysis worker, scan schema, storage of results
+
+**What to build:**
+- Website crawl + analysis Celery worker
+- Scan result schema and models
+- SEO analysis (meta tags, headings, keywords, links)
+- Tech stack detection
+- Social presence detection
+- Shareable public report
+- API endpoints for scan trigger and results
+
+---
+
+## Phases 8–19 — Upcoming
+
+| Phase | Key Deliverables |
+|-------|-----------------|
+| 8 | Digital Presence Engine — scoring model, breakdown, history, recommendations |
+| 9 | Lead Intelligence Engine — capture, events, sources, scoring, summary APIs |
+| 10 | Opportunity Engine — detection, scoring, radar card, approval actions |
+| 11 | AI Copilot Strategy — 30/60/90 plans, daily brief, AI Gateway integration |
+| 12 | Competitor Intelligence — analysis, comparisons, scorecards, benchmarks |
+| 13 | Reports — generation, PDF structures, executive summaries |
+| 14 | Admin Console — clients, workspaces, plans, tokens, monitoring |
+| 15 | Mobile Architecture — client app, admin app architecture |
+| 16 | Future Modules — HR, Finance, Operations, Executive Intelligence |
+| 17 | Ask AEOS Command Layer — executive queries, context packs, quick actions |
+| 18 | Digital Twin & Workflow — predictive models, workflow templates, simulation |
+| 19 | Deployment — production Docker, environment setup, deployment guides |

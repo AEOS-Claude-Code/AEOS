@@ -1,199 +1,106 @@
 """
-AEOS – Seed data router.
+AEOS – Seed / dev-tools router.
 
-Serves deterministic demo data for local development.
-All endpoints are guarded: they return 404 in production.
+POST /api/seed/reset   → Reset engine data for the authenticated workspace
+GET  /api/seed/status   → Current data counts
 
-Endpoints:
-  GET  /api/v1/workspace/profile    → demo workspace + owner
-  GET  /api/v1/leads                → 5 sample leads
-  GET  /api/v1/opportunities        → 5 sample opportunities
-  GET  /api/v1/integrations/status  → 4 integrations + recommendations
-  GET  /api/seed/status             → current seed state
-  POST /api/seed/reset              → reset seed data to defaults
+Guarded by ENVIRONMENT=development.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
-from fastapi import APIRouter, HTTPException
+import logging
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select, func, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.seed.data import (
-    WORKSPACE,
-    OWNER_USER,
-    LEADS,
-    OPPORTUNITIES,
-    INTEGRATIONS,
-    RECOMMENDED_INTEGRATIONS,
-    LEAD_SUMMARY,
-    OPPORTUNITY_SUMMARY,
-    INTEGRATION_SUMMARY,
-)
+from app.core.database import get_db
+from app.auth.dependencies import get_current_workspace
+from app.auth.models import Workspace
+from app.engines.lead_intelligence_engine.models import Lead, LeadEvent, LeadSource
+from app.engines.lead_intelligence_engine.service import ensure_seed_leads
+from app.engines.opportunity_intelligence_engine.models import Opportunity
+from app.engines.opportunity_intelligence_engine.detector import ensure_seed_opportunities
+from app.engines.company_scanner_engine.models import CompanyScanReport
+from app.engines.executive_copilot_engine.models import CopilotConversation
+from app.modules.integrations.models import Integration, IntegrationCredential
 
+logger = logging.getLogger("aeos.seed")
 settings = get_settings()
 
-# ── In-memory mutable state (reset-able) ────────────────────────────
-# We keep a mutable copy so the /reset endpoint can restore defaults.
-
-_state: dict = {}
-
-
-def _init_state() -> None:
-    """Initialize or reset mutable seed state."""
-    _state["workspace"] = {**WORKSPACE}
-    _state["owner"] = {**OWNER_USER}
-    _state["leads"] = [dict(l) for l in LEADS]
-    _state["opportunities"] = [dict(o) for o in OPPORTUNITIES]
-    _state["integrations"] = [dict(i) for i in INTEGRATIONS]
-    _state["recommended_integrations"] = list(RECOMMENDED_INTEGRATIONS)
-    _state["initialized_at"] = datetime.utcnow().isoformat()
-    _state["reset_count"] = _state.get("reset_count", 0)
-
-
-_init_state()
-
-# ── Guard ────────────────────────────────────────────────────────────
-
-
-def _guard() -> None:
-    """Block seed endpoints in production."""
-    if settings.ENVIRONMENT not in ("development", "dev", "local", "test"):
-        raise HTTPException(status_code=404, detail="Not found")
-
-
-# ── Routers ──────────────────────────────────────────────────────────
-
 seed_router = APIRouter(prefix="/seed", tags=["Seed (dev only)"])
-data_router = APIRouter(prefix="/v1", tags=["Seed data"])
 
 
-# ── Seed management ──────────────────────────────────────────────────
+def _guard():
+    if settings.ENVIRONMENT not in ("development", "dev", "local", "test"):
+        raise HTTPException(status_code=403, detail="Seed endpoints are disabled in production")
 
-@seed_router.get(
-    "/status",
-    summary="Seed status",
-    description="Returns current seed data state. Development only.",
-)
-async def seed_status():
+
+@seed_router.get("/status", summary="Data counts for the current workspace")
+async def seed_status(
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
     _guard()
+    wid = workspace.id
+
+    leads = (await db.execute(select(func.count(Lead.id)).where(Lead.workspace_id == wid))).scalar_one()
+    opps = (await db.execute(select(func.count(Opportunity.id)).where(Opportunity.workspace_id == wid))).scalar_one()
+    scans = (await db.execute(select(func.count(CompanyScanReport.id)).where(CompanyScanReport.workspace_id == wid))).scalar_one()
+    convos = (await db.execute(select(func.count(CopilotConversation.id)).where(CopilotConversation.workspace_id == wid))).scalar_one()
+
     return {
-        "status": "active",
-        "environment": settings.ENVIRONMENT,
-        "workspace_id": _state["workspace"]["id"],
-        "owner_email": _state["owner"]["email"],
-        "leads_count": len(_state["leads"]),
-        "opportunities_count": len(_state["opportunities"]),
-        "integrations_count": len(_state["integrations"]),
-        "initialized_at": _state["initialized_at"],
-        "reset_count": _state["reset_count"],
+        "workspace_id": wid,
+        "workspace_name": workspace.name,
+        "counts": {
+            "leads": leads,
+            "opportunities": opps,
+            "scans": scans,
+            "copilot_conversations": convos,
+        },
     }
 
 
-@seed_router.post(
-    "/reset",
-    summary="Reset seed data",
-    description="Resets all seed data to defaults. Development only.",
-)
-async def seed_reset():
+@seed_router.post("/reset", summary="Clear and re-seed engine data for the current workspace")
+async def seed_reset(
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
     _guard()
-    _state["reset_count"] = _state.get("reset_count", 0) + 1
-    _init_state()
+    wid = workspace.id
+    logger.info("Resetting seed data for workspace=%s", wid)
+
+    # Delete existing engine data (order matters for FK constraints)
+    await db.execute(delete(CopilotConversation).where(CopilotConversation.workspace_id == wid))
+    await db.execute(delete(CompanyScanReport).where(CompanyScanReport.workspace_id == wid))
+    await db.execute(delete(Opportunity).where(Opportunity.workspace_id == wid))
+    await db.execute(delete(LeadEvent).where(LeadEvent.workspace_id == wid))
+    await db.execute(delete(LeadSource).where(LeadSource.workspace_id == wid))
+    await db.execute(delete(Lead).where(Lead.workspace_id == wid))
+
+    # Delete integration data (credentials FK → integrations)
+    intg_ids_q = select(Integration.id).where(Integration.workspace_id == wid)
+    await db.execute(delete(IntegrationCredential).where(IntegrationCredential.integration_id.in_(intg_ids_q)))
+    await db.execute(delete(Integration).where(Integration.workspace_id == wid))
+    await db.flush()
+
+    # Re-seed
+    await ensure_seed_leads(db, wid)
+    await db.flush()
+    await ensure_seed_opportunities(db, workspace)
+    await db.flush()
+
+    # Re-scan if website exists
+    profile = workspace.profile
+    if profile and profile.website_url:
+        from app.engines.company_scanner_engine.service import run_scan
+        await run_scan(db, wid, profile.website_url, profile.social_links)
+
+    logger.info("Seed reset complete for workspace=%s", wid)
+
     return {
         "status": "reset_complete",
-        "message": "All seed data restored to defaults.",
-        "reset_count": _state["reset_count"],
-        "timestamp": datetime.utcnow().isoformat(),
-    }
-
-
-# ── Workspace profile ────────────────────────────────────────────────
-
-@data_router.get(
-    "/workspace/profile",
-    summary="Workspace profile",
-    description="Returns the demo workspace profile with owner info.",
-)
-async def workspace_profile():
-    _guard()
-    return {
-        "workspace": _state["workspace"],
-        "owner": _state["owner"],
-    }
-
-
-# ── Leads ────────────────────────────────────────────────────────────
-
-@data_router.get(
-    "/leads",
-    summary="Leads list",
-    description="Returns all seed leads with summary stats.",
-)
-async def leads_list():
-    _guard()
-    leads = _state["leads"]
-    qualified = sum(1 for l in leads if l["status"] == "qualified")
-    return {
-        "workspace_id": _state["workspace"]["id"],
-        "leads": leads,
-        "summary": {
-            "total_leads_30d": len(leads),
-            "qualified_leads_30d": qualified,
-            "conversion_rate": LEAD_SUMMARY["conversion_rate"],
-            "top_source": LEAD_SUMMARY["top_source"],
-            "trend": LEAD_SUMMARY["trend"],
-        },
-        "generated_at": datetime.utcnow().isoformat(),
-    }
-
-
-# ── Opportunities ────────────────────────────────────────────────────
-
-@data_router.get(
-    "/opportunities",
-    summary="Opportunities list",
-    description="Returns all detected opportunities with summary.",
-)
-async def opportunities_list():
-    _guard()
-    opps = _state["opportunities"]
-    high = sum(1 for o in opps if o["impact"] == "high")
-    return {
-        "workspace_id": _state["workspace"]["id"],
-        "opportunities": opps,
-        "summary": {
-            "total_detected": len(opps),
-            "high_impact_count": high,
-            "categories": list({o["category"] for o in opps}),
-            "top_opportunity": opps[0]["title"] if opps else "",
-        },
-        "generated_at": datetime.utcnow().isoformat(),
-    }
-
-
-# ── Integrations ─────────────────────────────────────────────────────
-
-@data_router.get(
-    "/integrations/status",
-    summary="Integration status",
-    description="Returns connected integrations and recommendations.",
-)
-async def integrations_status():
-    _guard()
-    integs = _state["integrations"]
-    connected = sum(1 for i in integs if i["status"] == "connected")
-    total = len(integs) + len(_state["recommended_integrations"])
-    critical_missing = [
-        i["platform"] for i in integs if i["status"] == "disconnected"
-    ]
-    return {
-        "workspace_id": _state["workspace"]["id"],
-        "integrations": integs,
-        "recommended": _state["recommended_integrations"],
-        "summary": {
-            "total_available": total,
-            "total_connected": connected,
-            "critical_missing": critical_missing,
-        },
-        "generated_at": datetime.utcnow().isoformat(),
+        "workspace_id": wid,
+        "message": "Engine data cleared and re-seeded.",
     }

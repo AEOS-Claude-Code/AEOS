@@ -11,7 +11,7 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import api from "@/lib/api";
 
-/* ── Types matching backend auth contract ──────────────────────── */
+/* ── Types ─────────────────────────────────────────────────────── */
 
 export interface User {
   id: string;
@@ -24,7 +24,7 @@ export interface User {
   workspace_role: string;
   permissions: string[];
   created_at: string;
-  last_login_at: string;
+  last_login_at: string | null;
 }
 
 export interface WorkspacePlan {
@@ -73,20 +73,19 @@ export interface Workspace {
   created_at: string;
 }
 
-/* ── Auth state ────────────────────────────────────────────────── */
-
 interface AuthState {
   user: User | null;
   workspace: Workspace | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  register: (email: string, password: string, fullName: string, companyName: string, websiteUrl?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
 }
 
 const TOKEN_KEY = "aeos_access_token";
-const DEV_TOKEN = "dev-session-token";
+const REFRESH_KEY = "aeos_refresh_token";
 
 /* ── Context ───────────────────────────────────────────────────── */
 
@@ -95,6 +94,7 @@ const AuthContext = createContext<AuthState>({
   workspace: null,
   isAuthenticated: false,
   isLoading: true,
+  register: async () => {},
   login: async () => {},
   logout: () => {},
   refreshSession: async () => {},
@@ -112,11 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  /**
-   * Fetch user + workspace from backend auth contract endpoints.
-   * Phase 2: these endpoints will validate the real JWT.
-   * Right now: they return deterministic seed data.
-   */
   const fetchSession = useCallback(async (): Promise<boolean> => {
     try {
       const [meRes, wsRes] = await Promise.all([
@@ -133,71 +128,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  /* Check for existing session on mount */
+  /* On mount: check for existing token → validate */
   useEffect(() => {
     async function init() {
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem(TOKEN_KEY)
-          : null;
-
+      const token = typeof window !== "undefined" ? localStorage.getItem(TOKEN_KEY) : null;
       if (token) {
-        /* Token exists — validate against backend */
         const ok = await fetchSession();
         if (!ok) {
-          /* Token invalid — clear it */
-          localStorage.removeItem(TOKEN_KEY);
-        }
-      } else {
-        /*
-         * Dev auto-login: create a dev token and fetch session.
-         * Phase 2 will remove this block entirely.
-         */
-        const isDev =
-          process.env.NODE_ENV === "development" ||
-          process.env.NEXT_PUBLIC_API_URL?.includes("localhost");
-
-        if (isDev) {
-          localStorage.setItem(TOKEN_KEY, DEV_TOKEN);
-          await fetchSession();
+          /* Try refresh */
+          const refresh = localStorage.getItem(REFRESH_KEY);
+          if (refresh) {
+            try {
+              const res = await api.post("/api/v1/auth/refresh", { refresh_token: refresh });
+              localStorage.setItem(TOKEN_KEY, res.data.access_token);
+              localStorage.setItem(REFRESH_KEY, res.data.refresh_token);
+              await fetchSession();
+            } catch {
+              localStorage.removeItem(TOKEN_KEY);
+              localStorage.removeItem(REFRESH_KEY);
+            }
+          } else {
+            localStorage.removeItem(TOKEN_KEY);
+          }
         }
       }
-
       setIsLoading(false);
     }
-
     init();
   }, [fetchSession]);
 
-  /**
-   * Login.
-   * Phase 2: POST /api/auth/login → { access_token, refresh_token }
-   * Then call fetchSession() to populate user + workspace from /auth/me.
-   */
-  async function login(_email: string, _password: string): Promise<void> {
-    /* Phase 2: real login call here */
-    localStorage.setItem(TOKEN_KEY, DEV_TOKEN);
+  /* Register */
+  async function register(email: string, password: string, fullName: string, companyName: string, websiteUrl?: string): Promise<void> {
+    const res = await api.post("/api/v1/auth/register", {
+      email,
+      password,
+      full_name: fullName,
+      company_name: companyName,
+      website_url: websiteUrl || "",
+    });
+    localStorage.setItem(TOKEN_KEY, res.data.access_token);
+    localStorage.setItem(REFRESH_KEY, res.data.refresh_token);
+    await fetchSession();
+    router.push("/app/onboarding/company");
+  }
+
+  /* Login */
+  async function login(email: string, password: string): Promise<void> {
+    const res = await api.post("/api/v1/auth/login", { email, password });
+    localStorage.setItem(TOKEN_KEY, res.data.access_token);
+    localStorage.setItem(REFRESH_KEY, res.data.refresh_token);
     await fetchSession();
 
-    /* Redirect to stored destination or dashboard */
-    const redirect =
-      typeof window !== "undefined"
-        ? sessionStorage.getItem("aeos_redirect")
-        : null;
+    const redirect = typeof window !== "undefined" ? sessionStorage.getItem("aeos_redirect") : null;
     sessionStorage.removeItem("aeos_redirect");
     router.push(redirect || "/app/dashboard");
   }
 
   /* Logout */
   function logout(): void {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      api.post("/api/v1/auth/logout").catch(() => {});
+    }
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem("aeos_refresh_token");
+    localStorage.removeItem(REFRESH_KEY);
     setUser(null);
     setWorkspace(null);
     router.push("/login");
   }
 
-  /* Re-fetch session (e.g. after workspace switch, plan change) */
   async function refreshSession(): Promise<void> {
     await fetchSession();
   }
@@ -209,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         workspace,
         isAuthenticated: !!user,
         isLoading,
+        register,
         login,
         logout,
         refreshSession,
@@ -240,13 +240,12 @@ export function RequireAuth({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-aeos-200 border-t-aeos-600" />
-          <span className="text-sm text-slate-400">Loading\u2026</span>
+          <span className="text-sm text-fg-muted">Loading\u2026</span>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) return null;
-
   return <>{children}</>;
 }

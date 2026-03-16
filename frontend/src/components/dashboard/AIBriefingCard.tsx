@@ -2,12 +2,18 @@
 
 import { Brain, ChevronRight } from "lucide-react";
 import DashCard from "./DashCard";
+import {
+  CardLoading,
+  CardEmpty,
+  type CardState,
+} from "@/components/ui/CardStates";
 
 interface BriefingProps {
   headline: string;
   keyInsight: string;
   healthScore: number;
   companyName: string;
+  state?: CardState;
 }
 
 export default function AIBriefingCard({
@@ -15,6 +21,7 @@ export default function AIBriefingCard({
   keyInsight,
   healthScore,
   companyName,
+  state = "success",
 }: BriefingProps) {
   const scoreColor =
     healthScore >= 70
@@ -35,7 +42,19 @@ export default function AIBriefingCard({
       }
       delay={240}
     >
-      {/* Health score banner */}
+      {state === "loading" && <CardLoading lines={3} />}
+
+      {state === "empty" && (
+        <CardEmpty
+          icon={<Brain size={20} className="text-fg-hint" />}
+          title="No briefing available"
+          description="Strategic data is needed to generate an AI briefing."
+        />
+      )}
+
+      {state === "success" && (
+        <>
+          {/* Health score banner */}
       <div
         className={`mb-4 flex items-center gap-4 rounded-xl bg-gradient-to-r ${scoreColor} px-4 py-3`}
       >
@@ -68,6 +87,8 @@ export default function AIBriefingCard({
         Ask AEOS for details
         <ChevronRight size={14} />
       </button>
+        </>
+      )}
     </DashCard>
   );
 }

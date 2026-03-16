@@ -15,11 +15,10 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
     try {
       await login(email, password);
-    } catch {
-      setError("Invalid credentials. Please try again.");
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Invalid credentials.");
     } finally {
       setLoading(false);
     }
@@ -27,66 +26,50 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-bold text-slate-900">Welcome back</h1>
-        <p className="mb-6 text-sm text-slate-500">
-          Sign in to your AEOS workspace
-        </p>
+      <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
+        <h1 className="mb-1 text-xl font-bold text-fg">Welcome back</h1>
+        <p className="mb-6 text-sm text-fg-muted">Sign in to your AEOS workspace</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
-              Email
-            </label>
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
               required
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
-              Password
-            </label>
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
               required
             />
           </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-600">
-              {error}
-            </p>
+            <p className="rounded-lg bg-status-danger-light px-3 py-2 text-xs text-status-danger-text">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
+            className="w-full rounded-widget bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
           >
             {loading ? "Signing in\u2026" : "Sign in"}
           </button>
         </form>
-
-        {/* Dev shortcut */}
-        <div className="mt-4 rounded-lg border border-dashed border-amber-200 bg-amber-50/50 p-3">
-          <p className="text-[11px] text-amber-700">
-            <span className="font-semibold">Dev mode:</span> Enter any
-            email/password to sign in with the demo account.
-          </p>
-        </div>
       </div>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-fg-muted">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="font-medium text-aeos-600 hover:text-aeos-700">
           Get started

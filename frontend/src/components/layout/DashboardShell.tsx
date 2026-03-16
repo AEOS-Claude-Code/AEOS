@@ -14,10 +14,10 @@ interface DashboardShellProps {
 
 export default function DashboardShell({
   children,
-  workspaceName = "Demo Company",
-  plan = "Growth",
-  tokensUsed = 38420,
-  tokensTotal = 150000,
+  workspaceName = "",
+  plan = "",
+  tokensUsed = 0,
+  tokensTotal = 0,
   isLive = false,
 }: DashboardShellProps) {
   return (

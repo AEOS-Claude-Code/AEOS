@@ -2,6 +2,11 @@
 
 import { Flag, ArrowUpRight } from "lucide-react";
 import DashCard from "./DashCard";
+import {
+  CardLoading,
+  CardEmpty,
+  type CardState,
+} from "@/components/ui/CardStates";
 import type { Priority } from "@/lib/hooks/useStrategyData";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -24,8 +29,10 @@ const CATEGORY_BG: Record<string, string> = {
 
 export default function StrategicPrioritiesCard({
   priorities,
+  state = "success",
 }: {
   priorities: Priority[];
+  state?: CardState;
 }) {
   const top = priorities.slice(0, 4);
 
@@ -41,11 +48,23 @@ export default function StrategicPrioritiesCard({
       }
       delay={300}
     >
-      {top.length === 0 ? (
-        <p className="py-4 text-center text-[12px] text-slate-400">
+      {state === "loading" && <CardLoading lines={4} />}
+
+      {state === "empty" && (
+        <CardEmpty
+          icon={<Flag size={20} className="text-fg-hint" />}
+          title="No priorities yet"
+          description="Complete setup to unlock strategic priorities."
+        />
+      )}
+
+      {state === "success" && top.length === 0 && (
+        <p className="py-4 text-center text-xs text-fg-muted">
           Complete setup to unlock priorities.
         </p>
-      ) : (
+      )}
+
+      {state === "success" && top.length > 0 && (
         <div className="space-y-2">
           {top.map((p) => (
             <div

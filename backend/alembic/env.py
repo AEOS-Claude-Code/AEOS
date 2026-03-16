@@ -13,9 +13,13 @@ from app.core.config import get_settings
 from app.core.database import Base
 
 # Import all models here so Alembic can detect them.
-# As models are added in future phases, add imports below:
-# from app.auth import models  # noqa
-# from app.workspaces import models  # noqa
+import app.auth.models  # noqa
+import app.engines.lead_intelligence_engine.models  # noqa
+import app.engines.opportunity_intelligence_engine.models  # noqa
+import app.engines.company_scanner_engine.models  # noqa
+import app.engines.executive_copilot_engine.models  # noqa
+import app.modules.billing.models  # noqa
+import app.modules.integrations.models  # noqa
 
 settings = get_settings()
 config = context.config

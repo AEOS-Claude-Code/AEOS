@@ -30,3 +30,7 @@ anthropic==0.42.0
 # ── Utils ──
 python-dotenv==1.0.1
 email-validator==2.2.0
+
+# ── Scraping / Analysis ──
+beautifulsoup4==4.12.3
+lxml==5.3.0

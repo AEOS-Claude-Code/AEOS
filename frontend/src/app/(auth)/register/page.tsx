@@ -3,25 +3,26 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
+import { Zap } from "lucide-react";
 
 export default function RegisterPage() {
-  const { login } = useAuth();
+  const { register } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     setLoading(true);
-
     try {
-      /*
-       * Phase 2: POST /api/auth/register → creates user + workspace
-       * then auto-login and redirect to /app/dashboard or setup wizard
-       */
-      await login(email, password);
+      await register(email, password, fullName, companyName, websiteUrl);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || "Registration failed.");
     } finally {
       setLoading(false);
     }
@@ -29,93 +30,78 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-sm">
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-bold text-slate-900">
-          Create your workspace
-        </h1>
-        <p className="mb-6 text-sm text-slate-500">
-          Start your free trial — no credit card required
-        </p>
+      <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
+        <h1 className="mb-1 text-xl font-bold text-fg">Create your workspace</h1>
+        <p className="mb-6 text-sm text-fg-muted">Get a free company intelligence report</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
-              Full name
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Full name</label>
+            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
               placeholder="Dana Chen"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
-              required
-            />
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+              required />
           </div>
-
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
-              Work email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Work email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
-              required
-            />
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+              required />
           </div>
-
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
-              Company name
-            </label>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Company name</label>
+            <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Acme Digital"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
-              required
-            />
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+              required />
           </div>
-
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-slate-700">
-              Password
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
+              Company website
+              <span className="ml-1.5 rounded-pill bg-aeos-50 px-1.5 py-px text-2xs font-semibold text-aeos-700">
+                Free report
+              </span>
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
-              required
-            />
+            <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://yourcompany.com"
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100" />
+            <p className="mt-1 text-2xs text-fg-hint">
+              We'll analyze your website and generate a shareable intelligence report — free.
+            </p>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" minLength={6}
+              className="w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+              required />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
-          >
-            {loading ? "Creating workspace\u2026" : "Create workspace"}
+          {error && (
+            <p className="rounded-lg bg-status-danger-light px-3 py-2 text-xs text-status-danger-text">{error}</p>
+          )}
+
+          <button type="submit" disabled={loading}
+            className="w-full rounded-widget bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50">
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Analyzing your company\u2026
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <Zap size={14} />
+                Get free report
+              </span>
+            )}
           </button>
         </form>
-
-        <div className="mt-4 rounded-lg border border-dashed border-amber-200 bg-amber-50/50 p-3">
-          <p className="text-[11px] text-amber-700">
-            <span className="font-semibold">Dev mode:</span> Submit any data to
-            create a demo session. Phase 2 will add real registration.
-          </p>
-        </div>
       </div>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-fg-muted">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-aeos-600 hover:text-aeos-700">
-          Sign in
-        </Link>
+        <Link href="/login" className="font-medium text-aeos-600 hover:text-aeos-700">Sign in</Link>
       </p>
     </div>
   );

@@ -1,0 +1,198 @@
+"""
+AEOS – Auth API router.
+
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+POST /api/v1/auth/refresh
+GET  /api/v1/auth/me
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, status
+
+logger = logging.getLogger("aeos.auth")
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.database import get_db
+from app.auth.schemas import (
+    RegisterRequest,
+    LoginRequest,
+    RefreshRequest,
+    AuthTokens,
+    UserResponse,
+)
+from app.auth.service import (
+    get_user_by_email,
+    register_user,
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    get_refresh_token,
+    revoke_user_tokens,
+    get_default_membership,
+    get_permissions,
+)
+from app.auth.dependencies import get_current_user, get_current_membership
+from app.auth.models import User, Membership
+
+router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
+
+
+@router.post(
+    "/register",
+    response_model=AuthTokens,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user and workspace",
+)
+async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    existing = await get_user_by_email(db, body.email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        )
+
+    user, workspace, membership = await register_user(
+        db,
+        email=body.email,
+        password=body.password,
+        full_name=body.full_name,
+        company_name=body.company_name,
+        website_url=body.website_url,
+    )
+
+    access_token = create_access_token(user.id, workspace.id)
+    refresh = await create_refresh_token(db, user.id)
+
+    # Create billing subscription + token wallet for the new workspace
+    try:
+        from app.modules.billing.service import get_or_create_subscription
+        await get_or_create_subscription(db, workspace.id)
+        await db.flush()
+    except Exception:
+        logger.exception("Billing setup failed for workspace=%s (non-fatal)", workspace.id)
+
+    # Auto-trigger company scan if website URL was provided
+    if body.website_url and body.website_url.strip():
+        try:
+            from app.engines.company_scanner_engine.service import run_scan
+            await run_scan(db, workspace.id, body.website_url.strip())
+        except Exception:
+            logger.exception("Auto-scan failed for workspace=%s (non-fatal)", workspace.id)
+
+    return AuthTokens(
+        access_token=access_token,
+        refresh_token=refresh.token,
+    )
+
+
+@router.post(
+    "/login",
+    response_model=AuthTokens,
+    summary="Login with email and password",
+)
+async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+    user = await get_user_by_email(db, body.email)
+    if not user or not verify_password(body.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
+        )
+
+    membership = await get_default_membership(db, user.id)
+    workspace_id = membership.workspace_id if membership else ""
+
+    access_token = create_access_token(user.id, workspace_id)
+    refresh = await create_refresh_token(db, user.id)
+
+    return AuthTokens(
+        access_token=access_token,
+        refresh_token=refresh.token,
+    )
+
+
+@router.post(
+    "/logout",
+    summary="Logout – revoke all refresh tokens",
+)
+async def logout(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await revoke_user_tokens(db, user.id)
+    return {"status": "logged_out"}
+
+
+@router.post(
+    "/refresh",
+    response_model=AuthTokens,
+    summary="Refresh access token",
+)
+async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    token_record = await get_refresh_token(db, body.refresh_token)
+    if not token_record:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    if token_record.is_expired:
+        token_record.revoked = True
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired",
+        )
+
+    # Revoke old token
+    token_record.revoked = True
+
+    # Get user's workspace
+    membership = await get_default_membership(db, token_record.user_id)
+    workspace_id = membership.workspace_id if membership else ""
+
+    # Issue new tokens
+    new_access = create_access_token(token_record.user_id, workspace_id)
+    new_refresh = await create_refresh_token(db, token_record.user_id)
+
+    return AuthTokens(
+        access_token=new_access,
+        refresh_token=new_refresh.token,
+    )
+
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Get current authenticated user",
+)
+async def me(
+    user: User = Depends(get_current_user),
+    membership: Membership = Depends(get_current_membership),
+    db: AsyncSession = Depends(get_db),
+):
+    permissions = get_permissions(membership.role)
+
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        initials=user.initials,
+        role=membership.role,
+        is_active=user.is_active,
+        workspace_id=membership.workspace_id,
+        workspace_role=membership.role,
+        permissions=permissions,
+        created_at=user.created_at.isoformat(),
+        last_login_at=datetime.utcnow().isoformat(),
+    )
