@@ -52,10 +52,9 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 async def lifespan(app: FastAPI):
     """Startup / shutdown hooks."""
     setup_logging("DEBUG" if settings.DEBUG else "INFO")
-    # ── Startup: create tables in development ──
-    if settings.ENVIRONMENT in ("development", "dev", "local", "test"):
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    # ── Startup: ensure tables exist ──
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     # Validate critical config
     if settings.ENVIRONMENT == "production" and settings.JWT_SECRET_KEY == "change-me-to-a-random-64-char-string":
