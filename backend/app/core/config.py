@@ -24,6 +24,26 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://aeos:aeos_secret_change_me@postgres:5432/aeos"
     DATABASE_URL_SYNC: str = "postgresql://aeos:aeos_secret_change_me@postgres:5432/aeos"
 
+    @property
+    def async_database_url(self) -> str:
+        """Ensure DATABASE_URL uses asyncpg driver (Render gives postgres://)."""
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
+    @property
+    def sync_database_url(self) -> str:
+        """Ensure DATABASE_URL_SYNC uses psycopg2 driver."""
+        url = self.DATABASE_URL_SYNC or self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        if "+asyncpg" in url:
+            url = url.replace("+asyncpg", "", 1)
+        return url
+
     # ── Redis ──
     REDIS_URL: str = "redis://redis:6379/0"
     CELERY_BROKER_URL: str = "redis://redis:6379/1"

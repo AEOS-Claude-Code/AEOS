@@ -1,0 +1,120 @@
+databases:
+  - name: aeos-db
+    plan: free
+    databaseName: aeos
+    user: aeos
+
+services:
+  - type: redis
+    name: aeos-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  - type: web
+    name: aeos-backend
+    plan: free
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: aeos-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: aeos-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: aeos-db
+          property: database
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: aeos-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: aeos-db
+          property: port
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aeos-db
+          property: connectionString
+      - key: DATABASE_URL_SYNC
+        fromDatabase:
+          name: aeos-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: aeos-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: aeos-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: aeos-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: JWT_REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: ALLOWED_ORIGINS
+        value: "https://aeos-frontend.vercel.app,https://*.vercel.app"
+      - key: ANTHROPIC_API_KEY
+        value: "sk-ant-xxxxx"
+      - key: AI_DEFAULT_MODEL
+        value: "claude-sonnet-4-20250514"
+      - key: AI_MAX_TOKENS
+        value: "4096"
+    healthCheckPath: /api/health
+
+  - type: worker
+    name: aeos-celery-worker
+    plan: free
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: "celery -A app.core.celery_app worker --loglevel=info --concurrency=2"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aeos-db
+          property: connectionString
+      - key: DATABASE_URL_SYNC
+        fromDatabase:
+          name: aeos-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: aeos-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: aeos-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: aeos-redis
+          type: redis
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
