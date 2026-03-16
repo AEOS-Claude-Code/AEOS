@@ -3,10 +3,12 @@ AEOS – Opportunity Radar Engine: API router.
 
 GET /api/v1/opportunities/radar
 GET /api/v1/opportunities/top
+GET /api/v1/opportunities/list
 """
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -20,14 +22,32 @@ from app.engines.lead_intelligence_engine.service import ensure_seed_leads
 from .models import Opportunity
 from .detector import ensure_seed_opportunities
 
+
+class OpportunityCategory(str, Enum):
+    keyword_gaps = "keyword_gaps"
+    competitor = "competitor"
+    local_market = "local_market"
+    conversion = "conversion"
+    social = "social"
+    content = "content"
+    technical = "technical"
+
+
+class ImpactLevel(str, Enum):
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+
 router = APIRouter(prefix="/v1/opportunities", tags=["Opportunity Radar"])
 
 
 @router.get("/radar", summary="Opportunity radar – all detected opportunities")
 async def opportunity_radar(
-    category: Optional[str] = Query(None, description="Filter by category"),
-    impact: Optional[str] = Query(None, description="Filter by impact level"),
+    category: Optional[OpportunityCategory] = Query(None, description="Filter by category"),
+    impact: Optional[ImpactLevel] = Query(None, description="Filter by impact level"),
     limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
@@ -39,10 +59,10 @@ async def opportunity_radar(
 
     q = select(Opportunity).where(Opportunity.workspace_id == workspace.id)
     if category:
-        q = q.where(Opportunity.category == category)
+        q = q.where(Opportunity.category == category.value)
     if impact:
-        q = q.where(Opportunity.impact == impact)
-    q = q.order_by(Opportunity.impact_score.desc()).limit(limit)
+        q = q.where(Opportunity.impact == impact.value)
+    q = q.order_by(Opportunity.impact_score.desc()).offset(offset).limit(limit)
 
     result = await db.execute(q)
     opps = list(result.scalars().all())
@@ -82,6 +102,7 @@ async def opportunity_radar(
 @router.get("/top", summary="Top opportunities ranked by impact")
 async def top_opportunities(
     limit: int = Query(5, ge=1, le=20),
+    offset: int = Query(0, ge=0),
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
@@ -94,6 +115,7 @@ async def top_opportunities(
         select(Opportunity)
         .where(Opportunity.workspace_id == workspace.id, Opportunity.status == "detected")
         .order_by(Opportunity.impact_score.desc())
+        .offset(offset)
         .limit(limit)
     )
     result = await db.execute(q)
@@ -118,10 +140,11 @@ async def top_opportunities(
 
 @router.get("/list", summary="List all opportunities (alias for /radar)")
 async def opportunity_list(
-    category: Optional[str] = Query(None),
-    impact: Optional[str] = Query(None),
+    category: Optional[OpportunityCategory] = Query(None),
+    impact: Optional[ImpactLevel] = Query(None),
     limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
-    return await opportunity_radar(category=category, impact=impact, limit=limit, workspace=workspace, db=db)
+    return await opportunity_radar(category=category, impact=impact, limit=limit, offset=offset, workspace=workspace, db=db)

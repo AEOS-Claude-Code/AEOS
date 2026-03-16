@@ -15,10 +15,12 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -60,12 +62,20 @@ class Lead(Base):
     classification = Column(String(50), default="cold")  # cold | warm | hot
 
     # Metadata
-    tags = Column(JSON, default=list)
+    tags = Column(JSON, default=list, server_default="[]")
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=_now, nullable=False)
     updated_at = Column(DateTime, default=_now, onupdate=_now, nullable=False)
 
     events = relationship("LeadEvent", back_populates="lead", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "email", name="uq_lead_workspace_email"),
+        Index("ix_lead_workspace_status", "workspace_id", "status"),
+        Index("ix_lead_workspace_classification", "workspace_id", "classification"),
+        Index("ix_lead_workspace_source", "workspace_id", "source"),
+        Index("ix_lead_workspace_created", "workspace_id", "created_at"),
+    )
 
     @property
     def classification_from_score(self) -> str:

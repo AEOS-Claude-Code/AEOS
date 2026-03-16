@@ -11,9 +11,11 @@ GET  /api/v1/auth/me
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 logger = logging.getLogger("aeos.auth")
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +32,7 @@ from app.auth.service import (
     get_user_by_email,
     register_user,
     verify_password,
+    hash_password,
     create_access_token,
     create_refresh_token,
     get_refresh_token,
@@ -41,6 +44,10 @@ from app.auth.dependencies import get_current_user, get_current_membership
 from app.auth.models import User, Membership
 
 router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
+limiter = Limiter(key_func=get_remote_address)
+
+# Dummy hash for constant-time comparison when user not found
+_DUMMY_HASH = hash_password("dummy-password-for-timing")
 
 
 @router.post(
@@ -49,7 +56,8 @@ router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user and workspace",
 )
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     existing = await get_user_by_email(db, body.email)
     if existing:
         raise HTTPException(
@@ -85,6 +93,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
         except Exception:
             logger.exception("Auto-scan failed for workspace=%s (non-fatal)", workspace.id)
 
+    logger.info("User registered: %s workspace=%s", user.email, workspace.id)
     return AuthTokens(
         access_token=access_token,
         refresh_token=refresh.token,
@@ -96,9 +105,19 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     response_model=AuthTokens,
     summary="Login with email and password",
 )
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = await get_user_by_email(db, body.email)
-    if not user or not verify_password(body.password, user.hashed_password):
+
+    # Constant-time comparison: always verify a password to prevent timing attacks
+    if not user:
+        verify_password(body.password, _DUMMY_HASH)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    if not verify_password(body.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -116,6 +135,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     access_token = create_access_token(user.id, workspace_id)
     refresh = await create_refresh_token(db, user.id)
 
+    logger.info("User logged in: %s", user.email)
     return AuthTokens(
         access_token=access_token,
         refresh_token=refresh.token,
@@ -131,6 +151,7 @@ async def logout(
     db: AsyncSession = Depends(get_db),
 ):
     await revoke_user_tokens(db, user.id)
+    logger.info("User logged out: %s", user.email)
     return {"status": "logged_out"}
 
 
@@ -139,7 +160,8 @@ async def logout(
     response_model=AuthTokens,
     summary="Refresh access token",
 )
-async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("20/minute")
+async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     token_record = await get_refresh_token(db, body.refresh_token)
     if not token_record:
         raise HTTPException(
@@ -149,13 +171,15 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
     if token_record.is_expired:
         token_record.revoked = True
+        await db.flush()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token expired",
         )
 
-    # Revoke old token
+    # Revoke old token and persist before issuing new ones
     token_record.revoked = True
+    await db.flush()
 
     # Get user's workspace
     membership = await get_default_membership(db, token_record.user_id)

@@ -4,10 +4,17 @@ AEOS – Main FastAPI application.
 
 from __future__ import annotations
 
+import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.core.config import get_settings
 from app.core.database import engine, Base
@@ -35,6 +42,10 @@ import app.modules.billing.models  # noqa
 import app.modules.integrations.models  # noqa
 
 settings = get_settings()
+logger = logging.getLogger("aeos.http")
+
+# ── Rate limiter ──
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 
 @asynccontextmanager
@@ -45,26 +56,78 @@ async def lifespan(app: FastAPI):
     if settings.ENVIRONMENT in ("development", "dev", "local", "test"):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    # Validate critical config
+    if settings.ENVIRONMENT == "production" and settings.JWT_SECRET_KEY == "change-me-to-a-random-64-char-string":
+        logger.critical("JWT_SECRET_KEY is using default value in production!")
+
     yield
-    # ── Shutdown ──
+
+    # ── Shutdown: dispose engine connections ──
+    await engine.dispose()
 
 
 app = FastAPI(
     title="AEOS API",
     description="Autonomous Enterprise Operating System – Backend API",
-    version="0.3.0",
+    version="0.4.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+# Attach limiter state
+app.state.limiter = limiter
+
+
+# ── Rate limit error handler ──
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please slow down."},
+    )
+
+
+# ── Global exception handler ──
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_id = str(uuid.uuid4())[:8]
+    logger.exception("Unhandled error [%s] %s %s", error_id, request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error_id": error_id},
+    )
+
+
+# ── Request logging middleware ──
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())[:8]
+    start = time.perf_counter()
+
+    response: Response = await call_next(request)
+
+    duration_ms = round((time.perf_counter() - start) * 1000, 1)
+    logger.info(
+        "%s %s %s %sms [%s]",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        request_id,
+    )
+    response.headers["X-Request-ID"] = request_id
+    return response
+
 
 # ── CORS ──
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
 )
 
 # ── Routers ──
@@ -86,6 +149,6 @@ app.include_router(seed_router, prefix="/api")
 async def root():
     return {
         "name": "AEOS",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "description": "Autonomous Enterprise Operating System",
     }

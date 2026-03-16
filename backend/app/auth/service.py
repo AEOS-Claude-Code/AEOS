@@ -207,11 +207,12 @@ async def revoke_user_tokens(db: AsyncSession, user_id: str) -> None:
     result = await db.execute(
         select(RefreshToken).where(
             RefreshToken.user_id == user_id,
-            RefreshToken.revoked == False,
+            RefreshToken.revoked == False,  # noqa: E712
         )
     )
     for token in result.scalars().all():
         token.revoked = True
+    await db.flush()
 
 
 # ── Permission builder ───────────────────────────────────────────────

@@ -14,6 +14,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     String,
@@ -44,10 +45,16 @@ class Opportunity(Base):
     effort_score = Column(Integer, default=50)  # 0-100 (lower = easier)
 
     source_engine = Column(String(100), default="opportunity_intelligence_engine")
-    source_data = Column(JSON, default=dict)
+    source_data = Column(JSON, default=dict, server_default="{}")
 
     recommended_action = Column(Text, default="")
     status = Column(String(50), default="detected")  # detected | reviewed | approved | in_progress | completed | dismissed
 
     detected_at = Column(DateTime, default=_now, nullable=False)
     updated_at = Column(DateTime, default=_now, onupdate=_now, nullable=False)
+
+    __table_args__ = (
+        Index("ix_opp_workspace_impact", "workspace_id", "impact"),
+        Index("ix_opp_workspace_status", "workspace_id", "status"),
+        Index("ix_opp_workspace_score", "workspace_id", "impact_score"),
+    )

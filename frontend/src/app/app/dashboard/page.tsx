@@ -3,6 +3,8 @@
 import { useStrategyData } from "@/lib/hooks/useStrategyData";
 import { useEngineData } from "@/lib/hooks/useEngineData";
 import { resolveCardState, type CardState } from "@/components/ui/CardStates";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { DashboardSkeleton } from "@/components/ui/CardSkeleton";
 
 import DigitalPresenceCard from "@/components/dashboard/DigitalPresenceCard";
 import LeadIntelligenceCard from "@/components/dashboard/LeadIntelligenceCard";
@@ -159,14 +161,7 @@ export default function DashboardPage() {
   }));
 
   if (loading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-aeos-200 border-t-aeos-600" />
-          <span className="text-sm text-fg-muted">Loading intelligence engines\u2026</span>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -186,6 +181,7 @@ export default function DashboardPage() {
       />
 
       {/* Row 0: Strategic Intelligence – full width */}
+      <ErrorBoundary>
       <div className="mb-5">
         <StrategicIntelligenceCard
           health={summary.health_score}
@@ -198,8 +194,10 @@ export default function DashboardPage() {
           onRetry={refreshAll}
         />
       </div>
+      </ErrorBoundary>
 
       {/* Row 1: Core metrics */}
+      <ErrorBoundary>
       <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <CompanyIntelligenceCard
           report={companyScan}
@@ -224,8 +222,10 @@ export default function DashboardPage() {
           onRetry={engineRefresh}
         />
       </div>
+      </ErrorBoundary>
 
       {/* Row 2: Deep intelligence */}
+      <ErrorBoundary>
       <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <LeadSourcesCard
           sources={leadSummary?.by_source ?? []}
@@ -243,9 +243,11 @@ export default function DashboardPage() {
           state={oppState}
         />
       </div>
+      </ErrorBoundary>
 
       {/* Row 3: Platform */}
       {/* Row 3: Platform + AI */}
+      <ErrorBoundary>
       <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
         <DigitalPresenceCard health={summary.health_score} state={strategyState} error={stratError} onRetry={stratRefresh} />
 
@@ -255,11 +257,14 @@ export default function DashboardPage() {
 
         <StrategicPrioritiesCard priorities={priorities.priorities} state={strategyState} />
       </div>
+      </ErrorBoundary>
 
       {/* Row 4: Billing */}
+      <ErrorBoundary>
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <BillingCard />
       </div>
+      </ErrorBoundary>
     </>
   );
 }

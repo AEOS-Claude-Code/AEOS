@@ -7,6 +7,7 @@ GET /api/v1/leads/list
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,22 @@ from app.core.database import get_db
 from app.auth.dependencies import get_current_workspace
 from app.auth.models import Workspace
 from .service import get_lead_summary, get_leads, ensure_seed_leads
+
+
+class LeadStatus(str, Enum):
+    new = "new"
+    contacted = "contacted"
+    qualified = "qualified"
+    proposal = "proposal"
+    won = "won"
+    lost = "lost"
+
+
+class LeadClassification(str, Enum):
+    cold = "cold"
+    warm = "warm"
+    hot = "hot"
+
 
 router = APIRouter(prefix="/v1/leads", tags=["Lead Intelligence"])
 
@@ -35,8 +52,8 @@ async def lead_summary(
 
 @router.get("/list", summary="List leads")
 async def lead_list(
-    status: Optional[str] = Query(None, description="Filter by status"),
-    classification: Optional[str] = Query(None, description="Filter by classification"),
+    status: Optional[LeadStatus] = Query(None, description="Filter by status"),
+    classification: Optional[LeadClassification] = Query(None, description="Filter by classification"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     workspace: Workspace = Depends(get_current_workspace),
@@ -44,7 +61,9 @@ async def lead_list(
 ):
     await ensure_seed_leads(db, workspace.id)
     await db.flush()
-    leads = await get_leads(db, workspace.id, status, classification, limit, offset)
+    status_val = status.value if status else None
+    class_val = classification.value if classification else None
+    leads = await get_leads(db, workspace.id, status_val, class_val, limit, offset)
     return {
         "workspace_id": workspace.id,
         "leads": [

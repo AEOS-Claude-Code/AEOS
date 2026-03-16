@@ -26,22 +26,35 @@ from app.engines.opportunity_intelligence_engine.detector import ensure_seed_opp
 
 logger = logging.getLogger("aeos.engine.strategy")
 
-# ── Signal cache (per-workspace, 60s TTL) ────────────────────────────
+# ── Signal cache (per-workspace, 60s TTL, max 100 entries) ───────────
 
 _signal_cache: dict[str, tuple[datetime, "SignalMap"]] = {}
 CACHE_TTL_SECONDS = 60
+CACHE_MAX_SIZE = 100
 
 
 def _get_cached(workspace_id: str) -> Optional["SignalMap"]:
     entry = _signal_cache.get(workspace_id)
-    if entry and (datetime.utcnow() - entry[0]).total_seconds() < CACHE_TTL_SECONDS:
-        logger.debug("Signal cache HIT workspace=%s", workspace_id)
-        return entry[1]
-    return None
+    if not entry:
+        return None
+    cached_at, signals = entry
+    if (datetime.utcnow() - cached_at).total_seconds() >= CACHE_TTL_SECONDS:
+        _signal_cache.pop(workspace_id, None)
+        return None
+    logger.debug("Signal cache HIT workspace=%s", workspace_id)
+    return signals
 
 
 def _set_cached(workspace_id: str, signals: "SignalMap") -> None:
-    _signal_cache[workspace_id] = (datetime.utcnow(), signals)
+    # Evict expired entries and enforce max size
+    now = datetime.utcnow()
+    expired = [k for k, (t, _) in _signal_cache.items() if (now - t).total_seconds() >= CACHE_TTL_SECONDS]
+    for k in expired:
+        _signal_cache.pop(k, None)
+    if len(_signal_cache) >= CACHE_MAX_SIZE:
+        oldest_key = min(_signal_cache, key=lambda k: _signal_cache[k][0])
+        _signal_cache.pop(oldest_key, None)
+    _signal_cache[workspace_id] = (now, signals)
 
 from .schemas import (
     ContextPack,
