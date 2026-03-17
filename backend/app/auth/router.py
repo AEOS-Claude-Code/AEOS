@@ -280,35 +280,3 @@ async def me(
         created_at=user.created_at.isoformat(),
         last_login_at=datetime.utcnow().isoformat(),
     )
-
-
-# ── TEMPORARY: Admin delete user (remove after cleanup) ──────────
-@router.delete(
-    "/admin/delete-user/{email}",
-    summary="TEMP: Delete a user by email (remove this endpoint after use)",
-)
-async def admin_delete_user(email: str, db: AsyncSession = Depends(get_db)):
-    from sqlalchemy import delete, select
-    from app.auth.models import Workspace, WorkspaceProfile, OnboardingProgress, Membership, RefreshToken
-
-    user = await get_user_by_email(db, email)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Get workspace
-    mem_result = await db.execute(select(Membership).where(Membership.user_id == user.id))
-    memberships = mem_result.scalars().all()
-    workspace_ids = [m.workspace_id for m in memberships]
-
-    # Delete in order
-    for wid in workspace_ids:
-        await db.execute(delete(OnboardingProgress).where(OnboardingProgress.workspace_id == wid))
-        await db.execute(delete(WorkspaceProfile).where(WorkspaceProfile.workspace_id == wid))
-        await db.execute(delete(Membership).where(Membership.workspace_id == wid))
-        await db.execute(delete(Workspace).where(Workspace.id == wid))
-
-    await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
-    await db.execute(delete(User).where(User.id == user.id))
-
-    logger.info("ADMIN: Deleted user %s and %d workspace(s)", email, len(workspace_ids))
-    return {"deleted": email, "workspaces": len(workspace_ids)}
