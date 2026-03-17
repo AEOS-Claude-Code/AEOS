@@ -1,5 +1,6 @@
 """
 AEOS – Main FastAPI application.
+Version: 0.5.0
 """
 
 from __future__ import annotations
