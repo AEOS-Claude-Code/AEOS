@@ -159,10 +159,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /* Register */
   async function register(email: string, password: string, fullName: string, websiteUrl?: string): Promise<void> {
+    // Derive company name from website URL or email domain for backend compatibility
+    let companyName = fullName.split(" ")[0] + "'s Company";
+    if (websiteUrl) {
+      try {
+        const host = new URL(websiteUrl).hostname.replace("www.", "");
+        const name = host.split(".")[0];
+        if (name && name.length > 1) companyName = name.charAt(0).toUpperCase() + name.slice(1);
+      } catch { /* use fallback */ }
+    } else if (email.includes("@")) {
+      const domain = email.split("@")[1].split(".")[0];
+      if (!["gmail","yahoo","hotmail","outlook","icloud","aol","protonmail","live"].includes(domain.toLowerCase())) {
+        companyName = domain.charAt(0).toUpperCase() + domain.slice(1);
+      }
+    }
     const res = await api.post("/api/v1/auth/register", {
       email,
       password,
       full_name: fullName,
+      company_name: companyName,
       website_url: websiteUrl || "",
     });
     localStorage.setItem(TOKEN_KEY, res.data.access_token);
