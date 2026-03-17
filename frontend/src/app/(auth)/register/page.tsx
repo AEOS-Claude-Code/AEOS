@@ -55,8 +55,11 @@ export default function RegisterPage() {
     try {
       await register(email, password, fullName, companyName, websiteUrl);
     } catch (err: any) {
+      const status = err?.response?.status;
       const detail = err?.response?.data?.detail;
-      if (Array.isArray(detail)) {
+      if (status === 502 || status === 503) {
+        setError("Server is starting up. Please wait a moment and try again.");
+      } else if (Array.isArray(detail)) {
         setError(detail.map((d: any) => d.msg || d).join(". "));
       } else {
         setError(detail || "Registration failed. Please try again.");
