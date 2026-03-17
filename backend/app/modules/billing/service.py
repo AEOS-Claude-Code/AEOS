@@ -249,6 +249,7 @@ OPERATION_COSTS: dict[str, int] = {
     "strategy_generation": 200,
     "lead_scoring": 50,
     "opportunity_detection": 50,
+    "digital_presence_compute": 200,
 }
 
 

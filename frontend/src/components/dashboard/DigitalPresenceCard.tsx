@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity } from "lucide-react";
+import Link from "next/link";
 import DashCard from "./DashCard";
 import {
   CardLoading,
@@ -22,7 +23,7 @@ function ScoreRing({ score, size = 96 }: { score: number; size?: number }) {
         <circle cx="48" cy="48" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="6" />
         <circle cx="48" cy="48" r={radius} fill="none" stroke={color} strokeWidth="6"
           strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset}
-          transform="rotate(-90 48 48)" style={{ animation: "score-fill 1s ease-out" }} />
+          transform="rotate(-90 48 48)" className="transition-all duration-700" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-xl font-bold tabular-nums text-fg">{score.toFixed(0)}</span>
@@ -65,7 +66,16 @@ export default function DigitalPresenceCard({
   ];
 
   return (
-    <DashCard title="Digital presence score" subtitle="Composite score across all channels" delay={0}>
+    <DashCard
+      title="Digital presence score"
+      subtitle="Composite score across all channels"
+      badge={
+        <Link href="/app/digital-presence" className="text-2xs font-medium text-aeos-600 hover:text-aeos-700">
+          View details →
+        </Link>
+      }
+      delay={0}
+    >
       {state === "loading" && <CardLoading lines={4} />}
       {state === "error" && <CardError message="Presence data unavailable" detail={error ?? undefined} onRetry={onRetry} />}
       {state === "empty" && (

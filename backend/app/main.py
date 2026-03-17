@@ -27,6 +27,7 @@ from app.engines.strategic_intelligence_engine.router import router as strategy_
 from app.engines.lead_intelligence_engine.router import router as leads_router
 from app.engines.opportunity_intelligence_engine.router import router as opportunities_router
 from app.engines.company_scanner_engine.router import router as scanner_router
+from app.engines.digital_presence_engine.router import router as digital_presence_router
 from app.engines.executive_copilot_engine.router import router as copilot_router
 from app.modules.billing.router import router as billing_router
 from app.modules.integrations.router import router as integrations_router
@@ -37,6 +38,7 @@ import app.auth.models  # noqa
 import app.engines.lead_intelligence_engine.models  # noqa
 import app.engines.opportunity_intelligence_engine.models  # noqa
 import app.engines.company_scanner_engine.models  # noqa
+import app.engines.digital_presence_engine.models  # noqa
 import app.engines.executive_copilot_engine.models  # noqa
 import app.modules.billing.models  # noqa
 import app.modules.integrations.models  # noqa
@@ -139,6 +141,7 @@ app.include_router(strategy_router, prefix="/api")
 app.include_router(leads_router, prefix="/api")
 app.include_router(opportunities_router, prefix="/api")
 app.include_router(scanner_router, prefix="/api")
+app.include_router(digital_presence_router, prefix="/api")
 app.include_router(copilot_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(integrations_router, prefix="/api")

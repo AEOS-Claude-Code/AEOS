@@ -228,16 +228,23 @@ async def _collect_industry(
     )
 
 
-def _collect_digital_presence() -> DigitalPresenceSignal:
-    """Placeholder – Phase 8 will compute real scores."""
-    return DigitalPresenceSignal(
-        score=52.0,
-        website_performance=65.0,
-        search_visibility=38.0,
-        social_presence=55.0,
-        reputation=60.0,
-        conversion_readiness=42.0,
-    )
+async def _collect_digital_presence(db: AsyncSession, workspace_id: str) -> DigitalPresenceSignal:
+    """Phase 8: Query real digital presence scores."""
+    try:
+        from app.engines.digital_presence_engine.service import get_latest_report
+        report = await get_latest_report(db, workspace_id)
+        if report and report.status == "completed":
+            return DigitalPresenceSignal(
+                score=report.overall_score,
+                website_performance=report.website_performance,
+                search_visibility=report.search_visibility,
+                social_presence=report.social_presence,
+                reputation=report.reputation,
+                conversion_readiness=report.conversion_readiness,
+            )
+    except Exception:
+        pass
+    return DigitalPresenceSignal(score=0.0)
 
 
 async def _collect_integrations(db: AsyncSession, workspace_id: str) -> IntegrationStatusSignal:
@@ -310,7 +317,7 @@ async def collect_signals(
 
     result = SignalMap(
         workspace=ws_signal,
-        digital_presence=_collect_digital_presence(),
+        digital_presence=await _collect_digital_presence(db, workspace_id),
         leads=lead_signal,
         opportunities=opp_signal,
         competitors=comp_signal,

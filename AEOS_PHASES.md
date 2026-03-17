@@ -17,7 +17,7 @@
 | 6 | Integrations | COMPLETE | 2026-03-16 |
 | 6.5 | Security Hardening & Reliability | COMPLETE | 2026-03-17 |
 | 7 | Website Scanner | COMPLETE | 2026-03-17 |
-| 8 | Digital Presence Engine | PENDING | — |
+| 8 | Digital Presence Engine | COMPLETE | 2026-03-17 |
 | 9 | Lead Intelligence Engine | PENDING | — |
 | 10 | Opportunity Engine | PENDING | — |
 | 11 | AI Copilot Strategy | PENDING | — |
@@ -220,11 +220,52 @@
 
 ---
 
-## Phases 8–19 — Upcoming
+## Phase 8 — Digital Presence Engine
+
+**Scope:** Unified digital presence scoring model, per-category breakdown, historical trend tracking, and actionable recommendations.
+
+**Delivered:**
+
+**Scoring Model (5 categories, weighted composite):**
+- Website Performance (25%) — response time, page size, compression, CDN detection
+- Search Visibility (25%) — SEO score, meta tags, robots.txt, sitemap, crawlability
+- Social Presence (20%) — coverage across LinkedIn, Facebook, Instagram, Twitter/X, YouTube
+- Reputation & Trust (15%) — HTTPS, security headers, Schema.org, Open Graph trust signals
+- Conversion Readiness (15%) — structured data, accessibility, page depth
+
+**Backend:**
+- `digital_presence_engine/models.py` — `DigitalPresenceReport` + `DigitalPresenceSnapshot` tables with indexes
+- `digital_presence_engine/schemas.py` — Response schemas for reports, history, recommendations
+- `digital_presence_engine/scoring.py` — Deterministic rule-based scoring across 5 categories + recommendation generator
+- `digital_presence_engine/service.py` — Compute pipeline, latest report, history with trend analysis
+- `digital_presence_engine/router.py` — 4 endpoints: GET `/latest`, POST `/compute`, GET `/history`, GET `/recommendations`
+- Event bus subscription: auto-recomputes digital presence when a company scan completes
+- Token cost: 200 tokens per computation
+- SIE integration: replaced placeholder `_collect_digital_presence()` with real DB queries
+
+**New API Endpoints:**
+- `GET /api/v1/digital-presence/latest` — Get or compute latest report
+- `POST /api/v1/digital-presence/compute` — Force recomputation
+- `GET /api/v1/digital-presence/history?days=90` — Score snapshots + trend
+- `GET /api/v1/digital-presence/recommendations` — Prioritized action items
+
+**Frontend:**
+- Enhanced `/app/digital-presence` page with:
+  - Score ring with overall score + 5 sub-score breakdown bars
+  - 90-day history SVG trend chart
+  - Prioritized recommendation cards with impact/effort badges
+  - Per-category detail cards with pass/fail check items
+  - Social presence, tech stack, and keywords sections
+  - Re-compute button for on-demand scoring
+- Updated `DigitalPresenceCard` dashboard component with "View details" link
+- New `useDigitalPresence` hook for data fetching
+
+---
+
+## Phases 9–19 — Upcoming
 
 | Phase | Key Deliverables |
 |-------|-----------------|
-| 8 | Digital Presence Engine — scoring model, breakdown, history, recommendations |
 | 9 | Lead Intelligence Engine — capture, events, sources, scoring, summary APIs |
 | 10 | Opportunity Engine — detection, scoring, radar card, approval actions |
 | 11 | AI Copilot Strategy — 30/60/90 plans, daily brief, AI Gateway integration |
