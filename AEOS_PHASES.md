@@ -18,6 +18,7 @@
 | 6.5 | Security Hardening & Reliability | COMPLETE | 2026-03-17 |
 | 7 | Website Scanner | COMPLETE | 2026-03-17 |
 | 8 | Digital Presence Engine | COMPLETE | 2026-03-17 |
+| 8.5 | Smart Intake Engine (URL-first Onboarding) | COMPLETE | 2026-03-17 |
 | 9 | Lead Intelligence Engine | PENDING | — |
 | 10 | Opportunity Engine | PENDING | — |
 | 11 | AI Copilot Strategy | PENDING | — |
@@ -259,6 +260,35 @@
   - Re-compute button for on-demand scoring
 - Updated `DigitalPresenceCard` dashboard component with "View details" link
 - New `useDigitalPresence` hook for data fetching
+
+---
+
+## Phase 8.5 — Smart Intake Engine (URL-first Onboarding)
+
+**Scope:** Smart URL-first onboarding flow that auto-detects company info from a website URL.
+
+**Delivered:**
+
+**Smart Intake Engine (`backend/app/engines/smart_intake_engine/`):**
+- `website_profile_collector.py` — Fetches HTML, extracts title, description, OG site name, derives company name from domain/title/OG tags
+- `contact_extractor.py` — Extracts phone numbers (from `tel:` links), email addresses (filtered), WhatsApp links, contact page URLs, booking page URLs
+- `social_extractor.py` — Detects social media profile URLs (LinkedIn, Facebook, Instagram, Twitter/X, YouTube, TikTok, Pinterest, Snapchat) with actual URLs, not just booleans
+- `industry_inference.py` — Deterministic rule-based industry classification across 11 industries with keyword matching + tech signals + confidence scoring
+- `service.py` — Orchestrates all extractors + reuses scanner's tech_stack_collector
+- `router.py` — Single endpoint: `POST /api/v1/onboarding/intake-from-url`
+- `schemas.py` — Request/response models
+
+**New API Endpoint:**
+- `POST /api/v1/onboarding/intake-from-url` — Accepts URL, returns: detected_company_name, detected_industry, industry_confidence, phone_numbers, emails, social_links, whatsapp_links, contact_pages, booking_pages, tech_stack
+
+**Frontend Onboarding Upgrade:**
+- Step 1 now starts with URL input ("Smart setup")
+- AEOS scans the website and shows a detection summary (counts of phones, emails, social profiles, WhatsApp, contacts, bookings, tech)
+- Shows detected details (emails, phones, social platforms, tech stack)
+- Prefills company name and industry with confidence badge
+- User can confirm or edit all detected fields
+- On confirm: saves company profile + presence data, skips to competitors step
+- "Skip" option for manual fill remains available
 
 ---
 

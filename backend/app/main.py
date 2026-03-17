@@ -29,6 +29,7 @@ from app.engines.opportunity_intelligence_engine.router import router as opportu
 from app.engines.company_scanner_engine.router import router as scanner_router
 from app.engines.digital_presence_engine.router import router as digital_presence_router
 from app.engines.executive_copilot_engine.router import router as copilot_router
+from app.engines.smart_intake_engine.router import router as intake_router
 from app.modules.billing.router import router as billing_router
 from app.modules.integrations.router import router as integrations_router
 from app.seed.router import seed_router
@@ -137,6 +138,7 @@ app.include_router(health.router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(workspace_router, prefix="/api")
 app.include_router(onboarding_router, prefix="/api")
+app.include_router(intake_router, prefix="/api")
 app.include_router(strategy_router, prefix="/api")
 app.include_router(leads_router, prefix="/api")
 app.include_router(opportunities_router, prefix="/api")
