@@ -19,6 +19,8 @@ class IntakeFromUrlResponse(BaseModel):
     industry_confidence: float
     industry_scores: dict[str, float] = {}
     industry_signals: list[str] = []
+    detected_country: str = ""
+    detected_city: str = ""
     detected_phone_numbers: list[str] = []
     detected_emails: list[str] = []
     detected_social_links: dict[str, list[str]] = {}

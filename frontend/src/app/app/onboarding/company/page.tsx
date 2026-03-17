@@ -23,7 +23,9 @@ import {
 
 const INDUSTRIES = [
   "ecommerce", "healthcare", "travel", "restaurant", "education",
-  "real_estate", "saas", "agency", "retail", "professional_services", "other",
+  "real_estate", "saas", "agency", "design_creative", "engineering",
+  "construction", "manufacturing", "technology", "retail", "finance",
+  "logistics", "media_entertainment", "nonprofit", "professional_services", "other",
 ];
 
 const INDUSTRY_LABELS: Record<string, string> = {
@@ -35,7 +37,16 @@ const INDUSTRY_LABELS: Record<string, string> = {
   real_estate: "Real Estate",
   saas: "SaaS / Software",
   agency: "Agency / Marketing",
+  design_creative: "Design & Creative",
+  engineering: "Engineering & Solutions",
+  construction: "Construction",
+  manufacturing: "Manufacturing",
+  technology: "Technology & IT",
   retail: "Retail",
+  finance: "Finance & Banking",
+  logistics: "Logistics & Supply Chain",
+  media_entertainment: "Media & Entertainment",
+  nonprofit: "Non-profit",
   professional_services: "Professional Services",
   other: "Other",
 };
@@ -56,6 +67,8 @@ interface IntakeResult {
   detected_company_name: string;
   detected_industry: string;
   industry_confidence: number;
+  detected_country: string;
+  detected_city: string;
   detected_phone_numbers: string[];
   detected_emails: string[];
   detected_social_links: Record<string, string[]>;
@@ -124,6 +137,8 @@ export default function OnboardingCompany() {
       setIntake(data);
       setCompanyName(data.detected_company_name || workspace?.name || "");
       setIndustry(data.detected_industry || "other");
+      if (data.detected_country) setCountry(data.detected_country);
+      if (data.detected_city) setCity(data.detected_city);
     } catch (err: any) {
       // If no stored results, try POST with workspace URL
       if (workspace?.website_url) {
@@ -135,6 +150,8 @@ export default function OnboardingCompany() {
           setIntake(data);
           setCompanyName(data.detected_company_name || workspace?.name || "");
           setIndustry(data.detected_industry || "other");
+          if (data.detected_country) setCountry(data.detected_country);
+          if (data.detected_city) setCity(data.detected_city);
         } catch {
           setError("Could not analyze website. You can fill in details manually.");
           setCompanyName(workspace?.name || "");
@@ -316,7 +333,12 @@ export default function OnboardingCompany() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Country</label>
+              <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
+                Country
+                {intake?.detected_country && (
+                  <span className="ml-2 text-2xs text-emerald-600">Auto-detected</span>
+                )}
+              </label>
               <input
                 type="text"
                 value={country}
@@ -326,7 +348,12 @@ export default function OnboardingCompany() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-fg-secondary">City</label>
+              <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
+                City
+                {intake?.detected_city && (
+                  <span className="ml-2 text-2xs text-emerald-600">Auto-detected</span>
+                )}
+              </label>
               <input
                 type="text"
                 value={city}

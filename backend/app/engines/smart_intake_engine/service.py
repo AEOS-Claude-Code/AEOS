@@ -12,7 +12,7 @@ import logging
 from .website_profile_collector import collect_website_profile
 from .contact_extractor import extract_contacts
 from .social_extractor import extract_social_links
-from .industry_inference import infer_industry
+from .industry_inference import infer_industry, detect_location
 
 logger = logging.getLogger("aeos.engine.intake")
 
@@ -50,12 +50,27 @@ async def intake_from_url(url: str) -> dict:
         url=url,
     )
 
+    # 6. Detect country/city
+    corpus = " ".join([
+        profile.get("title", ""),
+        profile.get("description", ""),
+        " ".join(profile.get("headings", [])),
+        html[:5000],  # First 5K chars of HTML for address patterns
+    ])
+    location = detect_location(
+        url=url,
+        corpus=corpus,
+        phone_numbers=contacts["phone_numbers"],
+    )
+
     logger.info(
-        "Intake complete for %s: company=%s, industry=%s (%.0f%%)",
+        "Intake complete for %s: company=%s, industry=%s (%.0f%%), country=%s, city=%s",
         url,
         profile.get("detected_company_name", ""),
         industry_result["detected_industry"],
         industry_result["industry_confidence"] * 100,
+        location.get("country", ""),
+        location.get("city", ""),
     )
 
     return {
@@ -65,6 +80,8 @@ async def intake_from_url(url: str) -> dict:
         "industry_confidence": industry_result["industry_confidence"],
         "industry_scores": industry_result["industry_scores"],
         "industry_signals": industry_result["signals_found"],
+        "detected_country": location.get("country", ""),
+        "detected_city": location.get("city", ""),
         "detected_phone_numbers": contacts["phone_numbers"],
         "detected_emails": contacts["emails"],
         "detected_social_links": social,
