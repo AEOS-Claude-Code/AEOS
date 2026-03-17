@@ -292,18 +292,54 @@
 
 ---
 
-## Phases 9–19 — Upcoming
+## Phases 9–30 — Upcoming (Aligned with AEOS Vision Document)
 
-| Phase | Key Deliverables |
-|-------|-----------------|
-| 9 | Lead Intelligence Engine — capture, events, sources, scoring, summary APIs |
-| 10 | Opportunity Engine — detection, scoring, radar card, approval actions |
-| 11 | AI Copilot Strategy — 30/60/90 plans, daily brief, AI Gateway integration |
-| 12 | Competitor Intelligence — analysis, comparisons, scorecards, benchmarks |
-| 13 | Reports — generation, PDF structures, executive summaries |
-| 14 | Admin Console — clients, workspaces, plans, tokens, monitoring |
-| 15 | Mobile Architecture — client app, admin app architecture |
-| 16 | Future Modules — HR, Finance, Operations, Executive Intelligence |
-| 17 | Ask AEOS Command Layer — executive queries, context packs, quick actions |
-| 18 | Digital Twin & Workflow — predictive models, workflow templates, simulation |
-| 19 | Deployment — production Docker, environment setup, deployment guides |
+> The AEOS Vision defines a 4-Phase Client Journey: (1) Intake & Onboarding, (2) AI Company Evaluation, (3) Business Plan & Financial Model, (4) AI Organizational Deployment. Phases below implement this journey end-to-end.
+
+### Client Journey Phase 1 — Company Intake (Phases 1–8.5 COMPLETE)
+> Website URL scan, company profile, industry detection, digital presence scoring
+
+### Client Journey Phase 2 — AI Company Evaluation Engine
+
+| Phase | Name | Key Deliverables |
+|-------|------|-----------------|
+| 9 | Competitor Intelligence Engine | Live competitor scraping, benchmarking, market positioning, whitespace detection |
+| 10 | Market Research Engine | TAM/SAM/SOM analysis, market size, growth trajectory, sector intelligence |
+| 11 | Organizational Gap Analysis Engine | Map existing team vs. ideal structure, maturity scoring across 9 departments, gap report |
+| 12 | Financial Health Assessment | P&L analysis, revenue trends, cost structure, industry benchmarks, risk identification |
+| 13 | Company Evaluation Report | 360-degree evaluation report combining all Phase 2 engines, current state scoring |
+
+### Client Journey Phase 3 — Business Plan & Financial Model
+
+| Phase | Name | Key Deliverables |
+|-------|------|-----------------|
+| 14 | AI Strategy Agent (McKinsey-level) | Claude-powered strategy agent trained on Big 4 frameworks, prompt engineering |
+| 15 | Business Plan Generator | Executive summary, market analysis, org structure, go-to-market strategy, risk plan |
+| 16 | Financial Model Generator | 3–5 year projections, cost modeling, EBITDA targets, break-even, funding requirements |
+| 17 | KPI Framework Engine | Department-level KPIs, cascade alignment, tracking dashboards |
+| 18 | Reports & PDF Engine | Board-ready PDF generation, executive summaries, shareable reports |
+
+### Client Journey Phase 4 — AI Organizational Deployment
+
+| Phase | Name | Key Deliverables |
+|-------|------|-----------------|
+| 19 | AI Agent Framework | Base agent architecture, department head + specialist agent patterns, agent registry |
+| 20 | HR Department AI | Hiring workflows, onboarding, performance management, payroll compliance agents |
+| 21 | Finance & Accounting AI | Bookkeeping, invoicing, financial reporting, budget management, cash flow agents |
+| 22 | Legal & Contracts AI | Contract drafting/review, compliance, NDAs, dispute management, regulatory agents |
+| 23 | Sales Department AI | Lead generation, pipeline management, proposals, CRM, client follow-up agents |
+| 24 | Marketing Department AI | Brand strategy, content creation, social media, SEO/SEM, email campaign agents |
+| 25 | Operations AI | Process optimization, project tracking, vendor management, QC, SOP agents |
+| 26 | IT & Technology AI | System management, cybersecurity, software procurement, data management agents |
+| 27 | Procurement AI | Vendor sourcing, RFQ management, purchase orders, supplier relationships agents |
+| 28 | Strategy & BI AI | Business plan execution monitoring, KPI tracking, market intelligence, strategic advisory |
+
+### Platform & Infrastructure
+
+| Phase | Name | Key Deliverables |
+|-------|------|-----------------|
+| 29 | Command Dashboard | Real-time ops dashboard, department status, KPI live tracking, agent activity feed |
+| 30 | Ask AEOS (Executive AI) | Natural language executive queries, cross-department intelligence, quick actions |
+| 31 | Admin Console | Multi-tenant admin, client management, billing admin, monitoring |
+| 32 | Mobile Architecture | Responsive PWA, push notifications, mobile-first command dashboard |
+| 33 | Production Hardening | Docker production config, CI/CD, monitoring, backup, scaling |

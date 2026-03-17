@@ -33,7 +33,31 @@ slowapi==0.1.9
 # ── Utils ──
 python-dotenv==1.0.1
 email-validator==2.2.0
+aiofiles==25.1.0
+jinja2==3.1.6
 
 # ── Scraping / Analysis ──
 beautifulsoup4==4.12.3
 lxml==5.3.0
+trafilatura==2.0.0
+
+# ── Document Parsing ──
+python-docx==1.2.0
+pypdf==6.9.1
+python-pptx==1.0.2
+openpyxl==3.1.5
+
+# ── Financial Modeling & Data ──
+pandas==3.0.1
+numpy==2.4.3
+
+# ── NLP / Text Analysis ──
+textblob==0.19.0
+
+# ── PDF Report Generation ──
+reportlab==4.4.10
+matplotlib==3.10.8
+
+# ── Domain Intelligence ──
+python-whois==0.9.6
+dnspython==2.7.0
