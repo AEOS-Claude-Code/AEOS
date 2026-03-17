@@ -214,38 +214,3 @@ async def me(
         created_at=user.created_at.isoformat(),
         last_login_at=datetime.utcnow().isoformat(),
     )
-
-
-# ── Temporary admin endpoint (remove after use) ──────────────────
-@router.delete(
-    "/admin/delete-user",
-    summary="[TEMP] Delete a user by email",
-)
-async def admin_delete_user(
-    email: str,
-    db: AsyncSession = Depends(get_db),
-):
-    from sqlalchemy import select, delete as sa_delete
-    user = await get_user_by_email(db, email)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Get workspace IDs owned by this user
-    from app.auth.models import Membership, Workspace
-    memberships = (await db.execute(
-        select(Membership).where(Membership.user_id == user.id)
-    )).scalars().all()
-
-    workspace_ids = [m.workspace_id for m in memberships]
-
-    # Delete user (cascades memberships, refresh tokens)
-    await db.delete(user)
-
-    # Delete orphaned workspaces
-    for ws_id in workspace_ids:
-        ws = await db.get(Workspace, ws_id)
-        if ws:
-            await db.delete(ws)
-
-    await db.commit()
-    return {"status": "deleted", "email": email, "workspaces_removed": len(workspace_ids)}
