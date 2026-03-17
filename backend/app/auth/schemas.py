@@ -16,7 +16,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str = Field(..., min_length=1, max_length=255)
-    company_name: str = Field(..., min_length=1, max_length=255)
+    company_name: str = Field(default="", max_length=255)
     website_url: str = Field(default="", max_length=500)
 
     @field_validator("password")

@@ -78,7 +78,7 @@ interface AuthState {
   workspace: Workspace | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  register: (email: string, password: string, fullName: string, companyName: string, websiteUrl?: string) => Promise<void>;
+  register: (email: string, password: string, fullName: string, websiteUrl?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
@@ -158,12 +158,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchSession]);
 
   /* Register */
-  async function register(email: string, password: string, fullName: string, companyName: string, websiteUrl?: string): Promise<void> {
+  async function register(email: string, password: string, fullName: string, websiteUrl?: string): Promise<void> {
     const res = await api.post("/api/v1/auth/register", {
       email,
       password,
       full_name: fullName,
-      company_name: companyName,
       website_url: websiteUrl || "",
     });
     localStorage.setItem(TOKEN_KEY, res.data.access_token);

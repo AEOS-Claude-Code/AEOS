@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth/AuthProvider";
 import api from "@/lib/api";
 import {
   Globe,
   Loader2,
   CheckCircle2,
   XCircle,
-  Building2,
   Phone,
   Mail,
   Share2,
-  MessageCircle,
   Cpu,
   Edit3,
   Sparkles,
@@ -53,8 +52,6 @@ interface IntakeResult {
   meta_description: string;
 }
 
-/* ── Detection badge ──────────────────────────────────────────── */
-
 function DetectedBadge({ count, label }: { count: number; label: string }) {
   return (
     <div className="flex items-center gap-2">
@@ -70,19 +67,17 @@ function DetectedBadge({ count, label }: { count: number; label: string }) {
   );
 }
 
-/* ── Main page ────────────────────────────────────────────────── */
-
 export default function OnboardingCompany() {
   const router = useRouter();
+  const { workspace } = useAuth();
 
-  // URL scanning phase
-  const [websiteUrl, setWebsiteUrl] = useState("");
+  // Scanning state
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
   const [intake, setIntake] = useState<IntakeResult | null>(null);
 
   // Editable fields (prefilled from intake)
-  const [companyName, setCompanyName] = useState("");
+  const [companyName, setCompanyName] = useState(workspace?.name || "");
   const [industry, setIndustry] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
@@ -90,23 +85,28 @@ export default function OnboardingCompany() {
   const [goal, setGoal] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function handleScan(e: React.FormEvent) {
-    e.preventDefault();
-    setScanError("");
-    setScanning(true);
+  // Auto-trigger intake scan on mount if workspace has a website_url
+  useEffect(() => {
+    if (workspace?.website_url && !intake && !scanning) {
+      runIntakeScan(workspace.website_url);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspace?.website_url]);
 
+  async function runIntakeScan(url: string) {
+    setScanning(true);
+    setScanError("");
     try {
-      const res = await api.post("/api/v1/onboarding/intake-from-url", {
-        url: websiteUrl,
-      });
+      const res = await api.post("/api/v1/onboarding/intake-from-url", { url });
       const data: IntakeResult = res.data;
       setIntake(data);
-
-      // Prefill fields
-      setCompanyName(data.detected_company_name || "");
-      setIndustry(data.detected_industry || "other");
+      // Prefill from detection
+      if (data.detected_company_name) setCompanyName(data.detected_company_name);
+      if (data.detected_industry) setIndustry(data.detected_industry);
     } catch (err: any) {
-      setScanError(err?.response?.data?.detail || "Failed to scan website. You can fill in the details manually.");
+      setScanError(
+        err?.response?.data?.detail || "Could not scan website. Fill in details manually."
+      );
     } finally {
       setScanning(false);
     }
@@ -134,7 +134,7 @@ export default function OnboardingCompany() {
         }
 
         await api.post("/api/v1/onboarding/presence", {
-          website_url: websiteUrl,
+          website_url: intake.url || workspace?.website_url || "",
           social_links: socialLinks,
           whatsapp_link: intake.detected_whatsapp_links[0] || "",
           contact_page: intake.detected_contact_pages[0] || "",
@@ -142,91 +142,49 @@ export default function OnboardingCompany() {
           google_business_url: "",
         });
 
-        // Skip presence step → go to competitors
+        // Skip presence step — go to competitors
         router.push("/app/onboarding/competitors");
       } else {
         router.push("/app/onboarding/presence");
       }
     } catch {
-      // If save fails, still move forward
       router.push("/app/onboarding/presence");
     } finally {
       setSaving(false);
     }
   }
 
-  function handleSkipScan() {
-    setIntake(null);
-  }
-
   const socialCount = intake
     ? Object.values(intake.detected_social_links).filter((urls) => urls.length > 0).length
     : 0;
 
-  const inputClass = "w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100";
+  const inputClass =
+    "w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100";
 
-  /* ── Phase 1: URL scan ──────────────────────────────────────── */
+  /* ── Scanning in progress ────────────────────────────────────── */
 
-  if (!intake && !scanError) {
+  if (scanning) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aeos-50">
-            <Sparkles size={20} className="text-aeos-600" />
+        <div className="flex flex-col items-center gap-4 py-8">
+          <div className="relative">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-aeos-50">
+              <Globe size={28} className="text-aeos-600" />
+            </div>
+            <Loader2 size={18} className="absolute -bottom-1 -right-1 animate-spin text-aeos-500" />
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-fg">Smart setup</h2>
-            <p className="text-sm text-fg-muted">Enter your website URL and we'll auto-detect everything.</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleScan} className="space-y-5">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Company website</label>
-            <input
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://yourcompany.com"
-              className={inputClass}
-              required
-            />
-            <p className="mt-1.5 text-2xs text-fg-hint">
-              AEOS will scan your website to detect company info, contacts, social profiles, and more.
+          <div className="text-center">
+            <h2 className="text-lg font-bold text-fg">Analyzing your website</h2>
+            <p className="mt-1 text-sm text-fg-muted">
+              Detecting company info, contacts, social profiles, and tech stack...
             </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={scanning}
-            className="w-full rounded-widget bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
-          >
-            {scanning ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 size={16} className="animate-spin" />
-                Scanning website…
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <Globe size={16} />
-                Scan and detect
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSkipScan}
-            className="w-full text-center text-xs text-fg-muted hover:text-aeos-600 transition"
-          >
-            Skip — I'll fill in details manually
-          </button>
-        </form>
+        </div>
       </div>
     );
   }
 
-  /* ── Phase 2: Confirmation / manual edit ────────────────────── */
+  /* ── Results / manual form ───────────────────────────────────── */
 
   return (
     <div className="space-y-5">
@@ -234,8 +192,10 @@ export default function OnboardingCompany() {
       {intake && (
         <div className="rounded-2xl border border-aeos-200 bg-aeos-50/30 p-5">
           <div className="mb-3 flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-aeos-600" />
-            <span className="text-sm font-semibold text-aeos-700">Website scanned successfully</span>
+            <Sparkles size={16} className="text-aeos-600" />
+            <span className="text-sm font-semibold text-aeos-700">
+              Website scanned successfully
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -253,13 +213,17 @@ export default function OnboardingCompany() {
             {intake.detected_emails.length > 0 && (
               <div className="flex items-start gap-2">
                 <Mail size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">{intake.detected_emails.slice(0, 3).join(", ")}</span>
+                <span className="text-2xs text-fg-secondary">
+                  {intake.detected_emails.slice(0, 3).join(", ")}
+                </span>
               </div>
             )}
             {intake.detected_phone_numbers.length > 0 && (
               <div className="flex items-start gap-2">
                 <Phone size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">{intake.detected_phone_numbers.slice(0, 2).join(", ")}</span>
+                <span className="text-2xs text-fg-secondary">
+                  {intake.detected_phone_numbers.slice(0, 2).join(", ")}
+                </span>
               </div>
             )}
             {socialCount > 0 && (
@@ -268,7 +232,7 @@ export default function OnboardingCompany() {
                 <span className="text-2xs text-fg-secondary">
                   {Object.entries(intake.detected_social_links)
                     .filter(([, urls]) => urls.length > 0)
-                    .map(([platform]) => platform.charAt(0).toUpperCase() + platform.slice(1))
+                    .map(([p]) => p.charAt(0).toUpperCase() + p.slice(1))
                     .join(", ")}
                 </span>
               </div>
@@ -276,7 +240,9 @@ export default function OnboardingCompany() {
             {intake.detected_tech_stack.length > 0 && (
               <div className="flex items-start gap-2">
                 <Cpu size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">{intake.detected_tech_stack.slice(0, 5).join(", ")}</span>
+                <span className="text-2xs text-fg-secondary">
+                  {intake.detected_tech_stack.slice(0, 5).join(", ")}
+                </span>
               </div>
             )}
           </div>
@@ -305,7 +271,9 @@ export default function OnboardingCompany() {
 
         <form onSubmit={handleConfirm} className="space-y-5">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Company name</label>
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
+              Company name
+            </label>
             <input
               type="text"
               value={companyName}
@@ -332,7 +300,9 @@ export default function OnboardingCompany() {
             >
               <option value="">Select industry</option>
               {INDUSTRIES.map((i) => (
-                <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>
+                <option key={i} value={i}>
+                  {INDUSTRY_LABELS[i] || i}
+                </option>
               ))}
             </select>
           </div>
@@ -340,27 +310,50 @@ export default function OnboardingCompany() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Country</label>
-              <input type="text" value={country} onChange={(e) => setCountry(e.target.value)}
-                placeholder="US" required className={inputClass} />
+              <input
+                type="text"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                placeholder="US"
+                required
+                className={inputClass}
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-fg-secondary">City</label>
-              <input type="text" value={city} onChange={(e) => setCity(e.target.value)}
-                placeholder="New York" className={inputClass} />
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="New York"
+                className={inputClass}
+              />
             </div>
           </div>
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Team size</label>
-            <input type="number" min={1} max={10000} value={teamSize} onChange={(e) => setTeamSize(+e.target.value)}
-              className={inputClass} />
+            <input
+              type="number"
+              min={1}
+              max={10000}
+              value={teamSize}
+              onChange={(e) => setTeamSize(+e.target.value)}
+              className={inputClass}
+            />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Primary business goal</label>
-            <input type="text" value={goal} onChange={(e) => setGoal(e.target.value)}
+            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
+              Primary business goal
+            </label>
+            <input
+              type="text"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
               placeholder="Increase online sales by 30%"
-              className={inputClass} />
+              className={inputClass}
+            />
           </div>
 
           <button
@@ -368,7 +361,7 @@ export default function OnboardingCompany() {
             disabled={saving}
             className="w-full rounded-widget bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
           >
-            {saving ? "Saving…" : intake ? "Confirm and continue" : "Continue"}
+            {saving ? "Saving..." : intake ? "Confirm and continue" : "Continue"}
           </button>
         </form>
       </div>

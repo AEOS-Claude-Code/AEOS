@@ -128,17 +128,42 @@ async def get_onboarding(db: AsyncSession, workspace_id: str) -> Optional[Onboar
 # ── Registration (transactional) ─────────────────────────────────────
 
 
+def _derive_company_name(website_url: str, email: str, full_name: str) -> str:
+    """Derive a workspace name from website domain, email domain, or user name."""
+    from urllib.parse import urlparse
+    if website_url and website_url.strip():
+        try:
+            domain = urlparse(website_url.strip()).netloc or website_url.strip()
+            domain = domain.replace("www.", "")
+            name = domain.split(".")[0]
+            if name and len(name) > 1:
+                return name.capitalize()
+        except Exception:
+            pass
+    # Fallback: email domain
+    if "@" in email:
+        domain = email.split("@")[1].split(".")[0]
+        if domain and domain.lower() not in ("gmail", "yahoo", "hotmail", "outlook", "icloud", "aol", "protonmail", "live"):
+            return domain.capitalize()
+    # Last fallback: user's name + "'s Workspace"
+    return f"{full_name.strip().split()[0]}'s Workspace"
+
+
 async def register_user(
     db: AsyncSession,
     email: str,
     password: str,
     full_name: str,
-    company_name: str,
+    company_name: str = "",
     website_url: str = "",
 ) -> tuple[User, Workspace, Membership]:
     """
     Create user + workspace + membership + profile + onboarding in one transaction.
     """
+    # Derive company name if not provided
+    if not company_name or not company_name.strip():
+        company_name = _derive_company_name(website_url, email, full_name)
+
     # Create user
     user = User(
         email=email.lower().strip(),

@@ -66,7 +66,7 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
         email=body.email,
         password=body.password,
         full_name=body.full_name,
-        company_name=body.company_name,
+        company_name=body.company_name or "",
         website_url=body.website_url,
     )
 

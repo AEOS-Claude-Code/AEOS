@@ -26,7 +26,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [companyName, setCompanyName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +52,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(email, password, fullName, companyName, websiteUrl);
+      await register(email, password, fullName, websiteUrl);
     } catch (err: any) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.detail;
@@ -87,11 +86,6 @@ export default function RegisterPage() {
             <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Work email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com" className={inputClass} required />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Company name</label>
-            <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Acme Digital" className={inputClass} required />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
