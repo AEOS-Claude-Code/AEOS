@@ -3,6 +3,9 @@ AEOS – Smart Intake Engine: Website Profile Collector.
 
 Fetches and parses a website to extract company name, page title,
 meta description, and raw HTML for downstream extractors.
+
+Uses Playwright (headless Chromium) for full JavaScript rendering
+when available, with httpx fallback for lightweight environments.
 """
 
 from __future__ import annotations
@@ -32,9 +35,60 @@ def _domain_to_name(url: str) -> str:
     return " ".join(p.capitalize() for p in parts if p)
 
 
+async def _fetch_with_playwright(url: str) -> str | None:
+    """Fetch page with headless Chromium — executes JavaScript."""
+    try:
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--single-process",
+                    "--disable-extensions",
+                    "--disable-background-networking",
+                    "--disable-default-apps",
+                    "--disable-sync",
+                    "--disable-translate",
+                    "--no-first-run",
+                    "--no-zygote",
+                ],
+            )
+            try:
+                page = await browser.new_page(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+                await page.goto(url, wait_until="networkidle", timeout=20000)
+                # Wait a bit for late-loading JS content
+                await page.wait_for_timeout(2000)
+                html = await page.content()
+                return html
+            finally:
+                await browser.close()
+    except Exception as e:
+        logger.info("Playwright fetch failed for %s: %s", url, str(e)[:150])
+        return None
+
+
+async def _fetch_with_httpx(url: str) -> str | None:
+    """Simple HTTP fetch — no JavaScript execution."""
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            resp = await client.get(url, headers={"User-Agent": "AEOS-IntakeBot/1.0"})
+            resp.raise_for_status()
+            return resp.text
+    except Exception as e:
+        logger.info("httpx fetch failed for %s: %s", url, str(e)[:100])
+        return None
+
+
 async def collect_website_profile(url: str) -> dict:
     """
     Fetch website and extract basic profile data.
+    Tries Playwright (full JS rendering) first, falls back to httpx.
     Returns dict with: html, title, description, detected_company_name, url.
     """
     result = {
@@ -50,13 +104,13 @@ async def collect_website_profile(url: str) -> dict:
     if not url or not url.startswith("http"):
         return result
 
-    try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-            resp = await client.get(url, headers={"User-Agent": "AEOS-IntakeBot/1.0"})
-            resp.raise_for_status()
-            html = resp.text
-    except Exception as e:
-        logger.info("Could not fetch %s: %s", url, str(e)[:100])
+    # Try Playwright first (full JS rendering), fall back to httpx
+    html = await _fetch_with_playwright(url)
+    if not html:
+        logger.info("Falling back to httpx for %s", url)
+        html = await _fetch_with_httpx(url)
+
+    if not html:
         return result
 
     result["html"] = html
