@@ -14,8 +14,6 @@ import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 logger = logging.getLogger("aeos.auth")
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +42,6 @@ from app.auth.dependencies import get_current_user, get_current_membership
 from app.auth.models import User, Membership
 
 router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
-limiter = Limiter(key_func=get_remote_address)
 
 # Dummy hash for constant-time comparison when user not found
 _DUMMY_HASH = hash_password("dummy-password-for-timing")
@@ -56,7 +53,6 @@ _DUMMY_HASH = hash_password("dummy-password-for-timing")
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user and workspace",
 )
-@limiter.limit("5/minute")
 async def register(request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     existing = await get_user_by_email(db, body.email)
     if existing:
@@ -105,7 +101,6 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
     response_model=AuthTokens,
     summary="Login with email and password",
 )
-@limiter.limit("10/minute")
 async def login(request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = await get_user_by_email(db, body.email)
 
@@ -160,7 +155,6 @@ async def logout(
     response_model=AuthTokens,
     summary="Refresh access token",
 )
-@limiter.limit("20/minute")
 async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     token_record = await get_refresh_token(db, body.refresh_token)
     if not token_record:
