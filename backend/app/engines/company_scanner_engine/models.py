@@ -1,5 +1,8 @@
 """
 AEOS – Company Scanner Engine: Database models.
+
+Phase 7: Enhanced with multi-page crawling, performance, security,
+accessibility, structured data, and robots/sitemap analysis.
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     JSON,
     String,
@@ -49,20 +53,40 @@ class CompanyScanReport(Base):
     # Website analysis
     page_title = Column(String(500), default="")
     meta_description = Column(Text, default="")
-    headings = Column(JSON, default=list)  # [{level: "h1", text: "..."}, ...]
-    detected_keywords = Column(JSON, default=list)
+    headings = Column(JSON, default=list, server_default="[]")
+    detected_keywords = Column(JSON, default=list, server_default="[]")
     internal_links_count = Column(Integer, default=0)
     pages_detected = Column(Integer, default=0)
+    pages_crawled = Column(Integer, default=0)
+    crawled_pages = Column(JSON, default=list, server_default="[]")  # [{url, title, status_code}]
 
     # SEO
     seo_score = Column(Integer, default=0)  # 0-100
-    seo_details = Column(JSON, default=dict)
+    seo_details = Column(JSON, default=dict, server_default="{}")
 
     # Social presence
-    social_presence = Column(JSON, default=dict)  # {linkedin: true, facebook: false, ...}
+    social_presence = Column(JSON, default=dict, server_default="{}")
 
     # Tech stack
-    tech_stack = Column(JSON, default=list)  # ["wordpress", "google_analytics", ...]
+    tech_stack = Column(JSON, default=list, server_default="[]")
+
+    # Phase 7: Performance metrics
+    performance = Column(JSON, default=dict, server_default="{}")
+
+    # Phase 7: Security analysis
+    security = Column(JSON, default=dict, server_default="{}")
+
+    # Phase 7: Accessibility basics
+    accessibility = Column(JSON, default=dict, server_default="{}")
+
+    # Phase 7: Structured data (OG, Twitter Cards, Schema.org)
+    structured_data = Column(JSON, default=dict, server_default="{}")
+
+    # Phase 7: Robots.txt & sitemap
+    crawl_info = Column(JSON, default=dict, server_default="{}")
+
+    # Overall score (weighted composite of all analysis)
+    overall_score = Column(Integer, default=0)
 
     # Summary
     scan_summary = Column(Text, default="")
@@ -71,3 +95,8 @@ class CompanyScanReport(Base):
     scan_started_at = Column(DateTime, nullable=True)
     scan_completed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=_now, nullable=False)
+
+    __table_args__ = (
+        Index("ix_scan_workspace_status", "workspace_id", "status"),
+        Index("ix_scan_workspace_created", "workspace_id", "created_at"),
+    )

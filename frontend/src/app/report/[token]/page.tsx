@@ -12,9 +12,13 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRight,
-  ExternalLink,
   Copy,
   Check,
+  Lock,
+  Gauge,
+  Eye,
+  FileText,
+  Bot,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -29,10 +33,18 @@ interface ScanReport {
   detected_keywords: string[];
   internal_links_count: number;
   pages_detected: number;
+  pages_crawled: number;
+  crawled_pages: { url: string; title: string; status_code: number }[];
   seo_score: number;
   seo_details: Record<string, any>;
   social_presence: Record<string, boolean>;
   tech_stack: string[];
+  performance: Record<string, any>;
+  security: Record<string, any>;
+  accessibility: Record<string, any>;
+  structured_data: Record<string, any>;
+  crawl_info: Record<string, any>;
+  overall_score: number;
   scan_summary: string;
   created_at: string;
 }
@@ -56,12 +68,22 @@ const SEO_LABELS: Record<string, string> = {
   keyword_in_title: "Keyword in title",
 };
 
-function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
+const SECURITY_LABELS: Record<string, string> = {
+  https: "HTTPS",
+  hsts: "HSTS",
+  csp: "Content Security Policy",
+  x_frame_options: "X-Frame-Options",
+  x_content_type_options: "X-Content-Type",
+  referrer_policy: "Referrer Policy",
+  permissions_policy: "Permissions Policy",
+};
+
+function ScoreRing({ score, size = 80, label }: { score: number; size?: number; label?: string }) {
   const r = size / 2 - 6;
   const circ = 2 * Math.PI * r;
   const offset = circ - (score / 100) * circ;
   const color = score >= 70 ? "#10b981" : score >= 45 ? "#f59e0b" : "#ef4444";
-  const label = score >= 70 ? "Good" : score >= 45 ? "Fair" : "Needs Work";
+  const displayLabel = label || (score >= 70 ? "Good" : score >= 45 ? "Fair" : "Needs Work");
   const labelColor = score >= 70 ? "text-emerald-600" : score >= 45 ? "text-amber-600" : "text-red-600";
 
   return (
@@ -82,7 +104,30 @@ function ScoreRing({ score, size = 80 }: { score: number; size?: number }) {
           <span className="text-2xl font-bold tabular-nums" style={{ color }}>{score}</span>
         </div>
       </div>
-      <span className={`text-xs font-semibold ${labelColor}`}>{label}</span>
+      <span className={`text-xs font-semibold ${labelColor}`}>{displayLabel}</span>
+    </div>
+  );
+}
+
+function ScoreMini({ score, label }: { score: number; label: string }) {
+  const color = score >= 70 ? "text-emerald-600 bg-emerald-50" : score >= 45 ? "text-amber-600 bg-amber-50" : "text-red-600 bg-red-50";
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`rounded-lg px-2.5 py-1 text-sm font-bold tabular-nums ${color}`}>{score}</span>
+      <span className="text-xs text-slate-500">{label}</span>
+    </div>
+  );
+}
+
+function BoolRow({ label, value }: { label: string; value: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      {value ? (
+        <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+      ) : (
+        <XCircle size={16} className="shrink-0 text-slate-300" />
+      )}
+      <span className={`text-sm ${value ? "font-medium text-slate-700" : "text-slate-400"}`}>{label}</span>
     </div>
   );
 }
@@ -122,7 +167,7 @@ export default function PublicReportPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#f3f4f8]">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
-          <span className="text-sm text-slate-400">Loading report\u2026</span>
+          <span className="text-sm text-slate-400">Analyzing website{"\u2026"}</span>
         </div>
       </div>
     );
@@ -146,6 +191,12 @@ export default function PublicReportPage() {
   const socialEntries = Object.entries(report.social_presence || {});
   const socialActive = socialEntries.filter(([, v]) => v).length;
   const seoDetails = Object.entries(report.seo_details || {});
+  const perf = report.performance || {};
+  const sec = report.security || {};
+  const access = report.accessibility || {};
+  const struct = report.structured_data || {};
+  const crawl = report.crawl_info || {};
+  const hasOverall = (report.overall_score ?? 0) > 0;
 
   return (
     <div className="min-h-screen bg-[#f3f4f8]">
@@ -182,16 +233,23 @@ export default function PublicReportPage() {
         {/* Score hero */}
         <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-10">
-            <ScoreRing score={report.seo_score} size={100} />
+            <ScoreRing score={hasOverall ? report.overall_score : report.seo_score} size={100} label={hasOverall ? "Overall" : undefined} />
             <div className="flex-1 text-center sm:text-left">
-              <h2 className="text-lg font-bold text-slate-800">Overall SEO Health</h2>
+              <h2 className="text-lg font-bold text-slate-800">
+                {hasOverall ? "Overall Website Intelligence Score" : "Overall SEO Health"}
+              </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
                 {report.scan_summary}
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-3 sm:justify-start">
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  <Globe size={11} className="mr-1 inline" /> {report.pages_detected} pages
+                  <Globe size={11} className="mr-1 inline" /> {report.pages_detected} pages detected
                 </span>
+                {report.pages_crawled > 0 && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                    {report.pages_crawled} pages crawled
+                  </span>
+                )}
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
                   {report.internal_links_count} internal links
                 </span>
@@ -201,6 +259,18 @@ export default function PublicReportPage() {
               </div>
             </div>
           </div>
+
+          {/* Score breakdown row */}
+          {hasOverall && (
+            <div className="mt-6 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-6">
+              <ScoreMini score={report.seo_score} label="SEO" />
+              {perf.score > 0 && <ScoreMini score={perf.score} label="Performance" />}
+              {sec.score > 0 && <ScoreMini score={sec.score} label="Security" />}
+              {access.score > 0 && <ScoreMini score={access.score} label="Accessibility" />}
+              {struct.score > 0 && <ScoreMini score={struct.score} label="Structured Data" />}
+              {crawl.score > 0 && <ScoreMini score={crawl.score} label="Crawlability" />}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -209,6 +279,7 @@ export default function PublicReportPage() {
             <div className="mb-4 flex items-center gap-2">
               <Shield size={16} className="text-blue-600" />
               <h3 className="text-sm font-bold text-slate-800">SEO Analysis</h3>
+              <span className="ml-auto text-xs font-bold text-slate-500">{report.seo_score}/100</span>
             </div>
             <div className="space-y-3">
               {seoDetails.map(([key, detail]) => {
@@ -237,6 +308,130 @@ export default function PublicReportPage() {
               })}
             </div>
           </div>
+
+          {/* Performance */}
+          {perf.score > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Gauge size={16} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">Performance</h3>
+                <span className="ml-auto text-xs font-bold text-slate-500">{perf.score}/100</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-500">Response time</span>
+                  <span className={`font-semibold ${perf.response_time_ms <= 1000 ? "text-emerald-600" : perf.response_time_ms <= 2000 ? "text-amber-600" : "text-red-600"}`}>
+                    {perf.response_time_ms}ms
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-500">Page size</span>
+                  <span className="font-medium text-slate-700">{perf.page_size_display}</span>
+                </div>
+                <BoolRow label="Uses compression (gzip/br)" value={perf.uses_compression} />
+                <BoolRow label="CDN detected" value={perf.uses_cdn} />
+                {perf.redirect_count > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Redirects</span>
+                    <span className="font-medium text-slate-700">{perf.redirect_count}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Security */}
+          {sec.score > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Lock size={16} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">Security Headers</h3>
+                <span className="ml-auto text-xs font-bold text-slate-500">{sec.score}/100</span>
+              </div>
+              <div className="space-y-2.5">
+                {Object.entries(SECURITY_LABELS).map(([key, label]) => (
+                  <BoolRow key={key} label={label} value={sec[key] ?? false} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Accessibility */}
+          {access.score > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Eye size={16} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">Accessibility</h3>
+                <span className="ml-auto text-xs font-bold text-slate-500">{access.score}/100</span>
+              </div>
+              <div className="space-y-2.5">
+                <BoolRow label="Viewport meta tag" value={access.has_viewport_meta} />
+                <BoolRow label="Language attribute" value={access.has_lang_attribute} />
+                <BoolRow label="Skip navigation link" value={access.has_skip_navigation} />
+                {access.images_total > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Images with alt text</span>
+                    <span className={`font-semibold ${access.images_without_alt === 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                      {access.images_with_alt}/{access.images_total}
+                    </span>
+                  </div>
+                )}
+                {access.aria_landmarks > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">ARIA landmarks</span>
+                    <span className="font-medium text-slate-700">{access.aria_landmarks}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Structured Data */}
+          {struct.score > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <FileText size={16} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">Structured Data</h3>
+                <span className="ml-auto text-xs font-bold text-slate-500">{struct.score}/100</span>
+              </div>
+              <div className="space-y-2.5">
+                <BoolRow label="Open Graph tags" value={struct.has_open_graph} />
+                <BoolRow label="Twitter Cards" value={struct.has_twitter_cards} />
+                <BoolRow label="Schema.org markup" value={struct.has_schema_org} />
+                <BoolRow label="Favicon" value={struct.has_favicon} />
+                <BoolRow label="Canonical URL" value={struct.has_canonical} />
+                {struct.schema_types?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {struct.schema_types.map((t: string) => (
+                      <span key={t} className="rounded bg-purple-50 px-2 py-0.5 text-2xs font-medium text-purple-700">{t}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Crawlability */}
+          {crawl.score > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Bot size={16} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-800">Crawlability</h3>
+                <span className="ml-auto text-xs font-bold text-slate-500">{crawl.score}/100</span>
+              </div>
+              <div className="space-y-2.5">
+                <BoolRow label="robots.txt present" value={crawl.has_robots_txt} />
+                <BoolRow label="Allows crawling" value={crawl.robots_allows_crawl} />
+                <BoolRow label="Sitemap found" value={crawl.has_sitemap} />
+                {crawl.sitemap_page_count > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Sitemap pages</span>
+                    <span className="font-medium text-slate-700">{crawl.sitemap_page_count}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Social presence */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -302,6 +497,36 @@ export default function PublicReportPage() {
             </div>
           )}
         </div>
+
+        {/* Crawled pages */}
+        {report.crawled_pages?.length > 0 && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <Globe size={16} className="text-blue-600" />
+              <h3 className="text-sm font-bold text-slate-800">Crawled Pages</h3>
+              <span className="ml-auto text-xs text-slate-400">{report.crawled_pages.length} pages</span>
+            </div>
+            <div className="space-y-2">
+              {report.crawled_pages.map((page, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2">
+                  <span className={`shrink-0 rounded px-1.5 py-0.5 text-2xs font-bold ${
+                    page.status_code === 200 ? "bg-emerald-100 text-emerald-700" :
+                    page.status_code >= 400 ? "bg-red-100 text-red-700" :
+                    "bg-amber-100 text-amber-700"
+                  }`}>
+                    {page.status_code || "ERR"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium text-slate-700">{page.title || page.url}</p>
+                    {page.title && (
+                      <p className="truncate text-2xs text-slate-400">{page.url}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-10 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-8 text-center shadow-sm">

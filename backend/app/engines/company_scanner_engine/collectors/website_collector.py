@@ -58,7 +58,9 @@ async def collect_website(url: str) -> dict:
     if not HAS_BS4:
         return _fallback_analysis(url)
 
-    return _parse_html(html, url)
+    result = _parse_html(html, url)
+    result["_html"] = html  # Pass raw HTML for downstream collectors
+    return result
 
 
 def _parse_html(html: str, url: str) -> dict:

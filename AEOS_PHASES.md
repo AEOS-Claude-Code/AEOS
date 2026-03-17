@@ -16,7 +16,7 @@
 | 5 | Marketing Module Foundation | COMPLETE | 2026-03-16 |
 | 6 | Integrations | COMPLETE | 2026-03-16 |
 | 6.5 | Security Hardening & Reliability | COMPLETE | 2026-03-17 |
-| 7 | Website Scanner | PENDING | — |
+| 7 | Website Scanner | COMPLETE | 2026-03-17 |
 | 8 | Digital Presence Engine | PENDING | — |
 | 9 | Lead Intelligence Engine | PENDING | — |
 | 10 | Opportunity Engine | PENDING | — |
@@ -183,18 +183,40 @@
 
 ---
 
-## Phase 7 — Website Scanner (NEXT)
+## Phase 7 — Website Scanner
 
-**Scope:** Website analysis worker, scan schema, storage of results
+**Scope:** Production-grade website intelligence scanner with multi-page crawling and 6-category analysis
 
-**What to build:**
-- Website crawl + analysis Celery worker
-- Scan result schema and models
-- SEO analysis (meta tags, headings, keywords, links)
-- Tech stack detection
-- Social presence detection
-- Shareable public report
-- API endpoints for scan trigger and results
+**Delivered:**
+
+**New Collectors (6 analysis categories):**
+- `performance_collector.py` — Response time, page size, compression, CDN detection (scored 0-100)
+- `security_collector.py` — HTTPS, HSTS, CSP, X-Frame-Options, X-Content-Type, Referrer-Policy, Permissions-Policy (scored 0-100)
+- `accessibility_collector.py` — Viewport meta, lang attribute, image alt tags, skip nav, ARIA landmarks, form labels (scored 0-100)
+- `structured_data_collector.py` — Open Graph, Twitter Cards, Schema.org JSON-LD + microdata, favicon, canonical URL (scored 0-100)
+- `crawl_collector.py` — robots.txt parsing, sitemap.xml detection + page count, multi-page crawler (up to 10 pages)
+
+**Enhanced Models & Schemas:**
+- New DB columns: `pages_crawled`, `crawled_pages`, `performance`, `security`, `accessibility`, `structured_data`, `crawl_info`, `overall_score`
+- Fixed mutable defaults with `server_default` on all JSON columns
+- Composite indexes on `(workspace_id, status)` and `(workspace_id, created_at)`
+- Overall score: weighted composite (SEO 30%, Performance 20%, Security 15%, Accessibility 15%, Structured Data 10%, Crawlability 10%)
+
+**New API Endpoints:**
+- `POST /api/v1/company-scan/rescan` — Force new scan (ignores existing completed scans)
+- `GET /api/v1/company-scan/history` — Paginated scan history
+
+**Enhanced Frontend Report (`/report/[token]`):**
+- Score breakdown row showing all 6 category scores
+- Performance card (response time, page size, compression, CDN)
+- Security headers card (7 header checks with pass/fail)
+- Accessibility card (viewport, lang, alt tags, ARIA, skip nav)
+- Structured data card (OG, Twitter, Schema.org types, favicon, canonical)
+- Crawlability card (robots.txt, sitemap, page count)
+- Crawled pages list with status codes and titles
+
+**Infrastructure Fix:**
+- `Base.metadata.create_all` now runs in all environments (was dev-only, causing Render DB to have no tables)
 
 ---
 
