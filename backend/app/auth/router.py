@@ -81,11 +81,77 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
     except Exception:
         logger.exception("Billing setup failed for workspace=%s (non-fatal)", workspace.id)
 
-    # Auto-trigger company scan if website URL was provided
+    # Auto-trigger Smart Intake + company scan if website URL was provided
     if body.website_url and body.website_url.strip():
+        url = body.website_url.strip()
+
+        # 1. Run Smart Intake — detect company info, contacts, social, tech stack
+        try:
+            from app.engines.smart_intake_engine.service import intake_from_url
+            intake_data = await intake_from_url(url)
+
+            # Save detected data to workspace profile
+            from sqlalchemy import select
+            from app.auth.models import WorkspaceProfile, OnboardingProgress
+            result = await db.execute(
+                select(WorkspaceProfile).where(WorkspaceProfile.workspace_id == workspace.id)
+            )
+            profile = result.scalar_one_or_none()
+            if profile:
+                # Update workspace name if detected
+                if intake_data.get("detected_company_name"):
+                    workspace.name = intake_data["detected_company_name"]
+
+                # Save industry
+                if intake_data.get("detected_industry"):
+                    profile.industry = intake_data["detected_industry"]
+
+                # Save social links (flatten to {platform: first_url})
+                social_raw = intake_data.get("detected_social_links", {})
+                social_flat = {}
+                for platform, urls in social_raw.items():
+                    if urls:
+                        social_flat[platform] = urls[0]
+                if social_flat:
+                    profile.social_links = social_flat
+
+                # Save contact info
+                phones = intake_data.get("detected_phone_numbers", [])
+                if phones:
+                    profile.phone = phones[0]
+
+                whatsapp = intake_data.get("detected_whatsapp_links", [])
+                if whatsapp:
+                    profile.whatsapp_link = whatsapp[0]
+
+                contacts = intake_data.get("detected_contact_pages", [])
+                if contacts:
+                    profile.contact_page = contacts[0]
+
+                # Store full intake result as JSON for frontend retrieval
+                profile._intake_cache = intake_data  # transient, not persisted
+
+                await db.flush()
+
+                # Auto-mark onboarding steps since we have data
+                ob_result = await db.execute(
+                    select(OnboardingProgress).where(OnboardingProgress.workspace_id == workspace.id)
+                )
+                ob = ob_result.scalar_one_or_none()
+                if ob:
+                    ob.step_company = True
+                    ob.step_presence = True
+                    ob.current_step = max(ob.current_step, 3)
+                    await db.flush()
+
+            logger.info("Smart intake completed for workspace=%s", workspace.id)
+        except Exception:
+            logger.exception("Smart intake failed for workspace=%s (non-fatal)", workspace.id)
+
+        # 2. Run full company scan (for detailed scoring)
         try:
             from app.engines.company_scanner_engine.service import run_scan
-            await run_scan(db, workspace.id, body.website_url.strip())
+            await run_scan(db, workspace.id, url)
         except Exception:
             logger.exception("Auto-scan failed for workspace=%s (non-fatal)", workspace.id)
 

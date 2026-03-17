@@ -13,8 +13,12 @@ import {
   Mail,
   Share2,
   Cpu,
-  Edit3,
   Sparkles,
+  MessageCircle,
+  ExternalLink,
+  Calendar,
+  ChevronRight,
+  Building2,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -36,6 +40,17 @@ const INDUSTRY_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+const SOCIAL_ICONS: Record<string, string> = {
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
+  instagram: "Instagram",
+  twitter: "X (Twitter)",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  pinterest: "Pinterest",
+  snapchat: "Snapchat",
+};
+
 interface IntakeResult {
   url: string;
   detected_company_name: string;
@@ -52,17 +67,28 @@ interface IntakeResult {
   meta_description: string;
 }
 
-function DetectedBadge({ count, label }: { count: number; label: string }) {
+function DetectedItem({ icon: Icon, label, value, found }: {
+  icon: any;
+  label: string;
+  value: string;
+  found: boolean;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      {count > 0 ? (
-        <CheckCircle2 size={14} className="text-emerald-500" />
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-surface-secondary p-3">
+      <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${found ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-300"}`}>
+        <Icon size={14} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-2xs font-medium text-fg-muted">{label}</p>
+        <p className={`truncate text-sm ${found ? "text-fg" : "text-fg-hint"}`}>
+          {found ? value : "Not detected"}
+        </p>
+      </div>
+      {found ? (
+        <CheckCircle2 size={14} className="mt-1 shrink-0 text-emerald-500" />
       ) : (
-        <XCircle size={14} className="text-slate-300" />
+        <XCircle size={14} className="mt-1 shrink-0 text-slate-300" />
       )}
-      <span className={`text-xs ${count > 0 ? "text-fg" : "text-fg-hint"}`}>
-        {count > 0 ? `${count} ${label}` : `No ${label}`}
-      </span>
     </div>
   );
 }
@@ -71,62 +97,69 @@ export default function OnboardingCompany() {
   const router = useRouter();
   const { workspace } = useAuth();
 
-  // Scanning state
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState("");
+  const [loading, setLoading] = useState(true);
   const [intake, setIntake] = useState<IntakeResult | null>(null);
+  const [error, setError] = useState("");
 
-  // Editable fields (prefilled from intake)
-  const [companyName, setCompanyName] = useState(workspace?.name || "");
+  // Editable fields
+  const [companyName, setCompanyName] = useState("");
   const [industry, setIndustry] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [teamSize, setTeamSize] = useState(1);
-  const [goal, setGoal] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Auto-trigger intake scan on mount if workspace has a website_url
+  // Fetch intake results on mount
   useEffect(() => {
-    if (workspace?.website_url && !intake && !scanning) {
-      runIntakeScan(workspace.website_url);
-    }
+    fetchIntakeResults();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspace?.website_url]);
+  }, []);
 
-  async function runIntakeScan(url: string) {
-    setScanning(true);
-    setScanError("");
+  async function fetchIntakeResults() {
+    setLoading(true);
     try {
-      const res = await api.post("/api/v1/onboarding/intake-from-url", { url });
+      // Try GET endpoint first (stored results from registration)
+      const res = await api.get("/api/v1/onboarding/intake-results");
       const data: IntakeResult = res.data;
       setIntake(data);
-      // Prefill from detection
-      if (data.detected_company_name) setCompanyName(data.detected_company_name);
-      if (data.detected_industry) setIndustry(data.detected_industry);
+      setCompanyName(data.detected_company_name || workspace?.name || "");
+      setIndustry(data.detected_industry || "other");
     } catch (err: any) {
-      setScanError(
-        err?.response?.data?.detail || "Could not scan website. Fill in details manually."
-      );
+      // If no stored results, try POST with workspace URL
+      if (workspace?.website_url) {
+        try {
+          const res = await api.post("/api/v1/onboarding/intake-from-url", {
+            url: workspace.website_url,
+          });
+          const data: IntakeResult = res.data;
+          setIntake(data);
+          setCompanyName(data.detected_company_name || workspace?.name || "");
+          setIndustry(data.detected_industry || "other");
+        } catch {
+          setError("Could not analyze website. You can fill in details manually.");
+          setCompanyName(workspace?.name || "");
+        }
+      } else {
+        setCompanyName(workspace?.name || "");
+      }
     } finally {
-      setScanning(false);
+      setLoading(false);
     }
   }
 
-  async function handleConfirm(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleConfirm() {
     setSaving(true);
-
     try {
-      // Step 1: Save company profile
+      // Save company profile
       await api.post("/api/v1/onboarding/company", {
         industry,
         country,
         city,
         team_size: teamSize,
-        primary_goal: goal,
+        primary_goal: "",
       });
 
-      // Step 2: Save presence data from intake
+      // Save presence data from intake
       if (intake) {
         const socialLinks: Record<string, string> = {};
         for (const [platform, urls] of Object.entries(intake.detected_social_links)) {
@@ -141,144 +174,119 @@ export default function OnboardingCompany() {
           phone: intake.detected_phone_numbers[0] || "",
           google_business_url: "",
         });
-
-        // Skip presence step — go to competitors
-        router.push("/app/onboarding/competitors");
-      } else {
-        router.push("/app/onboarding/presence");
       }
+
+      router.push("/app/onboarding/competitors");
     } catch {
-      router.push("/app/onboarding/presence");
+      router.push("/app/onboarding/competitors");
     } finally {
       setSaving(false);
     }
   }
 
   const socialCount = intake
-    ? Object.values(intake.detected_social_links).filter((urls) => urls.length > 0).length
+    ? Object.values(intake.detected_social_links).filter((u) => u.length > 0).length
+    : 0;
+
+  const totalDetected = intake
+    ? (intake.detected_company_name ? 1 : 0) +
+      (intake.detected_industry !== "other" ? 1 : 0) +
+      intake.detected_phone_numbers.length +
+      intake.detected_emails.length +
+      socialCount +
+      intake.detected_whatsapp_links.length +
+      intake.detected_contact_pages.length +
+      intake.detected_tech_stack.length
     : 0;
 
   const inputClass =
     "w-full rounded-widget border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100";
 
-  /* ── Scanning in progress ────────────────────────────────────── */
+  /* ── Loading: Analyzing website ──────────────────────────────── */
 
-  if (scanning) {
+  if (loading) {
     return (
       <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
-        <div className="flex flex-col items-center gap-4 py-8">
+        <div className="flex flex-col items-center gap-5 py-12">
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-aeos-50">
-              <Globe size={28} className="text-aeos-600" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-aeos-50 to-aeos-100">
+              <Globe size={36} className="text-aeos-600" />
             </div>
-            <Loader2 size={18} className="absolute -bottom-1 -right-1 animate-spin text-aeos-500" />
+            <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md">
+              <Loader2 size={16} className="animate-spin text-aeos-500" />
+            </div>
           </div>
           <div className="text-center">
-            <h2 className="text-lg font-bold text-fg">Analyzing your website</h2>
-            <p className="mt-1 text-sm text-fg-muted">
-              Detecting company info, contacts, social profiles, and tech stack...
+            <h2 className="text-xl font-bold text-fg">Analyzing your website</h2>
+            <p className="mt-2 max-w-sm text-sm text-fg-muted">
+              AEOS is scanning your website to detect company info, contacts, social profiles, and technology stack...
             </p>
+          </div>
+          <div className="flex gap-2">
+            {["Company info", "Contacts", "Social media", "Tech stack"].map((step) => (
+              <span
+                key={step}
+                className="animate-pulse rounded-full bg-aeos-50 px-3 py-1 text-2xs font-medium text-aeos-600"
+              >
+                {step}
+              </span>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
-  /* ── Results / manual form ───────────────────────────────────── */
+  /* ── Results: Confirmation screen ────────────────────────────── */
 
   return (
     <div className="space-y-5">
-      {/* Detected info summary */}
-      {intake && (
-        <div className="rounded-2xl border border-aeos-200 bg-aeos-50/30 p-5">
-          <div className="mb-3 flex items-center gap-2">
-            <Sparkles size={16} className="text-aeos-600" />
-            <span className="text-sm font-semibold text-aeos-700">
-              Website scanned successfully
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <DetectedBadge count={intake.detected_phone_numbers.length} label="phone numbers" />
-            <DetectedBadge count={intake.detected_emails.length} label="emails" />
-            <DetectedBadge count={socialCount} label="social profiles" />
-            <DetectedBadge count={intake.detected_whatsapp_links.length} label="WhatsApp links" />
-            <DetectedBadge count={intake.detected_contact_pages.length} label="contact pages" />
-            <DetectedBadge count={intake.detected_booking_pages.length} label="booking pages" />
-            <DetectedBadge count={intake.detected_tech_stack.length} label="technologies" />
-          </div>
-
-          {/* Detected details */}
-          <div className="mt-3 space-y-2 border-t border-aeos-200 pt-3">
-            {intake.detected_emails.length > 0 && (
-              <div className="flex items-start gap-2">
-                <Mail size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">
-                  {intake.detected_emails.slice(0, 3).join(", ")}
-                </span>
-              </div>
-            )}
-            {intake.detected_phone_numbers.length > 0 && (
-              <div className="flex items-start gap-2">
-                <Phone size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">
-                  {intake.detected_phone_numbers.slice(0, 2).join(", ")}
-                </span>
-              </div>
-            )}
-            {socialCount > 0 && (
-              <div className="flex items-start gap-2">
-                <Share2 size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">
-                  {Object.entries(intake.detected_social_links)
-                    .filter(([, urls]) => urls.length > 0)
-                    .map(([p]) => p.charAt(0).toUpperCase() + p.slice(1))
-                    .join(", ")}
-                </span>
-              </div>
-            )}
-            {intake.detected_tech_stack.length > 0 && (
-              <div className="flex items-start gap-2">
-                <Cpu size={12} className="mt-0.5 text-fg-hint" />
-                <span className="text-2xs text-fg-secondary">
-                  {intake.detected_tech_stack.slice(0, 5).join(", ")}
-                </span>
-              </div>
-            )}
+      {/* Header with detection summary */}
+      {intake && totalDetected > 0 && (
+        <div className="rounded-2xl border border-aeos-200 bg-gradient-to-br from-aeos-50/50 to-emerald-50/30 p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aeos-100">
+              <Sparkles size={20} className="text-aeos-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-aeos-800">
+                {totalDetected} items detected from your website
+              </h3>
+              <p className="text-2xs text-aeos-600">
+                AEOS analyzed your website and found the following information
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Editable form */}
-      <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
-        <div className="mb-6 flex items-center gap-2">
-          <Edit3 size={16} className="text-fg-muted" />
-          <h2 className="text-lg font-bold text-fg">
-            {intake ? "Confirm your details" : "Company profile"}
-          </h2>
+      {error && !intake && (
+        <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">{error}</div>
+      )}
+
+      {/* Company identity */}
+      <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <div className="mb-5 flex items-center gap-2">
+          <Building2 size={16} className="text-fg-muted" />
+          <h2 className="text-base font-bold text-fg">Company identity</h2>
+          {intake && (
+            <span className="ml-auto text-2xs text-fg-hint">Edit if needed</span>
+          )}
         </div>
-        {intake && (
-          <p className="mb-5 text-sm text-fg-muted">
-            We've prefilled what we detected. Edit anything that needs correction.
-          </p>
-        )}
 
-        {scanError && (
-          <div className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            {scanError}
-          </div>
-        )}
-
-        <form onSubmit={handleConfirm} className="space-y-5">
+        <div className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
               Company name
+              {intake?.detected_company_name && (
+                <span className="ml-2 text-2xs text-emerald-600">Auto-detected</span>
+              )}
             </label>
             <input
               type="text"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Acme Digital"
+              placeholder="Your company name"
               className={inputClass}
             />
           </div>
@@ -287,7 +295,7 @@ export default function OnboardingCompany() {
             <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
               Industry
               {intake && intake.industry_confidence > 0 && (
-                <span className="ml-2 text-2xs text-aeos-600">
+                <span className="ml-2 text-2xs text-emerald-600">
                   {Math.round(intake.industry_confidence * 100)}% confident
                 </span>
               )}
@@ -295,7 +303,6 @@ export default function OnboardingCompany() {
             <select
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
-              required
               className={inputClass}
             >
               <option value="">Select industry</option>
@@ -314,8 +321,7 @@ export default function OnboardingCompany() {
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                placeholder="US"
-                required
+                placeholder="e.g. Saudi Arabia"
                 className={inputClass}
               />
             </div>
@@ -325,7 +331,7 @@ export default function OnboardingCompany() {
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="New York"
+                placeholder="e.g. Riyadh"
                 className={inputClass}
               />
             </div>
@@ -342,29 +348,137 @@ export default function OnboardingCompany() {
               className={inputClass}
             />
           </div>
+        </div>
+      </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
-              Primary business goal
-            </label>
-            <input
-              type="text"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="Increase online sales by 30%"
-              className={inputClass}
+      {/* Detected contact information */}
+      {intake && (
+        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+          <div className="mb-4 flex items-center gap-2">
+            <Phone size={16} className="text-fg-muted" />
+            <h2 className="text-base font-bold text-fg">Contact information</h2>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DetectedItem
+              icon={Phone}
+              label="Phone numbers"
+              value={intake.detected_phone_numbers.join(", ")}
+              found={intake.detected_phone_numbers.length > 0}
+            />
+            <DetectedItem
+              icon={Mail}
+              label="Email addresses"
+              value={intake.detected_emails.join(", ")}
+              found={intake.detected_emails.length > 0}
+            />
+            <DetectedItem
+              icon={MessageCircle}
+              label="WhatsApp"
+              value={intake.detected_whatsapp_links.join(", ")}
+              found={intake.detected_whatsapp_links.length > 0}
+            />
+            <DetectedItem
+              icon={ExternalLink}
+              label="Contact pages"
+              value={intake.detected_contact_pages.length + " found"}
+              found={intake.detected_contact_pages.length > 0}
+            />
+            <DetectedItem
+              icon={Calendar}
+              label="Booking pages"
+              value={intake.detected_booking_pages.length + " found"}
+              found={intake.detected_booking_pages.length > 0}
             />
           </div>
+        </div>
+      )}
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-widget bg-aeos-600 py-2.5 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
-          >
-            {saving ? "Saving..." : intake ? "Confirm and continue" : "Continue"}
-          </button>
-        </form>
-      </div>
+      {/* Social media profiles */}
+      {intake && (
+        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+          <div className="mb-4 flex items-center gap-2">
+            <Share2 size={16} className="text-fg-muted" />
+            <h2 className="text-base font-bold text-fg">Social media profiles</h2>
+            {socialCount > 0 && (
+              <span className="ml-auto rounded-full bg-emerald-50 px-2.5 py-0.5 text-2xs font-semibold text-emerald-700">
+                {socialCount} found
+              </span>
+            )}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {Object.entries(SOCIAL_ICONS).map(([platform, label]) => {
+              const urls = intake.detected_social_links[platform] || [];
+              const found = urls.length > 0;
+              return (
+                <div
+                  key={platform}
+                  className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
+                    found
+                      ? "border-emerald-200 bg-emerald-50/50"
+                      : "border-border bg-surface-secondary"
+                  }`}
+                >
+                  {found ? (
+                    <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
+                  ) : (
+                    <XCircle size={14} className="shrink-0 text-slate-300" />
+                  )}
+                  <span className={`text-sm ${found ? "font-medium text-fg" : "text-fg-hint"}`}>
+                    {label}
+                  </span>
+                  {found && (
+                    <span className="ml-auto truncate text-2xs text-fg-muted max-w-[120px]">
+                      {urls[0].replace(/https?:\/\/(www\.)?/, "").split("/").slice(0, 2).join("/")}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Tech stack */}
+      {intake && intake.detected_tech_stack.length > 0 && (
+        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+          <div className="mb-4 flex items-center gap-2">
+            <Cpu size={16} className="text-fg-muted" />
+            <h2 className="text-base font-bold text-fg">Technology stack</h2>
+            <span className="ml-auto rounded-full bg-blue-50 px-2.5 py-0.5 text-2xs font-semibold text-blue-700">
+              {intake.detected_tech_stack.length} detected
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {intake.detected_tech_stack.map((tech) => (
+              <span
+                key={tech}
+                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Confirm button */}
+      <button
+        onClick={handleConfirm}
+        disabled={saving}
+        className="flex w-full items-center justify-center gap-2 rounded-widget bg-aeos-600 py-3 text-sm font-semibold text-white transition hover:bg-aeos-700 disabled:opacity-50"
+      >
+        {saving ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            Saving...
+          </>
+        ) : (
+          <>
+            Confirm and continue
+            <ChevronRight size={16} />
+          </>
+        )}
+      </button>
     </div>
   );
 }
