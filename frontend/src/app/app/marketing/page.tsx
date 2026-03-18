@@ -22,8 +22,8 @@ export default function MarketingPage() {
           <Megaphone size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Marketing</h1>
-          <p className="text-xs text-slate-500">Campaign performance, channels, and automation</p>
+          <h1 className="text-lg font-bold text-fg">Marketing</h1>
+          <p className="text-xs text-fg-muted">Campaign performance, channels, and automation</p>
         </div>
       </div>
 

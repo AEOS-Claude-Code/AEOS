@@ -30,15 +30,15 @@ function PositionRing({ score, size = 130 }: { score: number; size?: number }) {
 
 function DimensionBar({ dim }: { dim: DimensionScore }) {
   const Icon = DIM_ICONS[dim.dimension] || Globe;
-  const gapColor = dim.gap > 5 ? "text-emerald-600" : dim.gap < -5 ? "text-red-600" : "text-slate-500";
+  const gapColor = dim.gap > 5 ? "text-emerald-600" : dim.gap < -5 ? "text-red-600" : "text-fg-muted";
   const gapIcon = dim.gap > 5 ? <TrendingUp size={12} /> : dim.gap < -5 ? <TrendingDown size={12} /> : <Minus size={12} />;
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Icon size={13} className="text-slate-500" />
-          <span className="text-xs font-medium text-slate-700">{dim.label}</span>
+          <Icon size={13} className="text-fg-muted" />
+          <span className="text-xs font-medium text-fg">{dim.label}</span>
         </div>
         <div className={`flex items-center gap-1 text-xs font-bold ${gapColor}`}>
           {gapIcon} {dim.gap > 0 ? "+" : ""}{dim.gap.toFixed(0)}
@@ -46,14 +46,14 @@ function DimensionBar({ dim }: { dim: DimensionScore }) {
       </div>
       <div className="flex gap-1">
         <div className="flex-1">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-inset">
             <motion.div initial={{ width: 0 }} animate={{ width: `${dim.client_score}%` }}
               transition={{ duration: 0.8 }} className="h-full rounded-full bg-aeos-500" />
           </div>
           <p className="mt-0.5 text-2xs text-aeos-600">You: {dim.client_score.toFixed(0)}</p>
         </div>
         <div className="flex-1">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-inset">
             <motion.div initial={{ width: 0 }} animate={{ width: `${dim.competitor_avg}%` }}
               transition={{ duration: 0.8, delay: 0.1 }} className="h-full rounded-full bg-orange-400" />
           </div>
@@ -68,37 +68,37 @@ function CompetitorCard({ comp }: { comp: CompetitorItem }) {
   const socials = Object.entries(comp.social_presence).filter(([, v]) => v).map(([k]) => k);
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-sm">
+      className="rounded-xl border border-border/60 bg-surface p-4 shadow-sm">
       <div className="mb-3 flex items-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 ring-1 ring-orange-200">
           <Globe size={16} className="text-orange-600" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-slate-900 truncate">{comp.name || comp.url}</p>
+          <p className="text-sm font-bold text-fg truncate">{comp.name || comp.url}</p>
           <a href={comp.url} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-2xs text-slate-400 hover:text-aeos-600">
+            className="flex items-center gap-1 text-2xs text-fg-hint hover:text-aeos-600">
             {comp.url.replace(/https?:\/\/(www\.)?/, "").replace(/\/$/, "")} <ExternalLink size={8} />
           </a>
         </div>
         <div className={`rounded-full px-2 py-0.5 text-2xs font-bold ${
-          comp.status === "scanned" ? "bg-emerald-50 text-emerald-700" : "bg-slate-50 text-slate-500"
+          comp.status === "scanned" ? "bg-emerald-50 text-emerald-700" : "bg-surface-secondary text-fg-muted"
         }`}>{comp.status}</div>
       </div>
 
       {comp.status === "scanned" && (
         <>
           <div className="mb-3 grid grid-cols-3 gap-2">
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
-              <p className="text-xs font-bold text-slate-900">{comp.seo_score.toFixed(0)}</p>
-              <p className="text-2xs text-slate-500">SEO</p>
+            <div className="rounded-lg bg-surface-secondary px-2 py-1.5 text-center">
+              <p className="text-xs font-bold text-fg">{comp.seo_score.toFixed(0)}</p>
+              <p className="text-2xs text-fg-muted">SEO</p>
             </div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
-              <p className="text-xs font-bold text-slate-900">{comp.performance_score.toFixed(0)}</p>
-              <p className="text-2xs text-slate-500">Perf</p>
+            <div className="rounded-lg bg-surface-secondary px-2 py-1.5 text-center">
+              <p className="text-xs font-bold text-fg">{comp.performance_score.toFixed(0)}</p>
+              <p className="text-2xs text-fg-muted">Perf</p>
             </div>
-            <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-center">
-              <p className="text-xs font-bold text-slate-900">{comp.overall_score.toFixed(0)}</p>
-              <p className="text-2xs text-slate-500">Overall</p>
+            <div className="rounded-lg bg-surface-secondary px-2 py-1.5 text-center">
+              <p className="text-xs font-bold text-fg">{comp.overall_score.toFixed(0)}</p>
+              <p className="text-2xs text-fg-muted">Overall</p>
             </div>
           </div>
 
@@ -148,8 +148,8 @@ export default function CompetitorsPage() {
             <Swords size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Competitor Intelligence</h1>
-            <p className="text-xs text-slate-500">{competitors.length} competitors tracked</p>
+            <h1 className="text-lg font-bold text-fg">Competitor Intelligence</h1>
+            <p className="text-xs text-fg-muted">{competitors.length} competitors tracked</p>
           </div>
         </div>
         <button onClick={scan} disabled={scanning}
@@ -165,9 +165,9 @@ export default function CompetitorsPage() {
       <div className="flex gap-2">
         <input type="url" value={newUrl} onChange={e => setNewUrl(e.target.value)}
           placeholder="Add competitor URL (e.g. https://competitor.com)"
-          className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100" />
+          className="flex-1 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm outline-none placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100" />
         <button onClick={() => { if (newUrl) { addCompetitor(newUrl); setNewUrl(""); } }}
-          className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+          className="flex items-center gap-1.5 rounded-xl bg-surface-inset px-4 py-2.5 text-sm font-medium text-fg transition hover:bg-surface-secondary">
           <Plus size={14} /> Add
         </button>
       </div>
@@ -177,23 +177,23 @@ export default function CompetitorsPage() {
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Positioning score */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg shadow-slate-100/50">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Competitive Position</p>
+            className="flex flex-col items-center rounded-2xl border border-border/60 bg-surface p-6 shadow-lg shadow-slate-100/50">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted">Competitive Position</p>
             <div className="relative">
               <PositionRing score={posScore} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className={`text-3xl font-bold ${posColor}`}>{posScore.toFixed(0)}</span>
-                <span className="text-2xs text-slate-400">/ 100</span>
+                <span className="text-2xs text-fg-hint">/ 100</span>
               </div>
             </div>
             <p className={`mt-3 text-sm font-bold ${posColor}`}>{posLabel}</p>
-            <p className="mt-1 text-2xs text-slate-400">{report.competitors_scanned} competitors analyzed</p>
+            <p className="mt-1 text-2xs text-fg-hint">{report.competitors_scanned} competitors analyzed</p>
           </motion.div>
 
           {/* Dimension comparison */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="col-span-2 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg shadow-slate-100/50">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">You vs Competitors</p>
+            className="col-span-2 rounded-2xl border border-border/60 bg-surface p-6 shadow-lg shadow-slate-100/50">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-fg-muted">You vs Competitors</p>
             <div className="space-y-4">
               {report.dimension_scores.map(dim => (
                 <DimensionBar key={dim.dimension} dim={dim} />
@@ -213,9 +213,9 @@ export default function CompetitorsPage() {
             </p>
             <div className="space-y-2">
               {report.strengths.map((s, i) => (
-                <div key={i} className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-emerald-100">
-                  <p className="text-xs font-bold text-slate-900">{s.title}</p>
-                  <p className="mt-0.5 text-2xs text-slate-500">{s.description}</p>
+                <div key={i} className="rounded-lg bg-surface p-3 shadow-sm ring-1 ring-emerald-100">
+                  <p className="text-xs font-bold text-fg">{s.title}</p>
+                  <p className="mt-0.5 text-2xs text-fg-muted">{s.description}</p>
                 </div>
               ))}
               {report.strengths.length === 0 && <p className="text-2xs text-emerald-600 italic">Scan competitors to find your strengths</p>}
@@ -229,9 +229,9 @@ export default function CompetitorsPage() {
             </p>
             <div className="space-y-2">
               {report.weaknesses.map((w, i) => (
-                <div key={i} className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-red-100">
-                  <p className="text-xs font-bold text-slate-900">{w.title}</p>
-                  <p className="mt-0.5 text-2xs text-slate-500">{w.description}</p>
+                <div key={i} className="rounded-lg bg-surface p-3 shadow-sm ring-1 ring-red-100">
+                  <p className="text-xs font-bold text-fg">{w.title}</p>
+                  <p className="mt-0.5 text-2xs text-fg-muted">{w.description}</p>
                 </div>
               ))}
               {report.weaknesses.length === 0 && <p className="text-2xs text-red-600 italic">No significant weaknesses detected</p>}
@@ -245,9 +245,9 @@ export default function CompetitorsPage() {
             </p>
             <div className="space-y-2">
               {report.opportunities.map((o, i) => (
-                <div key={i} className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-blue-100">
-                  <p className="text-xs font-bold text-slate-900">{o.title}</p>
-                  <p className="mt-0.5 text-2xs text-slate-500">{o.description}</p>
+                <div key={i} className="rounded-lg bg-surface p-3 shadow-sm ring-1 ring-blue-100">
+                  <p className="text-xs font-bold text-fg">{o.title}</p>
+                  <p className="mt-0.5 text-2xs text-fg-muted">{o.description}</p>
                 </div>
               ))}
               {report.opportunities.length === 0 && <p className="text-2xs text-blue-600 italic">Scan competitors to discover opportunities</p>}
@@ -259,7 +259,7 @@ export default function CompetitorsPage() {
       {/* Competitor cards */}
       {competitors.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-bold text-slate-900">Tracked Competitors</h2>
+          <h2 className="mb-3 text-sm font-bold text-fg">Tracked Competitors</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {competitors.map(comp => (
               <CompetitorCard key={comp.id} comp={comp} />
@@ -270,10 +270,10 @@ export default function CompetitorsPage() {
 
       {/* Empty state */}
       {competitors.length === 0 && !report && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-          <Swords size={40} className="mx-auto mb-4 text-slate-300" />
-          <h2 className="mb-2 text-lg font-bold text-slate-900">No competitors tracked yet</h2>
-          <p className="mb-6 text-sm text-slate-500">Add competitor URLs above or during onboarding to start monitoring.</p>
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+          <Swords size={40} className="mx-auto mb-4 text-fg-hint" />
+          <h2 className="mb-2 text-lg font-bold text-fg">No competitors tracked yet</h2>
+          <p className="mb-6 text-sm text-fg-muted">Add competitor URLs above or during onboarding to start monitoring.</p>
         </div>
       )}
     </motion.div>

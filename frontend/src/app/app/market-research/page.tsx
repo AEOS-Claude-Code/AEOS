@@ -44,21 +44,21 @@ function MarketFunnel({ tam, sam, som, tamLabel, samLabel, somLabel }: {
 function BenchmarkBar({ item }: { item: BenchmarkItem }) {
   const statusIcon = item.status === "above" ? <ArrowUp size={12} className="text-emerald-500" /> :
     item.status === "below" ? <ArrowDown size={12} className="text-red-500" /> :
-    <Minus size={12} className="text-slate-400" />;
-  const statusColor = item.status === "above" ? "text-emerald-600" : item.status === "below" ? "text-red-600" : "text-slate-600";
+    <Minus size={12} className="text-fg-hint" />;
+  const statusColor = item.status === "above" ? "text-emerald-600" : item.status === "below" ? "text-red-600" : "text-fg-secondary";
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 ring-1 ring-slate-100">
+    <div className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 ring-1 ring-border-light">
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-slate-700">{item.metric}</p>
+        <p className="text-xs font-medium text-fg">{item.metric}</p>
         <div className="mt-1 flex items-center gap-2">
           <span className={`text-sm font-bold ${statusColor}`}>
             {item.unit === "USD" ? `$${(item.your_value / 1000).toFixed(0)}K` :
              item.unit === "%" ? `${item.your_value}%` :
              item.your_value}
           </span>
-          <span className="text-2xs text-slate-400">vs avg</span>
-          <span className="text-xs text-slate-500">
+          <span className="text-2xs text-fg-hint">vs avg</span>
+          <span className="text-xs text-fg-muted">
             {item.unit === "USD" ? `$${(item.industry_avg / 1000).toFixed(0)}K` :
              item.unit === "%" ? `${item.industry_avg}%` :
              item.industry_avg}
@@ -79,9 +79,9 @@ export default function MarketResearchPage() {
 
   if (error || !report) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+      <div className="rounded-2xl border border-border bg-surface p-8 text-center">
         <AlertTriangle size={32} className="mx-auto mb-3 text-amber-400" />
-        <p className="text-sm text-slate-600">{error || "No market research available"}</p>
+        <p className="text-sm text-fg-secondary">{error || "No market research available"}</p>
         <button onClick={recompute} className="mt-4 rounded-lg bg-aeos-600 px-4 py-2 text-sm font-semibold text-white">
           Generate Market Research
         </button>
@@ -101,12 +101,12 @@ export default function MarketResearchPage() {
             <BarChart3 size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Market Research</h1>
-            <p className="text-xs text-slate-500">{report.industry.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())} sector analysis</p>
+            <h1 className="text-lg font-bold text-fg">Market Research</h1>
+            <p className="text-xs text-fg-muted">{report.industry.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())} sector analysis</p>
           </div>
         </div>
         <button onClick={recompute} disabled={recomputing}
-          className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-50">
+          className="flex items-center gap-2 rounded-xl bg-surface-inset px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-secondary disabled:opacity-50">
           {recomputing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Recompute
         </button>
       </div>
@@ -115,8 +115,8 @@ export default function MarketResearchPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Market Sizing Funnel */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Market Sizing</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-fg-muted">Market Sizing</p>
           <MarketFunnel
             tam={report.market_sizing.tam} sam={report.market_sizing.sam} som={report.market_sizing.som}
             tamLabel={report.market_sizing.tam_label} samLabel={report.market_sizing.sam_label} somLabel={report.market_sizing.som_label}
@@ -125,8 +125,8 @@ export default function MarketResearchPage() {
 
         {/* Market Positioning */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Market Position</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted">Market Position</p>
           <div className="mb-4 text-center">
             <p className={`text-4xl font-bold ${posColor}`}>{pos.score.toFixed(0)}</p>
             <p className={`text-sm font-semibold ${posColor}`}>{pos.label}</p>
@@ -153,8 +153,8 @@ export default function MarketResearchPage() {
 
         {/* Industry Benchmarks */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Industry Benchmarks</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-fg-muted">Industry Benchmarks</p>
           <div className="space-y-2">
             {report.benchmarks.map((b, i) => (
               <BenchmarkBar key={i} item={b} />
@@ -174,14 +174,14 @@ export default function MarketResearchPage() {
           </p>
           <div className="space-y-2">
             {report.growth_drivers.map((d, i) => (
-              <div key={i} className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-emerald-100">
+              <div key={i} className="rounded-lg bg-surface p-3 shadow-sm ring-1 ring-emerald-100">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-slate-900">{d.title}</p>
+                  <p className="text-xs font-bold text-fg">{d.title}</p>
                   <span className={`ml-auto rounded-full px-1.5 py-px text-2xs font-bold ${
-                    d.impact === "high" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                    d.impact === "high" ? "bg-emerald-100 text-emerald-700" : "bg-surface-inset text-fg-secondary"
                   }`}>{d.impact}</span>
                 </div>
-                <p className="mt-0.5 text-2xs text-slate-500">{d.description}</p>
+                <p className="mt-0.5 text-2xs text-fg-muted">{d.description}</p>
               </div>
             ))}
           </div>
@@ -195,14 +195,14 @@ export default function MarketResearchPage() {
           </p>
           <div className="space-y-2">
             {report.threats.map((t, i) => (
-              <div key={i} className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-red-100">
+              <div key={i} className="rounded-lg bg-surface p-3 shadow-sm ring-1 ring-red-100">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-slate-900">{t.title}</p>
+                  <p className="text-xs font-bold text-fg">{t.title}</p>
                   <span className={`ml-auto rounded-full px-1.5 py-px text-2xs font-bold ${
-                    t.severity === "high" ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-600"
+                    t.severity === "high" ? "bg-red-100 text-red-700" : "bg-surface-inset text-fg-secondary"
                   }`}>{t.severity}</span>
                 </div>
-                <p className="mt-0.5 text-2xs text-slate-500">{t.description}</p>
+                <p className="mt-0.5 text-2xs text-fg-muted">{t.description}</p>
               </div>
             ))}
           </div>
@@ -216,14 +216,14 @@ export default function MarketResearchPage() {
           </p>
           <div className="space-y-2">
             {report.opportunities.map((o, i) => (
-              <div key={i} className="rounded-lg bg-white p-3 shadow-sm ring-1 ring-blue-100">
+              <div key={i} className="rounded-lg bg-surface p-3 shadow-sm ring-1 ring-blue-100">
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-slate-900">{o.title}</p>
+                  <p className="text-xs font-bold text-fg">{o.title}</p>
                   <span className={`ml-auto rounded-full px-1.5 py-px text-2xs font-bold ${
-                    o.impact === "high" ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
+                    o.impact === "high" ? "bg-blue-100 text-blue-700" : "bg-surface-inset text-fg-secondary"
                   }`}>{o.impact}</span>
                 </div>
-                <p className="mt-0.5 text-2xs text-slate-500">{o.description}</p>
+                <p className="mt-0.5 text-2xs text-fg-muted">{o.description}</p>
               </div>
             ))}
           </div>

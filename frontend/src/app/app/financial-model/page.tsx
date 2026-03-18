@@ -25,8 +25,8 @@ export default function FinancialModelPage() {
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-2xl shadow-green-200/40">
           <Calculator size={40} className="text-white" />
         </div>
-        <h2 className="mb-2 text-xl font-bold text-slate-900">Financial Model Generator</h2>
-        <p className="mb-8 max-w-md text-center text-sm text-slate-500">
+        <h2 className="mb-2 text-xl font-bold text-fg">Financial Model Generator</h2>
+        <p className="mb-8 max-w-md text-center text-sm text-fg-muted">
           Generate 5-year P&L projections, EBITDA analysis, break-even, and funding requirements.
         </p>
         <button onClick={generate} disabled={generating}
@@ -52,12 +52,12 @@ export default function FinancialModelPage() {
             <Calculator size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Financial Model v{model.version}</h1>
-            <p className="text-xs text-slate-500">5-year projections with AI optimization</p>
+            <h1 className="text-lg font-bold text-fg">Financial Model v{model.version}</h1>
+            <p className="text-xs text-fg-muted">5-year projections with AI optimization</p>
           </div>
         </div>
         <button onClick={generate} disabled={generating}
-          className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-50">
+          className="flex items-center gap-2 rounded-xl bg-surface-inset px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-secondary disabled:opacity-50">
           {generating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} New version
         </button>
       </div>
@@ -71,28 +71,28 @@ export default function FinancialModelPage() {
           { label: "Y3 EBITDA Margin", value: `${model.year3_ebitda_margin.toFixed(1)}%`, icon: BarChart3, color: "from-violet-500 to-purple-600" },
         ].map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-lg shadow-slate-100/50">
+            className="rounded-2xl border border-border/60 bg-surface p-4 shadow-lg shadow-slate-100/50">
             <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${m.color}`}>
               <m.icon size={14} className="text-white" />
             </div>
-            <p className="text-xl font-bold text-slate-900">{m.value}</p>
-            <p className="text-2xs text-slate-500">{m.label}</p>
+            <p className="text-xl font-bold text-fg">{m.value}</p>
+            <p className="text-2xs text-fg-muted">{m.label}</p>
           </motion.div>
         ))}
       </div>
 
       {/* 5-Year P&L Table */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-lg shadow-slate-100/50">
-        <div className="border-b border-slate-100 px-5 py-3">
-          <p className="text-sm font-bold text-slate-900">5-Year Profit & Loss</p>
+        className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-lg shadow-slate-100/50">
+        <div className="border-b border-border-light px-5 py-3">
+          <p className="text-sm font-bold text-fg">5-Year Profit & Loss</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="px-4 py-2.5 text-left font-semibold text-slate-600">Metric</th>
-                {yp.map(y => <th key={y.year} className="px-4 py-2.5 text-right font-semibold text-slate-600">Year {y.year}</th>)}
+              <tr className="border-b border-border-light bg-surface-secondary/50">
+                <th className="px-4 py-2.5 text-left font-semibold text-fg-secondary">Metric</th>
+                {yp.map(y => <th key={y.year} className="px-4 py-2.5 text-right font-semibold text-fg-secondary">Year {y.year}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -107,10 +107,10 @@ export default function FinancialModelPage() {
                 { label: "Growth %", key: "revenue_growth", pct: true },
                 { label: "EBITDA Margin", key: "ebitda_margin", pct: true, highlight: true },
               ].map(row => (
-                <tr key={row.label} className={`border-b border-slate-50 ${row.highlight ? "bg-emerald-50/30" : ""}`}>
-                  <td className={`px-4 py-2 ${row.bold ? "font-bold text-slate-900" : "text-slate-600"}`}>{row.label}</td>
+                <tr key={row.label} className={`border-b border-border-light ${row.highlight ? "bg-emerald-50/30" : ""}`}>
+                  <td className={`px-4 py-2 ${row.bold ? "font-bold text-fg" : "text-fg-secondary"}`}>{row.label}</td>
                   {yp.map(y => (
-                    <td key={y.year} className={`px-4 py-2 text-right ${row.bold ? "font-bold text-slate-900" : "text-slate-600"}`}>
+                    <td key={y.year} className={`px-4 py-2 text-right ${row.bold ? "font-bold text-fg" : "text-fg-secondary"}`}>
                       {row.pct ? `${(y as any)[row.key]}%` : row.key === "headcount" ? (y as any)[row.key] : fmt((y as any)[row.key])}
                     </td>
                   ))}
@@ -125,17 +125,17 @@ export default function FinancialModelPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Revenue Streams */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Revenue Streams</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">Revenue Streams</p>
           <div className="space-y-2.5">
             {model.revenue_streams.map(s => (
               <div key={s.name}>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700">{s.name}</span>
-                  <span className="text-2xs text-slate-500">{s.pct_of_total}%</span>
+                  <span className="text-xs font-medium text-fg">{s.name}</span>
+                  <span className="text-2xs text-fg-muted">{s.pct_of_total}%</span>
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-2xs">
-                  <span className="text-slate-400">Y1: {fmt(s.year1)}</span>
+                  <span className="text-fg-hint">Y1: {fmt(s.year1)}</span>
                   <ArrowUp size={8} className="text-emerald-500" />
                   <span className="font-semibold text-emerald-600">Y5: {fmt(s.year5)}</span>
                 </div>
@@ -146,42 +146,42 @@ export default function FinancialModelPage() {
 
         {/* EBITDA Progression */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">EBITDA Progression</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">EBITDA Progression</p>
           <div className="space-y-3">
             {[
               { label: "Year 1", value: ea.year1_ebitda, margin: ea.year1_margin },
               { label: "Year 3", value: ea.year3_ebitda, margin: ea.year3_margin },
               { label: "Year 5", value: ea.year5_ebitda, margin: ea.year5_margin },
             ].map(e => (
-              <div key={e.label} className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
+              <div key={e.label} className="rounded-xl bg-surface-secondary p-3 ring-1 ring-border-light">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-600">{e.label}</span>
+                  <span className="text-xs font-medium text-fg-secondary">{e.label}</span>
                   <span className="text-xs font-bold text-emerald-600">{e.margin.toFixed(1)}% margin</span>
                 </div>
-                <p className="text-lg font-bold text-slate-900">{fmt(e.value)}</p>
+                <p className="text-lg font-bold text-fg">{fmt(e.value)}</p>
               </div>
             ))}
-            <p className="text-2xs text-slate-400">Trend: <span className="font-semibold text-emerald-600 capitalize">{ea.trend}</span></p>
+            <p className="text-2xs text-fg-hint">Trend: <span className="font-semibold text-emerald-600 capitalize">{ea.trend}</span></p>
           </div>
         </motion.div>
 
         {/* Scenarios */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Scenario Analysis</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">Scenario Analysis</p>
           <div className="space-y-2.5">
             {model.scenarios.map(s => {
               const color = s.label === "Optimistic" ? "ring-emerald-200 bg-emerald-50/50" :
                 s.label === "Pessimistic" ? "ring-red-200 bg-red-50/50" : "ring-blue-200 bg-blue-50/50";
               return (
                 <div key={s.label} className={`rounded-xl p-3 ring-1 ${color}`}>
-                  <p className="text-xs font-bold text-slate-900">{s.label}</p>
+                  <p className="text-xs font-bold text-fg">{s.label}</p>
                   <div className="mt-1 grid grid-cols-2 gap-2 text-2xs">
-                    <div><span className="text-slate-500">Y3 Rev:</span> <span className="font-semibold">{fmt(s.year3_revenue)}</span></div>
-                    <div><span className="text-slate-500">Y5 Rev:</span> <span className="font-semibold">{fmt(s.year5_revenue)}</span></div>
-                    <div><span className="text-slate-500">Y3 EBITDA:</span> <span className="font-semibold">{fmt(s.year3_ebitda)}</span></div>
-                    <div><span className="text-slate-500">Y5 EBITDA:</span> <span className="font-semibold">{fmt(s.year5_ebitda)}</span></div>
+                    <div><span className="text-fg-muted">Y3 Rev:</span> <span className="font-semibold">{fmt(s.year3_revenue)}</span></div>
+                    <div><span className="text-fg-muted">Y5 Rev:</span> <span className="font-semibold">{fmt(s.year5_revenue)}</span></div>
+                    <div><span className="text-fg-muted">Y3 EBITDA:</span> <span className="font-semibold">{fmt(s.year3_ebitda)}</span></div>
+                    <div><span className="text-fg-muted">Y5 EBITDA:</span> <span className="font-semibold">{fmt(s.year5_ebitda)}</span></div>
                   </div>
                 </div>
               );
@@ -193,25 +193,25 @@ export default function FinancialModelPage() {
       {/* Break-even + Funding */}
       <div className="grid gap-4 lg:grid-cols-2">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Break-Even Analysis</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">Break-Even Analysis</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-emerald-50 p-3 ring-1 ring-emerald-100">
               <p className="text-2xs text-emerald-600">Break-Even Point</p>
               <p className="text-xl font-bold text-emerald-700">Month {be.break_even_month}</p>
               <p className={`text-2xs font-semibold ${be.status === "achieved" ? "text-emerald-600" : "text-amber-600"}`}>{be.status}</p>
             </div>
-            <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-              <p className="text-2xs text-slate-500">Monthly Revenue Needed</p>
-              <p className="text-lg font-bold text-slate-900">{fmt(be.break_even_revenue)}</p>
-              <p className="text-2xs text-slate-400">{be.contribution_margin}% contribution margin</p>
+            <div className="rounded-xl bg-surface-secondary p-3 ring-1 ring-border-light">
+              <p className="text-2xs text-fg-muted">Monthly Revenue Needed</p>
+              <p className="text-lg font-bold text-fg">{fmt(be.break_even_revenue)}</p>
+              <p className="text-2xs text-fg-hint">{be.contribution_margin}% contribution margin</p>
             </div>
           </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Funding & Investment</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">Funding & Investment</p>
           {fr.total_needed > 0 ? (
             <div className="space-y-2">
               <div className="rounded-xl bg-blue-50 p-3 ring-1 ring-blue-100">
@@ -219,10 +219,10 @@ export default function FinancialModelPage() {
                 <p className="text-xl font-bold text-blue-700">{fmt(fr.total_needed)}</p>
                 <p className="text-2xs text-blue-500">Recommended: <span className="font-bold capitalize">{fr.recommended_round.replace("_", " ")}</span></p>
               </div>
-              <p className="text-2xs text-slate-500">Valuation: {fr.valuation_range}</p>
+              <p className="text-2xs text-fg-muted">Valuation: {fr.valuation_range}</p>
               <div className="flex flex-wrap gap-1">
                 {fr.use_of_funds.map(u => (
-                  <span key={u.category} className="rounded-full bg-slate-50 px-2 py-0.5 text-2xs text-slate-600 ring-1 ring-slate-100">{u.category} ({u.pct}%)</span>
+                  <span key={u.category} className="rounded-full bg-surface-secondary px-2 py-0.5 text-2xs text-fg-secondary ring-1 ring-border-light">{u.category} ({u.pct}%)</span>
                 ))}
               </div>
             </div>
@@ -231,7 +231,7 @@ export default function FinancialModelPage() {
               <Wallet size={24} className="mx-auto mb-2 text-emerald-500" />
               <p className="text-sm font-bold text-emerald-700">Bootstrappable</p>
               <p className="text-2xs text-emerald-600">Revenue covers operations. Optional growth funding available.</p>
-              <p className="mt-2 text-2xs text-slate-500">{fr.valuation_range}</p>
+              <p className="mt-2 text-2xs text-fg-muted">{fr.valuation_range}</p>
             </div>
           )}
         </motion.div>
@@ -239,8 +239,8 @@ export default function FinancialModelPage() {
 
       {/* Assumptions */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-        className="rounded-xl bg-slate-50 px-5 py-3 ring-1 ring-slate-100">
-        <p className="text-2xs text-slate-500">
+        className="rounded-xl bg-surface-secondary px-5 py-3 ring-1 ring-border-light">
+        <p className="text-2xs text-fg-muted">
           <span className="font-semibold">Assumptions:</span> {model.assumptions.base_growth_rate}% growth rate |
           {model.assumptions.cost_reduction_from_ai}% AI cost reduction |
           {model.assumptions.industry_growth_rate}% industry CAGR

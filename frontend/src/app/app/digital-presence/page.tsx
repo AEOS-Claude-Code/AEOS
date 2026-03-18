@@ -69,7 +69,7 @@ function SubScoreBar({ label, value, weight }: { label: string; value: number; w
 function TrendBadge({ trend, change }: { trend: string; change: number | null }) {
   if (trend === "insufficient_data") return null;
   const icon = trend === "improving" ? <ArrowUpRight size={14} /> : trend === "declining" ? <ArrowDownRight size={14} /> : <Minus size={14} />;
-  const color = trend === "improving" ? "text-emerald-600 bg-emerald-50" : trend === "declining" ? "text-red-600 bg-red-50" : "text-slate-600 bg-slate-50";
+  const color = trend === "improving" ? "text-emerald-600 bg-emerald-50" : trend === "declining" ? "text-red-600 bg-red-50" : "text-fg-secondary bg-surface-secondary";
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${color}`}>
       {icon}
@@ -108,10 +108,10 @@ function BreakdownDetail({ item }: { item: ScoreBreakdownItem }) {
 /* ── Recommendation Card ──────────────────────────────────────── */
 
 function RecommendationItem({ rec }: { rec: Recommendation }) {
-  const impactColor = rec.impact === "high" ? "bg-red-50 text-red-700" : rec.impact === "medium" ? "bg-amber-50 text-amber-700" : "bg-slate-50 text-slate-600";
-  const effortColor = rec.effort === "easy" ? "bg-emerald-50 text-emerald-700" : rec.effort === "medium" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700";
+  const impactColor = rec.impact === "high" ? "bg-status-danger-light text-status-danger-text" : rec.impact === "medium" ? "bg-status-warning-light text-status-warning-text" : "bg-surface-secondary text-fg-secondary";
+  const effortColor = rec.effort === "easy" ? "bg-status-success-light text-status-success-text" : rec.effort === "medium" ? "bg-status-warning-light text-status-warning-text" : "bg-status-danger-light text-status-danger-text";
   return (
-    <div className="rounded-xl border border-slate-100 p-3.5">
+    <div className="rounded-xl border border-border-light p-3.5">
       <div className="flex items-start gap-3">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-aeos-50 text-xs font-bold text-aeos-700">
           {rec.priority}
@@ -260,7 +260,7 @@ export default function DigitalPresencePage() {
             </div>
           </div>
           {history && (
-            <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
+            <div className="mt-3 flex items-center gap-2 border-t border-border-light pt-3">
               <TrendBadge trend={history.trend} change={history.change_30d} />
               {report?.data_sources && report.data_sources.length > 0 && (
                 <span className="text-2xs text-fg-hint">

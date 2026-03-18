@@ -48,9 +48,9 @@ function EmptyState({ onGenerate, generating }: { onGenerate: () => void; genera
           <Brain size={44} className="text-white" />
         </div>
       </div>
-      <h2 className="mb-2 text-xl font-bold text-slate-900">AI Strategy Agent</h2>
-      <p className="mb-1 text-sm text-slate-500">McKinsey-grade business intelligence powered by Claude</p>
-      <p className="mb-8 max-w-md text-center text-xs text-slate-400">
+      <h2 className="mb-2 text-xl font-bold text-fg">AI Strategy Agent</h2>
+      <p className="mb-1 text-sm text-fg-muted">McKinsey-grade business intelligence powered by Claude</p>
+      <p className="mb-8 max-w-md text-center text-xs text-fg-hint">
         Generate a comprehensive 10-section business plan using all your company data —
         digital presence, gap analysis, market positioning, and organizational structure.
       </p>
@@ -59,11 +59,11 @@ function EmptyState({ onGenerate, generating }: { onGenerate: () => void; genera
         {["Market Analysis", "Org Structure", "Financial Model", "Risk Assessment", "KPI Framework"].map((label, i) => (
           <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + i * 0.1 }}
-            className="flex flex-col items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-3 ring-1 ring-slate-100">
+            className="flex flex-col items-center gap-1.5 rounded-xl bg-surface-secondary px-3 py-3 ring-1 ring-border-light">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500/10 to-violet-500/10">
               <Sparkles size={14} className="text-aeos-600" />
             </div>
-            <span className="text-2xs font-medium text-slate-600">{label}</span>
+            <span className="text-2xs font-medium text-fg-secondary">{label}</span>
           </motion.div>
         ))}
       </div>
@@ -100,12 +100,12 @@ function GeneratingView({ sections, currentSection, completed, total }: {
             <Brain size={32} className="text-white" />
           </motion.div>
         </div>
-        <h2 className="text-lg font-bold text-slate-900">Generating your business plan</h2>
-        <p className="text-sm text-slate-500">{completed}/{total} sections complete</p>
+        <h2 className="text-lg font-bold text-fg">Generating your business plan</h2>
+        <p className="text-sm text-fg-muted">{completed}/{total} sections complete</p>
       </div>
 
       <div className="mx-auto max-w-md">
-        <div className="mb-4 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="mb-4 h-2.5 w-full overflow-hidden rounded-full bg-surface-inset">
           <motion.div className="h-full rounded-full bg-gradient-to-r from-aeos-500 via-violet-500 to-emerald-500"
             animate={{ width: `${Math.max(3, progress)}%` }} transition={{ duration: 0.5 }} />
         </div>
@@ -133,11 +133,11 @@ function GeneratingView({ sections, currentSection, completed, total }: {
                     <Loader2 size={14} className="animate-spin text-white" />
                   </div>
                 ) : (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                    <Icon size={14} className="text-slate-400" />
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-inset">
+                    <Icon size={14} className="text-fg-hint" />
                   </div>
                 )}
-                <span className={`text-sm ${done ? "font-medium text-emerald-700" : active ? "font-bold text-aeos-700" : "text-slate-400"}`}>
+                <span className={`text-sm ${done ? "font-medium text-emerald-700" : active ? "font-bold text-aeos-700" : "text-fg-hint"}`}>
                   {sec.title}
                 </span>
                 {done && <span className="ml-auto text-2xs text-emerald-500">{sec.word_count} words</span>}
@@ -170,7 +170,7 @@ function PlanViewer({ sections, onRegenerate, title, metadata }: {
       {/* Left TOC */}
       <div className="hidden w-56 shrink-0 lg:block">
         <div className="sticky top-6 space-y-1">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-400">Sections</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-hint">Sections</p>
           {sections.map((sec) => {
             const Icon = SECTION_ICONS[sec.key] || FileText;
             const isActive = sec.key === activeSection;
@@ -180,17 +180,17 @@ function PlanViewer({ sections, onRegenerate, title, metadata }: {
                 document.getElementById(`section-${sec.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}
                 className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-all ${
-                  isActive ? "bg-aeos-50 text-aeos-700 ring-1 ring-aeos-200" : "text-slate-600 hover:bg-slate-50"
+                  isActive ? "bg-aeos-50 text-aeos-700 ring-1 ring-aeos-200" : "text-fg-secondary hover:bg-surface-secondary"
                 }`}>
-                <Icon size={13} className={isActive ? "text-aeos-600" : "text-slate-400"} />
+                <Icon size={13} className={isActive ? "text-aeos-600" : "text-fg-hint"} />
                 <span className="text-xs font-medium truncate">{sec.title}</span>
               </button>
             );
           })}
-          <div className="mt-4 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-100">
-            <p className="text-2xs text-slate-500">Total: <span className="font-bold text-slate-700">{totalWords.toLocaleString()}</span> words</p>
+          <div className="mt-4 rounded-lg bg-surface-secondary p-3 ring-1 ring-border-light">
+            <p className="text-2xs text-fg-muted">Total: <span className="font-bold text-fg">{totalWords.toLocaleString()}</span> words</p>
             {metadata?.generation_time_seconds && (
-              <p className="text-2xs text-slate-500">Generated in <span className="font-bold text-slate-700">{Math.round(metadata.generation_time_seconds)}s</span></p>
+              <p className="text-2xs text-fg-muted">Generated in <span className="font-bold text-fg">{Math.round(metadata.generation_time_seconds)}s</span></p>
             )}
           </div>
         </div>
@@ -206,18 +206,18 @@ function PlanViewer({ sections, onRegenerate, title, metadata }: {
             <motion.div key={sec.key} id={`section-${sec.key}`}
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-slate-200/60 bg-white shadow-sm">
+              className="rounded-2xl border border-border/60 bg-surface shadow-sm">
               {/* Section header */}
-              <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-3.5">
+              <div className="flex items-center gap-3 border-b border-border-light px-5 py-3.5">
                 <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${color} text-white shadow-sm`}>
                   <Icon size={15} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-bold text-slate-900">{sec.title}</h3>
-                  <p className="text-2xs text-slate-400">{sec.word_count} words</p>
+                  <h3 className="text-sm font-bold text-fg">{sec.title}</h3>
+                  <p className="text-2xs text-fg-hint">{sec.word_count} words</p>
                 </div>
                 <button onClick={() => onRegenerate(sec.key)}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-2xs text-slate-400 transition hover:bg-slate-50 hover:text-aeos-600">
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-2xs text-fg-hint transition hover:bg-surface-secondary hover:text-aeos-600">
                   <RefreshCw size={10} /> Regenerate
                 </button>
               </div>
@@ -236,23 +236,23 @@ function PlanViewer({ sections, onRegenerate, title, metadata }: {
 /* ── Simple markdown renderer ─────────────────────────────── */
 
 function markdownToHtml(md: string): string {
-  if (!md) return "<p class='text-slate-400 italic'>No content generated.</p>";
+  if (!md) return "<p class='text-fg-hint italic'>No content generated.</p>";
 
   return md
-    .replace(/^### (.+)$/gm, "<h4 class='text-sm font-bold text-slate-900 mt-4 mb-2'>$1</h4>")
-    .replace(/^## (.+)$/gm, "<h3 class='text-base font-bold text-slate-900 mt-4 mb-2'>$1</h3>")
+    .replace(/^### (.+)$/gm, "<h4 class='text-sm font-bold text-fg mt-4 mb-2'>$1</h4>")
+    .replace(/^## (.+)$/gm, "<h3 class='text-base font-bold text-fg mt-4 mb-2'>$1</h3>")
     .replace(/^\*\*(.+?)\*\*/gm, "<strong>$1</strong>")
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/^\* (.+)$/gm, "<li class='ml-4 text-sm text-slate-700'>$1</li>")
-    .replace(/^- (.+)$/gm, "<li class='ml-4 text-sm text-slate-700'>$1</li>")
-    .replace(/^(\d+)\. (.+)$/gm, "<li class='ml-4 text-sm text-slate-700'><strong>$1.</strong> $2</li>")
+    .replace(/^\* (.+)$/gm, "<li class='ml-4 text-sm text-fg'>$1</li>")
+    .replace(/^- (.+)$/gm, "<li class='ml-4 text-sm text-fg'>$1</li>")
+    .replace(/^(\d+)\. (.+)$/gm, "<li class='ml-4 text-sm text-fg'><strong>$1.</strong> $2</li>")
     .replace(/(<li.*<\/li>\n?)+/g, (match) => `<ul class='space-y-1 my-2'>${match}</ul>`)
-    .replace(/\n\n/g, "</p><p class='text-sm text-slate-700 leading-relaxed'>")
+    .replace(/\n\n/g, "</p><p class='text-sm text-fg leading-relaxed'>")
     .replace(/^(.+)$/gm, (line) => {
       if (line.startsWith("<")) return line;
-      return `<p class='text-sm text-slate-700 leading-relaxed'>${line}</p>`;
+      return `<p class='text-sm text-fg leading-relaxed'>${line}</p>`;
     })
-    .replace(/<p class='text-sm text-slate-700 leading-relaxed'>\s*<\/p>/g, "");
+    .replace(/<p class='text-sm text-fg leading-relaxed'>\s*<\/p>/g, "");
 }
 
 /* ── Main page ────────────────────────────────────────────── */
@@ -277,13 +277,13 @@ export default function BusinessPlanPage() {
             <Brain size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">AI Strategy Agent</h1>
-            <p className="text-xs text-slate-500">McKinsey-grade business plan powered by Claude</p>
+            <h1 className="text-lg font-bold text-fg">AI Strategy Agent</h1>
+            <p className="text-xs text-fg-muted">McKinsey-grade business plan powered by Claude</p>
           </div>
         </div>
         {plan && plan.status === "completed" && (
           <button onClick={generate} disabled={generating}
-            className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-50">
+            className="flex items-center gap-2 rounded-xl bg-surface-inset px-4 py-2 text-xs font-medium text-fg transition hover:bg-surface-secondary disabled:opacity-50">
             {generating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
             New version
           </button>

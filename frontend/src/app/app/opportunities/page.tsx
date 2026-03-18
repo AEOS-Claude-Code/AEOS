@@ -14,12 +14,12 @@ const IMPACT_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  seo: "bg-blue-50 text-blue-700",
+  seo: "bg-status-info-light text-status-info-text",
   content: "bg-violet-50 text-violet-700",
   social: "bg-pink-50 text-pink-700",
-  lead_generation: "bg-emerald-50 text-emerald-700",
-  conversion: "bg-amber-50 text-amber-700",
-  competitive: "bg-red-50 text-red-700",
+  lead_generation: "bg-status-success-light text-status-success-text",
+  conversion: "bg-status-warning-light text-status-warning-text",
+  competitive: "bg-status-danger-light text-status-danger-text",
 };
 
 export default function OpportunitiesPage() {
@@ -46,8 +46,8 @@ export default function OpportunitiesPage() {
           <Sparkles size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Opportunities</h1>
-          <p className="text-xs text-slate-500">AI-detected growth opportunities ranked by impact</p>
+          <h1 className="text-lg font-bold text-fg">Opportunities</h1>
+          <p className="text-xs text-fg-muted">AI-detected growth opportunities ranked by impact</p>
         </div>
       </div>
 
