@@ -255,6 +255,7 @@ OPERATION_COSTS: dict[str, int] = {
     "business_plan_section_regen": 200,
     "competitor_scan": 300,
     "market_research_compute": 150,
+    "financial_health_compute": 150,
 }
 
 
