@@ -8,14 +8,14 @@ const SEVERITY_CONFIG: Record<
 > = {
   critical: {
     dot: "bg-red-500",
-    bg: "bg-red-50",
-    text: "text-red-800",
+    bg: "bg-status-danger-light",
+    text: "text-status-danger-text",
     label: "Critical",
   },
   high: {
     dot: "bg-amber-500",
-    bg: "bg-amber-50",
-    text: "text-amber-800",
+    bg: "bg-status-warning-light",
+    text: "text-status-warning-text",
     label: "High",
   },
   medium: {
@@ -26,8 +26,8 @@ const SEVERITY_CONFIG: Record<
   },
   low: {
     dot: "bg-slate-400",
-    bg: "bg-slate-50",
-    text: "text-slate-700",
+    bg: "bg-surface-secondary",
+    text: "text-fg",
     label: "Low",
   },
 };
@@ -52,7 +52,7 @@ function ScoreGauge({ score }: { score: number }) {
       <span className={`text-3xl font-bold tabular-nums ${color}`}>
         {clamped.toFixed(0)}
       </span>
-      <span className="text-[10px] uppercase tracking-wider text-slate-400">
+      <span className="text-[10px] uppercase tracking-wider text-fg-hint">
         Health
       </span>
     </div>
@@ -71,14 +71,14 @@ function DimensionRow({ dim }: { dim: RiskDimension }) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="w-28 shrink-0 text-xs text-slate-500">{dim.label}</span>
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+      <span className="w-28 shrink-0 text-xs text-fg-muted">{dim.label}</span>
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-inset">
         <div
           className={`h-full rounded-full transition-all ${barColor}`}
           style={{ width: `${Math.min(100, dim.score)}%` }}
         />
       </div>
-      <span className="w-8 text-right text-xs tabular-nums text-slate-500">
+      <span className="w-8 text-right text-xs tabular-nums text-fg-muted">
         {dim.score.toFixed(0)}
       </span>
       {cfg && (
@@ -126,13 +126,13 @@ export default function RiskSummaryCard({
   const riskCount = dimensions.filter((d) => d.score < d.threshold).length;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-fg-hint">
           Risk summary
         </h3>
         {riskCount > 0 && (
-          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
+          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-status-danger-text">
             {riskCount} area{riskCount > 1 ? "s" : ""} at risk
           </span>
         )}
@@ -140,7 +140,7 @@ export default function RiskSummaryCard({
 
       <div className="mb-4 flex items-start gap-4">
         <ScoreGauge score={health.overall} />
-        <p className="flex-1 text-sm leading-relaxed text-slate-600">
+        <p className="flex-1 text-sm leading-relaxed text-fg-secondary">
           {headline}
         </p>
       </div>

@@ -73,11 +73,11 @@ export default function AIBriefingCard({
       </div>
 
       {/* Key insight */}
-      <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-4 py-3">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+      <div className="rounded-xl border border-border-light bg-surface-secondary px-4 py-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-fg-hint">
           Key insight
         </span>
-        <p className="mt-1 text-[12px] leading-relaxed text-slate-600">
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-secondary">
           {keyInsight}
         </p>
       </div>

@@ -26,11 +26,11 @@ export default function RoadmapPreviewCard({
 }) {
   if (!roadmap || roadmap.actions.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+      <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-fg-hint">
           30-day roadmap
         </h3>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-fg-hint">
           No roadmap available yet. Strategic priorities are needed to generate
           an action plan.
         </p>
@@ -41,12 +41,12 @@ export default function RoadmapPreviewCard({
   const previewActions = roadmap.actions.slice(0, 4);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-fg-hint">
           30-day roadmap
         </h3>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-fg-hint">
           {roadmap.actions.length} action{roadmap.actions.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -66,15 +66,15 @@ export default function RoadmapPreviewCard({
       {/* Timeline */}
       <div className="relative space-y-3">
         {/* Vertical line */}
-        <div className="absolute left-[13px] top-2 bottom-2 w-px bg-slate-200" />
+        <div className="absolute left-[13px] top-2 bottom-2 w-px bg-border" />
 
         {previewActions.map((action, i) => (
           <div key={i} className="relative flex items-start gap-3 pl-0">
             <WeekBadge week={action.week} />
 
-            <div className="min-w-0 flex-1 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5">
+            <div className="min-w-0 flex-1 rounded-xl border border-border-light bg-surface-secondary px-3 py-2.5">
               <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-medium text-slate-800">
+                <span className="truncate text-sm font-medium text-fg">
                   {action.action}
                 </span>
               </div>
@@ -82,7 +82,7 @@ export default function RoadmapPreviewCard({
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                     DEPT_COLORS[action.department] ??
-                    "bg-slate-100 text-slate-600"
+                    "bg-surface-inset text-fg-secondary"
                   }`}
                 >
                   {action.department}
@@ -93,7 +93,7 @@ export default function RoadmapPreviewCard({
         ))}
 
         {roadmap.actions.length > 4 && (
-          <p className="pl-10 text-xs text-slate-400">
+          <p className="pl-10 text-xs text-fg-hint">
             + {roadmap.actions.length - 4} more action
             {roadmap.actions.length - 4 > 1 ? "s" : ""}
           </p>

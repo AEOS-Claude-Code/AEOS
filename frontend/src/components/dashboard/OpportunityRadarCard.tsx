@@ -23,9 +23,9 @@ const MOCK_OPPORTUNITIES: Opportunity[] = [
 ];
 
 const IMPACT_STYLES = {
-  high: "bg-red-50 text-red-700 border-red-200",
-  medium: "bg-amber-50 text-amber-700 border-amber-200",
-  low: "bg-slate-50 text-slate-600 border-slate-200",
+  high: "bg-status-danger-light text-status-danger-text border-red-200",
+  medium: "bg-status-warning-light text-status-warning-text border-amber-200",
+  low: "bg-surface-secondary text-fg-secondary border-border",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -92,7 +92,7 @@ export default function OpportunityRadarCard({
           {opportunities.slice(0, 4).map((opp, i) => (
             <div
               key={i}
-              className="group flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2.5 transition hover:border-aeos-200 hover:bg-aeos-50/30"
+              className="group flex items-start gap-3 rounded-xl border border-border-light bg-surface-secondary px-3 py-2.5 transition hover:border-aeos-200 hover:bg-aeos-50/30"
             >
               <span
                 className={`mt-0.5 shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase ${IMPACT_STYLES[opp.impact]}`}
@@ -100,7 +100,7 @@ export default function OpportunityRadarCard({
                 {opp.impact}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[12px] font-medium text-slate-700">
+                <p className="truncate text-[12px] font-medium text-fg">
                   {opp.title}
                 </p>
                 <span className="text-2xs text-fg-muted">
@@ -109,7 +109,7 @@ export default function OpportunityRadarCard({
               </div>
               <ArrowUpRight
                 size={14}
-                className="shrink-0 text-slate-300 transition group-hover:text-aeos-500"
+                className="shrink-0 text-fg-hint transition group-hover:text-aeos-500"
               />
             </div>
           ))}

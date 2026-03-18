@@ -34,14 +34,14 @@ const SEV: Record<
   critical: {
     icon: <XCircle size={13} />,
     dot: "bg-red-500",
-    bg: "bg-red-50 border-red-200",
-    text: "text-red-700",
+    bg: "bg-status-danger-light border-red-200",
+    text: "text-status-danger-text",
   },
   high: {
     icon: <AlertTriangle size={13} />,
     dot: "bg-amber-500",
-    bg: "bg-amber-50 border-amber-200",
-    text: "text-amber-700",
+    bg: "bg-status-warning-light border-amber-200",
+    text: "text-status-warning-text",
   },
   medium: {
     icon: <Clock size={13} />,
@@ -52,8 +52,8 @@ const SEV: Record<
   low: {
     icon: <CheckCircle2 size={13} />,
     dot: "bg-slate-400",
-    bg: "bg-slate-50 border-slate-200",
-    text: "text-slate-600",
+    bg: "bg-surface-secondary border-border",
+    text: "text-fg-secondary",
   },
 };
 
@@ -121,7 +121,7 @@ function ColHeader({
       <span className="text-aeos-600">{icon}</span>
       <span className="text-xs font-semibold uppercase tracking-wider text-fg-muted">{title}</span>
       {count !== undefined && (
-        <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-2xs font-semibold text-fg-muted">{count}</span>
+        <span className="rounded-full bg-surface-inset px-1.5 py-0.5 text-2xs font-semibold text-fg-muted">{count}</span>
       )}
     </div>
   );
@@ -131,7 +131,7 @@ function ColHeader({
 
 function StrategyLoading() {
   return (
-    <div className="grid gap-0 divide-x divide-slate-100 lg:grid-cols-3">
+    <div className="grid gap-0 divide-x divide-border-light lg:grid-cols-3">
       {[0, 1, 2].map((i) => (
         <div key={i} className="px-6 py-5">
           <div className="mb-4 h-3 w-24 animate-pulse rounded-pill bg-surface-inset" />
@@ -139,7 +139,7 @@ function StrategyLoading() {
             {[0, 1, 2].map((j) => (
               <div
                 key={j}
-                className="rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-3"
+                className="rounded-xl border border-border-light bg-surface-secondary px-3 py-3"
               >
                 <div
                   className="h-3 animate-pulse rounded-pill bg-surface-inset"
@@ -205,7 +205,7 @@ export default function StrategicIntelligenceCard({
           </div>
         </div>
         {state === "success" && criticalCount > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-2xs font-semibold text-red-700">
+          <span className="flex items-center gap-1 rounded-full bg-status-danger-light px-2.5 py-1 text-2xs font-semibold text-status-danger-text">
             <ShieldAlert size={11} />
             {criticalCount} critical
           </span>
@@ -215,7 +215,7 @@ export default function StrategicIntelligenceCard({
       {/* Full-card loading */}
       {state === "loading" && (
         <>
-          <div className="flex items-center gap-6 border-b border-slate-50 px-6 py-4">
+          <div className="flex items-center gap-6 border-b border-border-light px-6 py-4">
             <div className="h-[68px] w-[68px] animate-pulse rounded-full bg-surface-inset" />
             <div className="flex-1 space-y-2">
               <div className="h-3 w-3/4 animate-pulse rounded-pill bg-surface-inset" />
@@ -252,9 +252,9 @@ export default function StrategicIntelligenceCard({
       {state === "success" && (
         <>
           {/* Score strip */}
-          <div className="flex items-center gap-6 border-b border-slate-50 px-6 py-4">
+          <div className="flex items-center gap-6 border-b border-border-light px-6 py-4">
             <ScoreRing score={health.overall} label="Overall" />
-            <div className="h-12 w-px bg-slate-100" />
+            <div className="h-12 w-px bg-surface-inset" />
             <div className="flex flex-1 flex-wrap gap-x-6 gap-y-2">
               {[
                 { label: "Digital presence", val: health.digital_presence },
@@ -263,7 +263,7 @@ export default function StrategicIntelligenceCard({
                 { label: "Integrations", val: health.integration_coverage },
               ].map((m) => (
                 <div key={m.label} className="flex items-center gap-2">
-                  <div className="h-1.5 w-12 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-1.5 w-12 overflow-hidden rounded-full bg-surface-inset">
                     <div
                       className={`h-full rounded-full ${
                         m.val >= 60 ? "bg-emerald-400" : m.val >= 40 ? "bg-amber-400" : "bg-red-400"
@@ -279,12 +279,12 @@ export default function StrategicIntelligenceCard({
           </div>
 
           {/* Headline */}
-          <div className="border-b border-slate-50 px-6 py-3">
+          <div className="border-b border-border-light px-6 py-3">
             <p className="text-sm-tight leading-relaxed text-fg-secondary">{headline}</p>
           </div>
 
           {/* 3-column body */}
-          <div className="grid gap-0 divide-x divide-slate-100 lg:grid-cols-3">
+          <div className="grid gap-0 divide-x divide-border-light lg:grid-cols-3">
             {/* Col 1: Priorities */}
             <div className="px-6 py-5">
               <ColHeader icon={<Flag size={14} />} title="Top priorities" count={priorities.length} />
@@ -295,7 +295,7 @@ export default function StrategicIntelligenceCard({
                   {top3.map((p) => (
                     <div
                       key={p.rank}
-                      className="group flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2.5 transition hover:border-aeos-200 hover:bg-aeos-50/30"
+                      className="group flex items-start gap-2.5 rounded-xl border border-border-light bg-surface-secondary px-3 py-2.5 transition hover:border-aeos-200 hover:bg-aeos-50/30"
                     >
                       <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-aeos-600 text-[9px] font-bold text-white">
                         {p.rank}
@@ -303,13 +303,13 @@ export default function StrategicIntelligenceCard({
                       <div className="min-w-0 flex-1">
                         <p className="text-[12px] font-medium leading-snug text-fg">{p.title}</p>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className={`rounded-full px-1.5 py-px text-[9px] font-semibold ${CAT_COLORS[p.category] ?? "bg-slate-100 text-slate-600"}`}>
+                          <span className={`rounded-full px-1.5 py-px text-[9px] font-semibold ${CAT_COLORS[p.category] ?? "bg-surface-inset text-fg-secondary"}`}>
                             {p.category}
                           </span>
                           <span className="text-2xs tabular-nums text-fg-muted">Impact {p.impact_score.toFixed(0)}</span>
                         </div>
                       </div>
-                      <ArrowUpRight size={13} className="mt-0.5 shrink-0 text-slate-300 transition group-hover:text-aeos-500" />
+                      <ArrowUpRight size={13} className="mt-0.5 shrink-0 text-fg-hint transition group-hover:text-aeos-500" />
                     </div>
                   ))}
                 </div>
@@ -320,9 +320,9 @@ export default function StrategicIntelligenceCard({
             <div className="px-6 py-5">
               <ColHeader icon={<ShieldAlert size={14} />} title="Risk alerts" count={risks.length} />
               {topRisks.length === 0 ? (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-3">
+                <div className="flex items-center gap-2 rounded-xl bg-status-success-light px-3 py-3">
                   <CheckCircle2 size={14} className="text-emerald-500" />
-                  <span className="text-[12px] font-medium text-emerald-700">No active risks detected</span>
+                  <span className="text-[12px] font-medium text-status-success-text">No active risks detected</span>
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -352,16 +352,16 @@ export default function StrategicIntelligenceCard({
                 <p className="text-xs text-fg-muted">No roadmap available. Priorities are needed first.</p>
               ) : (
                 <div className="relative space-y-2.5">
-                  <div className="absolute bottom-3 left-[11px] top-1 w-px bg-slate-200" />
+                  <div className="absolute bottom-3 left-[11px] top-1 w-px bg-border" />
                   {actions.map((a, i) => (
                     <div key={i} className="relative flex items-start gap-3">
                       <span className="z-10 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md bg-aeos-50 text-2xs font-bold text-aeos-700">
                         W{a.week}
                       </span>
-                      <div className="min-w-0 flex-1 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2">
+                      <div className="min-w-0 flex-1 rounded-xl border border-border-light bg-surface-secondary px-3 py-2">
                         <p className="text-[12px] font-medium leading-snug text-fg">{a.action}</p>
                         <div className="mt-1 flex items-center gap-2">
-                          <span className={`rounded-full px-1.5 py-px text-[9px] font-semibold ${DEPT_COLORS[a.department] ?? "bg-slate-100 text-slate-600"}`}>
+                          <span className={`rounded-full px-1.5 py-px text-[9px] font-semibold ${DEPT_COLORS[a.department] ?? "bg-surface-inset text-fg-secondary"}`}>
                             {a.department}
                           </span>
                         </div>

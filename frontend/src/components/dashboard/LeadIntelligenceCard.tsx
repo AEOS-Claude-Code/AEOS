@@ -67,10 +67,10 @@ export default function LeadIntelligenceCard({
 
   const trendColor =
     data?.trend === "rising"
-      ? "bg-emerald-50 text-emerald-700"
+      ? "bg-status-success-light text-status-success-text"
       : data?.trend === "declining"
-        ? "bg-red-50 text-red-700"
-        : "bg-amber-50 text-amber-700";
+        ? "bg-status-danger-light text-status-danger-text"
+        : "bg-status-warning-light text-status-warning-text";
 
   return (
     <DashCard

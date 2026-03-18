@@ -64,12 +64,12 @@ function ConnectionBar({
   };
 
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
-      <span className="text-2xs font-bold uppercase tracking-wider text-slate-400">
+    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-border bg-surface px-4 py-2.5 shadow-sm">
+      <span className="text-2xs font-bold uppercase tracking-wider text-fg-hint">
         Engines
       </span>
       {sources.map((s) => (
-        <span key={s.label} className="flex items-center gap-1.5 text-xs text-slate-600">
+        <span key={s.label} className="flex items-center gap-1.5 text-xs text-fg-secondary">
           <span
             className={`h-2 w-2 rounded-full ${dotColor[s.status] ?? "bg-slate-300"} ${
               s.status === "live" ? "pulse-dot" : ""
@@ -171,13 +171,13 @@ export default function DashboardPage() {
       {/* Premium header */}
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Dashboard</h1>
-          <p className="text-xs text-slate-500">
+          <h1 className="text-lg font-bold text-fg">Dashboard</h1>
+          <p className="text-xs text-fg-muted">
             Executive overview — {summary.company_name}
           </p>
         </div>
         <button onClick={refreshAll}
-          className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-2xs font-medium text-slate-600 transition hover:bg-slate-200">
+          className="flex items-center gap-1.5 rounded-xl bg-surface-inset px-3 py-1.5 text-2xs font-medium text-fg-secondary transition hover:bg-surface-secondary">
           Refresh all
         </button>
       </div>

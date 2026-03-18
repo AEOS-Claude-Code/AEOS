@@ -5,9 +5,9 @@ import { CardLoading, CardEmpty, type CardState } from "@/components/ui/CardStat
 import { Thermometer } from "lucide-react";
 
 const CLASS_CONFIG: Record<string, { label: string; color: string; bg: string; text: string }> = {
-  hot: { label: "Hot", color: "bg-red-500", bg: "bg-red-50", text: "text-red-700" },
-  warm: { label: "Warm", color: "bg-amber-500", bg: "bg-amber-50", text: "text-amber-700" },
-  cold: { label: "Cold", color: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700" },
+  hot: { label: "Hot", color: "bg-red-500", bg: "bg-status-danger-light", text: "text-status-danger-text" },
+  warm: { label: "Warm", color: "bg-amber-500", bg: "bg-status-warning-light", text: "text-status-warning-text" },
+  cold: { label: "Cold", color: "bg-blue-400", bg: "bg-status-info-light", text: "text-status-info-text" },
 };
 
 export default function LeadScoreCard({

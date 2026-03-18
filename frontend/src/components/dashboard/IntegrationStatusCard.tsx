@@ -24,10 +24,10 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  connected: "border-emerald-200 bg-emerald-50/50",
-  disconnected: "border-slate-200 bg-slate-50/50",
-  connecting: "border-amber-200 bg-amber-50/50",
-  error: "border-red-200 bg-red-50/50",
+  connected: "border-emerald-200 bg-status-success-light",
+  disconnected: "border-border bg-surface-secondary",
+  connecting: "border-amber-200 bg-status-warning-light",
+  error: "border-red-200 bg-status-danger-light",
 };
 
 export default function IntegrationStatusCard() {
