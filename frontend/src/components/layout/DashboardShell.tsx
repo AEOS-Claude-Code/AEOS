@@ -2,6 +2,35 @@
 
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Brain, Bot, BarChart3, Settings } from "lucide-react";
+
+function MobileNav() {
+  const pathname = usePathname();
+  const items = [
+    { icon: LayoutDashboard, href: "/app/dashboard", label: "Home" },
+    { icon: Brain, href: "/app/business-plan", label: "Plan" },
+    { icon: Bot, href: "/app/agents", label: "Agents" },
+    { icon: BarChart3, href: "/app/command", label: "Command" },
+    { icon: Settings, href: "/app/settings", label: "More" },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-slate-200 bg-white/95 backdrop-blur-sm px-2 py-1.5 safe-area-pb lg:hidden">
+      {items.map(({ icon: Icon, href, label }) => {
+        const active = pathname === href || pathname.startsWith(href + "/");
+        return (
+          <Link key={href} href={href}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition ${active ? "text-aeos-600" : "text-slate-400"}`}>
+            <Icon size={20} />
+            <span className="text-[10px] font-medium">{label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -22,9 +51,12 @@ export default function DashboardShell({
 }: DashboardShellProps) {
   return (
     <div className="flex min-h-screen">
-      <Sidebar />
+      {/* Sidebar - hidden on mobile, visible on lg+ */}
+      <div className="hidden lg:block">
+        <Sidebar />
+      </div>
 
-      <div className="flex flex-1 flex-col" style={{ marginLeft: 252 }}>
+      <div className="flex flex-1 flex-col lg:ml-[252px]">
         <TopBar
           workspaceName={workspaceName}
           plan={plan}
@@ -33,10 +65,13 @@ export default function DashboardShell({
           isLive={isLive}
         />
 
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 lg:p-8 lg:pb-8">
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom nav */}
+      <MobileNav />
     </div>
   );
 }

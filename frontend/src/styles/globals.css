@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PWA safe area for notched devices */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 1024px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+}
+
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
 /* ── CSS custom properties ──────────────────────────────────── */
