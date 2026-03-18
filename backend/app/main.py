@@ -5,6 +5,7 @@ Version: 0.5.0
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -76,9 +77,14 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 async def lifespan(app: FastAPI):
     """Startup / shutdown hooks."""
     setup_logging("DEBUG" if settings.DEBUG else "INFO")
-    # ── Startup: ensure tables exist ──
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # ── Startup: ensure tables exist (with timeout to prevent deploy hangs) ──
+    try:
+        async with asyncio.timeout(30):
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables verified")
+    except (TimeoutError, Exception) as exc:
+        logger.error("Database startup failed (%s): %s — app will start anyway", type(exc).__name__, exc)
 
     # Validate critical config
     if settings.ENVIRONMENT == "production" and settings.JWT_SECRET_KEY == "change-me-to-a-random-64-char-string":

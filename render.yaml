@@ -61,4 +61,5 @@ services:
         value: "claude-sonnet-4-20250514"
       - key: AI_MAX_TOKENS
         value: "4096"
+    port: 10000
     healthCheckPath: /api/health
