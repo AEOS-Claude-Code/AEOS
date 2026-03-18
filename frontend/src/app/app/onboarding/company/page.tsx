@@ -19,6 +19,15 @@ import {
   Calendar,
   ChevronRight,
   Building2,
+  Bot,
+  Users,
+  Brain,
+  Target,
+  Megaphone,
+  Wallet,
+  Shield,
+  Settings,
+  Package,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -80,6 +89,49 @@ interface IntakeResult {
   meta_description: string;
 }
 
+interface OrgDepartment {
+  id: string;
+  name: string;
+  icon: string;
+  status: string;
+  ai_head: string;
+  ai_agents: number;
+  ai_roles: string[];
+  description: string;
+  priority_rank: number;
+}
+
+interface OrgChart {
+  total_ai_agents: number;
+  total_departments: number;
+  departments: OrgDepartment[];
+  summary: string;
+}
+
+const DEPT_ICONS: Record<string, any> = {
+  brain: Brain,
+  target: Target,
+  megaphone: Megaphone,
+  users: Users,
+  wallet: Wallet,
+  shield: Shield,
+  settings: Settings,
+  cpu: Cpu,
+  package: Package,
+};
+
+const DEPT_COLORS: Record<string, string> = {
+  strategy: "from-violet-500 to-purple-600",
+  sales: "from-orange-500 to-red-500",
+  marketing: "from-pink-500 to-rose-500",
+  hr: "from-blue-500 to-indigo-500",
+  finance: "from-emerald-500 to-green-600",
+  legal: "from-slate-500 to-gray-600",
+  operations: "from-amber-500 to-yellow-600",
+  it: "from-cyan-500 to-teal-500",
+  procurement: "from-lime-500 to-green-500",
+};
+
 function DetectedItem({ icon: Icon, label, value, found }: {
   icon: any;
   label: string;
@@ -119,8 +171,10 @@ export default function OnboardingCompany() {
   const [industry, setIndustry] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
-  const [teamSize, setTeamSize] = useState(1);
   const [saving, setSaving] = useState(false);
+
+  // Org chart
+  const [orgChart, setOrgChart] = useState<OrgChart | null>(null);
 
   // Fetch intake results on mount
   useEffect(() => {
@@ -164,6 +218,23 @@ export default function OnboardingCompany() {
     }
   }
 
+  // Fetch org chart when industry changes
+  useEffect(() => {
+    if (industry && industry !== "other") {
+      fetchOrgChart(industry);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [industry]);
+
+  async function fetchOrgChart(ind: string) {
+    try {
+      const res = await api.get(`/api/v1/onboarding/org-chart-recommendation?industry=${ind}`);
+      setOrgChart(res.data);
+    } catch {
+      // Non-critical — org chart is a nice-to-have
+    }
+  }
+
   async function handleConfirm() {
     setSaving(true);
     try {
@@ -172,7 +243,7 @@ export default function OnboardingCompany() {
         industry,
         country,
         city,
-        team_size: teamSize,
+        team_size: orgChart?.total_ai_agents || 1,
         primary_goal: "",
       });
 
@@ -364,19 +435,89 @@ export default function OnboardingCompany() {
             </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Team size</label>
-            <input
-              type="number"
-              min={1}
-              max={10000}
-              value={teamSize}
-              onChange={(e) => setTeamSize(+e.target.value)}
-              className={inputClass}
-            />
-          </div>
         </div>
       </div>
+
+      {/* AI Organizational Chart */}
+      {orgChart && (
+        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+          <div className="mb-2 flex items-center gap-2">
+            <Bot size={16} className="text-aeos-600" />
+            <h2 className="text-base font-bold text-fg">Your AI-Powered Organization</h2>
+          </div>
+          <p className="mb-5 text-sm text-fg-muted">
+            {orgChart.summary}
+          </p>
+
+          {/* Summary stats */}
+          <div className="mb-5 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-700 p-4 text-white">
+              <p className="text-2xl font-bold">{orgChart.total_ai_agents}</p>
+              <p className="text-xs opacity-80">AI Agents Ready</p>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white">
+              <p className="text-2xl font-bold">{orgChart.total_departments}</p>
+              <p className="text-xs opacity-80">Departments Covered</p>
+            </div>
+          </div>
+
+          {/* Department cards */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {orgChart.departments.map((dept, idx) => {
+              const IconComponent = DEPT_ICONS[dept.icon] || Bot;
+              const gradient = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+              return (
+                <div
+                  key={dept.id}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-surface-secondary p-4 transition hover:border-aeos-300 hover:shadow-md"
+                >
+                  {/* Priority badge */}
+                  {idx < 3 && (
+                    <span className="absolute right-2 top-2 rounded-full bg-aeos-50 px-1.5 py-0.5 text-2xs font-bold text-aeos-600">
+                      #{idx + 1}
+                    </span>
+                  )}
+
+                  {/* Department icon + name */}
+                  <div className="mb-3 flex items-center gap-2.5">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${gradient} text-white`}>
+                      <IconComponent size={14} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-fg">{dept.name}</p>
+                      <p className="text-2xs text-fg-hint">{dept.description}</p>
+                    </div>
+                  </div>
+
+                  {/* AI Head */}
+                  <div className="mb-2 flex items-center gap-2 rounded-lg bg-aeos-50/50 px-2.5 py-1.5">
+                    <Bot size={12} className="text-aeos-600" />
+                    <span className="text-2xs font-semibold text-aeos-700">{dept.ai_head}</span>
+                  </div>
+
+                  {/* AI Specialist roles */}
+                  <div className="space-y-1">
+                    {dept.ai_roles.map((role) => (
+                      <div key={role} className="flex items-center gap-2 pl-1">
+                        <div className="h-1 w-1 rounded-full bg-aeos-400" />
+                        <span className="text-2xs text-fg-muted">{role}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Agent count */}
+                  <div className="mt-3 flex items-center gap-1 border-t border-border pt-2">
+                    <Bot size={10} className="text-fg-hint" />
+                    <span className="text-2xs font-medium text-fg-muted">
+                      {dept.ai_agents} AI agent{dept.ai_agents > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Detected contact information */}
       {intake && (

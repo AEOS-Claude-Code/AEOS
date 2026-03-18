@@ -37,6 +37,26 @@ async def intake_from_url(
     return result
 
 
+@router.get("/org-chart-recommendation")
+async def get_org_chart(
+    industry: str = "other",
+    workspace: Workspace = Depends(get_current_workspace),
+):
+    """
+    Get a recommended organizational chart with AI agent allocation
+    based on the company's industry.
+    """
+    from .org_chart_engine import generate_org_chart
+
+    # Use workspace profile industry if available and no override
+    if industry == "other" and workspace.profile:
+        profile_industry = workspace.profile.industry or "other"
+        if profile_industry != "general":
+            industry = profile_industry
+
+    return generate_org_chart(industry=industry)
+
+
 @router.get("/intake-results", response_model=IntakeFromUrlResponse)
 async def get_intake_results(
     workspace: Workspace = Depends(get_current_workspace),
