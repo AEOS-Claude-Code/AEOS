@@ -26,14 +26,14 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
   const currentIdx = STEPS.findIndex((s) => pathname.startsWith(s.path));
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-surface-base">
       {/* Top bar */}
-      <header className="flex h-14 items-center justify-between border-b border-slate-200/80 bg-white px-6">
+      <header className="flex h-14 items-center justify-between border-b border-border bg-surface px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-700 shadow-sm shadow-aeos-500/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm shadow-emerald-500/20">
             <Zap size={15} className="text-white" />
           </div>
-          <span className="text-sm font-bold text-slate-900">AEOS</span>
+          <span className="text-sm font-bold tracking-wide text-fg">AEOS</span>
         </Link>
 
         {/* Horizontal step indicators */}
@@ -43,33 +43,49 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
             const active = i === currentIdx;
             return (
               <div key={step.num} className="flex items-center">
-                <div className={`flex h-6 items-center gap-1.5 rounded-full px-2.5 text-2xs font-semibold transition-all ${
-                  done ? "bg-emerald-50 text-emerald-700" : active ? "bg-aeos-50 text-aeos-700 ring-1 ring-aeos-200" : "text-slate-400"
-                }`}>
+                <div
+                  className={`flex h-7 items-center gap-1.5 rounded-full px-3 text-2xs font-semibold transition-all ${
+                    done
+                      ? "bg-status-success/10 text-status-success"
+                      : active
+                        ? "bg-surface-secondary text-fg ring-1 ring-border"
+                        : "text-fg-hint"
+                  }`}
+                >
                   {done ? (
-                    <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500">
+                    <div className="flex h-4 w-4 items-center justify-center rounded-full bg-status-success">
                       <Check size={10} className="text-white" />
                     </div>
                   ) : (
-                    <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
-                      active ? "bg-aeos-600 text-white" : "bg-slate-200 text-slate-500"
-                    }`}>{step.num}</span>
+                    <span
+                      className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
+                        active
+                          ? "bg-aeos-500 text-white"
+                          : "bg-surface-secondary border border-border text-fg-hint"
+                      }`}
+                    >
+                      {step.num}
+                    </span>
                   )}
                   {step.label}
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`mx-1 h-px w-4 ${done ? "bg-emerald-300" : "bg-slate-200"}`} />
+                  <div
+                    className={`mx-1 h-px w-5 ${done ? "bg-status-success/40" : "bg-border"}`}
+                  />
                 )}
               </div>
             );
           })}
         </div>
 
-        <span className="text-2xs text-slate-400 sm:hidden">Step {(currentIdx >= 0 ? currentIdx : 0) + 1}/5</span>
+        <span className="text-2xs text-fg-hint sm:hidden">
+          Step {(currentIdx >= 0 ? currentIdx : 0) + 1}/5
+        </span>
       </header>
 
       {/* Content */}
-      <main className="flex flex-1 items-start justify-center px-4 py-8">
+      <main className="flex flex-1 items-start justify-center px-4 py-10">
         <div className="w-full max-w-3xl">{children}</div>
       </main>
     </div>

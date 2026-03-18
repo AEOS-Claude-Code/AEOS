@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Globe, ArrowRight, Loader2 } from "lucide-react";
+import { Globe, ArrowRight, Loader2, Phone, AtSign, MessageCircle, MapPin, Link2, Search } from "lucide-react";
 import api from "@/lib/api";
 
 export default function OnboardingPresence() {
@@ -30,51 +30,66 @@ export default function OnboardingPresence() {
     } catch {} finally { setLoading(false); }
   }
 
-  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-100";
+  const ic = "w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-emerald-500/40 focus:bg-surface focus:ring-2 focus:ring-emerald-500/10";
+
+  const fields = [
+    { label: "Facebook", val: facebook, set: setFacebook, ph: "facebook.com/...", icon: "f" },
+    { label: "Instagram", val: instagram, set: setInstagram, ph: "instagram.com/...", icon: "i" },
+    { label: "LinkedIn", val: linkedin, set: setLinkedin, ph: "linkedin.com/company/...", icon: "in" },
+    { label: "WhatsApp", val: whatsapp, set: setWhatsapp, ph: "wa.me/...", icon: "w" },
+    { label: "Contact page", val: contactPage, set: setContactPage, ph: "https://...", icon: "c" },
+    { label: "Google Business", val: googleBiz, set: setGoogleBiz, ph: "business.google.com/...", icon: "g" },
+  ];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-sm">
-            <Globe size={18} className="text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Website & social links</h2>
-            <p className="text-sm text-slate-500">Help AEOS analyze your full digital presence.</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        {/* Header */}
+        <div className="border-b border-border px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/20">
+              <Globe size={18} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-fg">Website & social links</h2>
+              <p className="text-sm text-fg-hint">Help AEOS analyze your full digital presence.</p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Primary website</label>
-            <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
-              placeholder="https://yourcompany.com" className={ic} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Facebook", val: facebook, set: setFacebook, ph: "facebook.com/..." },
-              { label: "Instagram", val: instagram, set: setInstagram, ph: "instagram.com/..." },
-              { label: "LinkedIn", val: linkedin, set: setLinkedin, ph: "linkedin.com/company/..." },
-              { label: "WhatsApp", val: whatsapp, set: setWhatsapp, ph: "wa.me/..." },
-              { label: "Contact page", val: contactPage, set: setContactPage, ph: "https://..." },
-              { label: "Google Business", val: googleBiz, set: setGoogleBiz, ph: "business.google.com/..." },
-            ].map((f) => (
-              <div key={f.label}>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-700">{f.label}</label>
-                <input type="url" value={f.val} onChange={(e) => f.set(e.target.value)} placeholder={f.ph} className={ic} />
-              </div>
-            ))}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold text-slate-700">Phone</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5XX XXX XXXX" className={ic} />
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 px-6 py-5">
+            {/* Primary website */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-fg-muted">Primary website</label>
+              <input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://yourcompany.com" className={ic} />
+            </div>
+
+            {/* Social / links grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {fields.map((f) => (
+                <div key={f.label}>
+                  <label className="mb-1.5 block text-xs font-semibold text-fg-muted">{f.label}</label>
+                  <input type="url" value={f.val} onChange={(e) => f.set(e.target.value)} placeholder={f.ph} className={ic} />
+                </div>
+              ))}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-fg-muted">Phone</label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5XX XXX XXXX" className={ic} />
+            </div>
           </div>
 
-          <button type="submit" disabled={loading}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 py-3 text-sm font-bold text-white shadow-lg shadow-aeos-500/20 transition-all hover:shadow-xl disabled:opacity-50">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <>Continue <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></>}
-          </button>
+          {/* Action bar */}
+          <div className="border-t border-border px-6 py-4">
+            <button type="submit" disabled={loading}
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <>Continue <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></>}
+            </button>
+          </div>
         </form>
       </div>
     </motion.div>

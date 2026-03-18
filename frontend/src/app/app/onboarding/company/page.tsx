@@ -38,25 +38,25 @@ const DEPT_ICONS: Record<string,any> = {
 const DEPT_COLORS: Record<string,string> = {
   strategy:"from-violet-500 to-purple-600",sales:"from-orange-500 to-red-500",
   marketing:"from-pink-500 to-rose-500",hr:"from-blue-500 to-indigo-500",
-  finance:"from-emerald-500 to-green-600",legal:"from-slate-500 to-gray-600",
+  finance:"from-emerald-500 to-green-600",legal:"from-slate-400 to-gray-500",
   operations:"from-amber-500 to-yellow-600",it:"from-cyan-500 to-teal-500",
   procurement:"from-lime-500 to-green-500",reservations:"from-blue-400 to-blue-600",
   guest_relations:"from-rose-400 to-pink-600",partnerships:"from-teal-500 to-emerald-600",
   patient_care:"from-red-400 to-rose-500",clinical_ops:"from-sky-500 to-blue-600",
-  billing:"from-emerald-500 to-green-600",compliance:"from-gray-500 to-slate-600",
+  billing:"from-emerald-500 to-green-600",compliance:"from-gray-400 to-slate-500",
   front_house:"from-amber-400 to-orange-500",kitchen_ops:"from-red-500 to-orange-600",
   delivery:"from-blue-500 to-cyan-500",customer_service:"from-pink-400 to-rose-500",
   customer_success:"from-pink-400 to-rose-500",creative:"from-fuchsia-500 to-purple-600",
   project_mgmt:"from-indigo-500 to-blue-600",client_services:"from-orange-400 to-amber-500",
-  digital:"from-cyan-500 to-blue-500",technical:"from-slate-500 to-gray-700",
+  digital:"from-cyan-500 to-blue-500",technical:"from-slate-400 to-gray-500",
   safety:"from-red-500 to-red-700",product:"from-violet-500 to-indigo-600",
-  devops:"from-gray-600 to-gray-800",elearning:"from-blue-400 to-indigo-500",
+  devops:"from-gray-500 to-gray-600",elearning:"from-blue-400 to-indigo-500",
   academic:"from-emerald-400 to-teal-500",student_services:"from-amber-400 to-orange-500",
   risk:"from-red-500 to-rose-600",production:"from-orange-500 to-amber-600",
   supply_chain:"from-teal-500 to-green-600",rd:"from-purple-500 to-violet-600",
-  warehouse:"from-amber-500 to-yellow-600",customs:"from-slate-500 to-gray-600",
+  warehouse:"from-amber-500 to-yellow-600",customs:"from-slate-400 to-gray-500",
   estimating:"from-blue-500 to-indigo-500",property_mgmt:"from-amber-500 to-orange-500",
-  valuation:"from-emerald-500 to-teal-500",transactions:"from-slate-500 to-gray-600",
+  valuation:"from-emerald-500 to-teal-500",transactions:"from-slate-400 to-gray-500",
 };
 
 const COUNTRY_CITIES: Record<string, string[]> = {
@@ -121,13 +121,13 @@ interface OrgChart {
   departments:OrgDepartment[]; summary:string;
 }
 
-/* ── Animated loading screen ──────────────────────────────────── */
+/* -- Animated loading screen ---------------------------------------- */
 
 const SCAN_STEPS = [
   { icon: Globe, label: "Fetching website", color: "from-blue-500 to-cyan-500" },
   { icon: Building2, label: "Detecting company info", color: "from-violet-500 to-purple-500" },
   { icon: Phone, label: "Extracting contacts & social", color: "from-emerald-500 to-green-500" },
-  { icon: Bot, label: "Building your AI org chart", color: "from-aeos-500 to-aeos-700" },
+  { icon: Bot, label: "Building your AI org chart", color: "from-emerald-400 to-emerald-600" },
 ];
 
 function LoadingScreen() {
@@ -142,28 +142,28 @@ function LoadingScreen() {
   return (
     <div className="flex items-center justify-center py-12">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md rounded-2xl border border-slate-200/60 bg-white p-8 shadow-2xl shadow-slate-200/50">
+        className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 shadow-2xl">
         {/* Animated icon */}
         <div className="mb-6 flex justify-center">
           <div className="relative">
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-3 rounded-full bg-gradient-to-r from-aeos-400/20 via-violet-400/20 to-emerald-400/20 blur-md" />
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-aeos-500 to-aeos-700 shadow-lg shadow-aeos-300/40">
+              className="absolute -inset-3 rounded-full bg-gradient-to-r from-emerald-400/10 via-violet-400/10 to-cyan-400/10 blur-md" />
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-lg shadow-emerald-500/20">
               <Globe size={36} className="text-white" />
             </div>
             <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg ring-2 ring-aeos-100">
-              <Loader2 size={16} className="animate-spin text-aeos-600" />
+              className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-surface-secondary shadow-lg ring-2 ring-emerald-500/20">
+              <Loader2 size={16} className="animate-spin text-emerald-400" />
             </motion.div>
           </div>
         </div>
 
-        <h2 className="mb-1 text-center text-lg font-bold text-slate-900">Analyzing your website</h2>
-        <p className="mb-6 text-center text-sm text-slate-500">Building your AI-powered company profile</p>
+        <h2 className="mb-1 text-center text-lg font-bold text-fg">Analyzing your website</h2>
+        <p className="mb-6 text-center text-sm text-fg-hint">Building your AI-powered company profile</p>
 
         {/* Progress bar */}
-        <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-slate-100">
-          <motion.div className="h-full rounded-full bg-gradient-to-r from-aeos-500 via-violet-500 to-emerald-500"
+        <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
+          <motion.div className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-cyan-400"
             initial={{ width: "5%" }} animate={{ width: `${Math.max(5, progress)}%` }}
             transition={{ duration: 0.6, ease: "easeOut" }} />
         </div>
@@ -178,12 +178,12 @@ function LoadingScreen() {
               <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.15 }}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300 ${
-                  active ? "bg-gradient-to-r " + s.color + " bg-opacity-5 shadow-sm ring-1 ring-inset ring-slate-100" :
-                  done ? "bg-emerald-50/50" : "opacity-40"
+                  active ? "bg-surface-secondary ring-1 ring-border" :
+                  done ? "bg-emerald-500/[0.06]" : "opacity-30"
                 }`}>
                 {done ? (
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500 shadow-sm shadow-emerald-500/30">
                     <Check size={14} className="text-white" />
                   </motion.div>
                 ) : active ? (
@@ -191,16 +191,16 @@ function LoadingScreen() {
                     <Loader2 size={14} className="animate-spin text-white" />
                   </div>
                 ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                    <Icon size={14} className="text-slate-400" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-secondary">
+                    <Icon size={14} className="text-fg-hint" />
                   </div>
                 )}
-                <span className={`text-sm ${done ? "font-medium text-emerald-700" : active ? "font-semibold text-slate-900" : "text-slate-400"}`}>
+                <span className={`text-sm ${done ? "font-medium text-emerald-400" : active ? "font-semibold text-fg" : "text-fg-hint"}`}>
                   {s.label}
                 </span>
                 {active && (
-                  <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
-                    className="ml-auto text-2xs text-slate-400">Processing...</motion.div>
+                  <motion.div animate={{ opacity: [0.3, 0.8, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
+                    className="ml-auto text-2xs text-fg-hint">Processing...</motion.div>
                 )}
               </motion.div>
             );
@@ -211,7 +211,7 @@ function LoadingScreen() {
   );
 }
 
-/* ── Main onboarding page ─────────────────────────────────────── */
+/* -- Main onboarding page ------------------------------------------- */
 
 export default function OnboardingCompany() {
   const router = useRouter();
@@ -229,7 +229,7 @@ export default function OnboardingCompany() {
   const [showAllDepts, setShowAllDepts] = useState(false);
   const [expandedDept, setExpandedDept] = useState<string|null>(null);
   const [humanRoles, setHumanRoles] = useState<Record<string, boolean>>({});
-  const [orgBuildStep, setOrgBuildStep] = useState(0); // for animated build-up
+  const [orgBuildStep, setOrgBuildStep] = useState(0);
 
   function toggleRole(deptId: string, role: string) {
     const key = `${deptId}:${role}`;
@@ -279,7 +279,6 @@ export default function OnboardingCompany() {
       api.get(`/api/v1/onboarding/org-chart-recommendation?industry=${industry}`).then(r => {
         setOrgChart(r.data);
         setOrgBuildStep(0);
-        // Animate departments appearing one by one
         const depts = r.data?.departments || [];
         depts.forEach((_: any, i: number) => {
           setTimeout(() => setOrgBuildStep(i + 1), 300 + i * 200);
@@ -291,7 +290,6 @@ export default function OnboardingCompany() {
   async function handleConfirm() {
     setSaving(true);
     try {
-      // Save role assignments (human/AI toggles)
       if (Object.keys(humanRoles).length > 0) {
         await api.put("/api/v1/workspace/role-assignments", { role_map: humanRoles }).catch(() => {});
       }
@@ -313,94 +311,93 @@ export default function OnboardingCompany() {
   const socialCount = intake ? Object.values(intake.detected_social_links).filter(u => u.length > 0).length : 0;
   const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length : 0;
 
-  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-100 transition-all";
+  const ic = "w-full rounded-xl border border-border bg-surface-secondary px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-hint focus:border-emerald-500/40 focus:bg-surface focus:ring-2 focus:ring-emerald-500/10 transition-all";
+  const selectClass = ic + " appearance-none";
 
   if (loading) return <LoadingScreen />;
-
-  const visibleDepts = showAllDepts ? (orgChart?.departments || []) : (orgChart?.departments || []).slice(0, 6);
 
   const allDepts = orgChart?.departments || [];
   const visibleDepts2 = showAllDepts ? allDepts : allDepts.slice(0, 10);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-6xl space-y-5 px-2">
-      {/* ═══ HERO BANNER ═══ */}
+      {/* === HERO BANNER === */}
       {intake && totalDetected > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-aeos-600 via-violet-500 to-emerald-500 px-6 py-4 text-white shadow-xl">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDgpIi8+PC9zdmc+')] opacity-60" />
+          className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-emerald-500/10 px-6 py-4">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIi8+PC9zdmc+')] opacity-60" />
           <div className="relative flex items-center gap-4">
             <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm shadow-lg">
-              <Sparkles size={28} className="text-white" />
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 backdrop-blur-sm shadow-lg shadow-emerald-500/10">
+              <Sparkles size={28} className="text-emerald-400" />
             </motion.div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold">{totalDetected} items detected from your website</h2>
-              <p className="mt-0.5 text-sm text-white/80">We built your company profile and AI team. Review below, then deploy.</p>
+              <h2 className="text-lg font-bold text-fg">{totalDetected} items detected from your website</h2>
+              <p className="mt-0.5 text-sm text-fg-hint">We built your company profile and AI team. Review below, then deploy.</p>
             </div>
-            <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 backdrop-blur-sm">
-              <CheckCircle2 size={16} /><span className="text-sm font-bold">Analysis complete</span>
+            <div className="hidden sm:flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-2 backdrop-blur-sm border border-emerald-500/20">
+              <CheckCircle2 size={16} className="text-emerald-400" /><span className="text-sm font-bold text-emerald-400">Analysis complete</span>
             </div>
           </div>
         </motion.div>
       )}
 
       {error && !intake && (
-        <div className="rounded-2xl bg-amber-50 px-6 py-4 text-sm text-amber-700 border border-amber-200">{error}</div>
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-6 py-4 text-sm text-amber-400">{error}</div>
       )}
 
-      {/* ═══ ROW 1: Company Identity + Contacts & Social ═══ */}
+      {/* === ROW 1: Company Identity + Contacts & Social === */}
       <div className="grid gap-5 lg:grid-cols-5">
-        {/* Company Identity — 3 cols */}
+        {/* Company Identity -- 3 cols */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-          className="lg:col-span-3 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg">
+          className="lg:col-span-3 rounded-2xl border border-border bg-surface p-6 shadow-lg">
           <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-600 shadow-md shadow-aeos-200/40">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-md shadow-blue-500/20">
               <Building2 size={20} className="text-white" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Company Identity</h2>
-              <p className="text-xs text-slate-500">Auto-detected from your website — edit if needed</p>
+              <h2 className="text-base font-bold text-fg">Company Identity</h2>
+              <p className="text-xs text-fg-hint">Auto-detected from your website -- edit if needed</p>
             </div>
             {intake && (
               <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                className="ml-auto rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600 ring-1 ring-emerald-200">
-                ✓ Auto-detected
+                className="ml-auto rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">
+                Auto-detected
               </motion.span>
             )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Company name</label>
+              <label className="mb-1.5 block text-xs font-semibold text-fg-muted">Company name</label>
               <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className={ic} />
             </div>
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-fg-muted">
                 Industry
                 {intake && intake.industry_confidence > 0 && (
-                  <span className="rounded-full bg-aeos-50 px-2 py-0.5 text-2xs font-bold text-aeos-600">{Math.round(intake.industry_confidence * 100)}%</span>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-2xs font-bold text-emerald-400">{Math.round(intake.industry_confidence * 100)}%</span>
                 )}
               </label>
-              <select value={industry} onChange={e => setIndustry(e.target.value)} className={ic}>
+              <select value={industry} onChange={e => setIndustry(e.target.value)} className={selectClass}>
                 <option value="">Select industry</option>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-slate-600">
-                  Country {country && <CheckCircle2 size={10} className="text-emerald-500" />}
+                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-fg-muted">
+                  Country {country && <CheckCircle2 size={10} className="text-emerald-400" />}
                 </label>
-                <select value={country} onChange={e => { setCountry(e.target.value); if (!COUNTRY_CITIES[e.target.value]?.includes(city)) setCity(""); }} className={ic}>
+                <select value={country} onChange={e => { setCountry(e.target.value); if (!COUNTRY_CITIES[e.target.value]?.includes(city)) setCity(""); }} className={selectClass}>
                   <option value="">Select</option>
                   {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-slate-600">
-                  City {city && <CheckCircle2 size={10} className="text-emerald-500" />}
+                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-fg-muted">
+                  City {city && <CheckCircle2 size={10} className="text-emerald-400" />}
                 </label>
-                <select value={city} onChange={e => setCity(e.target.value)} className={ic} disabled={!country}>
+                <select value={city} onChange={e => setCity(e.target.value)} className={selectClass} disabled={!country}>
                   <option value="">Select</option>
                   {(COUNTRY_CITIES[country] || []).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -409,21 +406,20 @@ export default function OnboardingCompany() {
           </div>
         </motion.div>
 
-        {/* Contacts & Social — 2 cols */}
+        {/* Contacts & Social -- 2 cols */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-          className="lg:col-span-2 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg">
+          className="lg:col-span-2 rounded-2xl border border-border bg-surface p-6 shadow-lg">
           <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-200/40">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-500/20">
               <Share2 size={20} className="text-white" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Contacts & Social</h2>
-              <p className="text-xs text-slate-500">Detected from your website</p>
+              <h2 className="text-base font-bold text-fg">Contacts & Social</h2>
+              <p className="text-xs text-fg-hint">Detected from your website</p>
             </div>
           </div>
           {intake ? (
             <div className="space-y-4">
-              {/* Contact cards */}
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { icon: Phone, label: "Phone", value: intake.detected_phone_numbers[0], found: intake.detected_phone_numbers.length > 0 },
@@ -431,26 +427,25 @@ export default function OnboardingCompany() {
                   { icon: MessageCircle, label: "WhatsApp", value: "Connected", found: intake.detected_whatsapp_links.length > 0 },
                   { icon: ExternalLink, label: "Contact Page", value: "Found", found: intake.detected_contact_pages.length > 0 },
                 ].map(({ icon: Ic, label, value, found }) => (
-                  <div key={label} className={`flex items-center gap-2 rounded-xl p-3 ${found ? "bg-emerald-50 ring-1 ring-emerald-200" : "bg-slate-50 ring-1 ring-slate-100"}`}>
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${found ? "bg-emerald-500" : "bg-slate-200"}`}>
+                  <div key={label} className={`flex items-center gap-2 rounded-xl p-3 ${found ? "bg-emerald-500/[0.06] ring-1 ring-emerald-500/20" : "bg-surface-secondary ring-1 ring-border"}`}>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${found ? "bg-emerald-500 shadow-sm shadow-emerald-500/30" : "bg-surface-secondary"}`}>
                       <Ic size={14} className="text-white" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-2xs text-slate-500">{label}</p>
-                      <p className={`truncate text-xs font-semibold ${found ? "text-slate-900" : "text-slate-400"}`}>{found ? value || label : "Not found"}</p>
+                      <p className="text-2xs text-fg-hint">{label}</p>
+                      <p className={`truncate text-xs font-semibold ${found ? "text-fg-secondary" : "text-fg-hint"}`}>{found ? value || label : "Not found"}</p>
                     </div>
                   </div>
                 ))}
               </div>
-              {/* Social */}
               <div>
-                <p className="mb-2 text-xs font-semibold text-slate-600">Social Profiles</p>
+                <p className="mb-2 text-xs font-semibold text-fg-muted">Social Profiles</p>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(SOCIAL_LABELS).map(([p, label]) => {
                     const found = (intake.detected_social_links[p] || []).length > 0;
                     return (
                       <span key={p} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        found ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
+                        found ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20" : "bg-surface-secondary text-fg-hint ring-1 ring-border"
                       }`}>
                         {found ? <CheckCircle2 size={10} /> : <XCircle size={10} />}{label}
                       </span>
@@ -458,45 +453,43 @@ export default function OnboardingCompany() {
                   })}
                 </div>
               </div>
-              {/* Tech */}
               {intake.detected_tech_stack.length > 0 && (
-                <div className="border-t border-slate-100 pt-3">
-                  <p className="mb-2 text-xs font-semibold text-slate-600">Technologies</p>
+                <div className="border-t border-border pt-3">
+                  <p className="mb-2 text-xs font-semibold text-fg-muted">Technologies</p>
                   <div className="flex flex-wrap gap-1.5">
                     {intake.detected_tech_stack.slice(0, 8).map(t => (
-                      <span key={t} className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">{t}</span>
+                      <span key={t} className="rounded-lg bg-cyan-500/10 px-2.5 py-1 text-xs font-bold text-cyan-400 ring-1 ring-cyan-500/20">{t}</span>
                     ))}
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-sm text-slate-400">No website data available</p>
+            <p className="text-sm text-fg-hint">No website data available</p>
           )}
         </motion.div>
       </div>
 
-      {/* ═══ ROW 2: Full-width AI Org Chart with build-up animation ═══ */}
+      {/* === ROW 2: Full-width AI Org Chart === */}
       {orgChart && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg">
-          {/* Header */}
+          className="rounded-2xl border border-border bg-surface p-6 shadow-lg">
           <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-200/40">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-500/20">
               <Bot size={20} className="text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-base font-bold text-slate-900">Your AI Organization</h2>
-              <p className="text-xs text-slate-500">Click any role to toggle between AI agent and human employee</p>
+              <h2 className="text-base font-bold text-fg">Your AI Organization</h2>
+              <p className="text-xs text-fg-hint">Click any role to toggle between AI agent and human employee</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-aeos-50 to-aeos-100 px-3 py-1.5 text-xs font-bold text-aeos-700 ring-1 ring-aeos-200">
+              <span className="flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">
                 <Bot size={12} />{aiCount} AI
               </span>
-              <span className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+              <span className="flex items-center gap-1.5 rounded-xl bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-400 ring-1 ring-blue-500/20">
                 <Users size={12} />{humanCount} Human
               </span>
-              <span className="rounded-xl bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
+              <span className="rounded-xl bg-surface-secondary px-3 py-1.5 text-xs font-bold text-fg-muted ring-1 ring-border">
                 {orgChart.total_departments} Depts
               </span>
             </div>
@@ -505,28 +498,28 @@ export default function OnboardingCompany() {
           {/* CEO Node */}
           <div className="flex justify-center mb-2">
             <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-3 text-white shadow-xl shadow-slate-400/30">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg">
+              className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-surface-secondary to-surface px-6 py-3 shadow-xl border border-border">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg shadow-amber-500/20">
                 <Users size={18} className="text-slate-900" />
               </div>
               <div>
-                <p className="text-sm font-bold">CEO / Owner</p>
-                <p className="text-xs text-slate-400">You — overseeing {orgChart.total_departments} departments</p>
+                <p className="text-sm font-bold text-fg">CEO / Owner</p>
+                <p className="text-xs text-fg-hint">You -- overseeing {orgChart.total_departments} departments</p>
               </div>
             </motion.div>
           </div>
 
           {/* SVG connectors from CEO */}
           <svg width="100%" height="32" className="overflow-visible">
-            <line x1="50%" y1="0" x2="50%" y2="16" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
-            <line x1="4%" y1="16" x2="96%" y2="16" stroke="#cbd5e1" strokeWidth="2" />
+            <line x1="50%" y1="0" x2="50%" y2="16" stroke="var(--color-border)" strokeWidth="2" strokeDasharray="4 2" />
+            <line x1="4%" y1="16" x2="96%" y2="16" stroke="var(--color-border)" strokeWidth="2" />
           </svg>
 
-          {/* Department grid — animated build-up */}
+          {/* Department grid */}
           <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(allDepts.length, 5)}, 1fr)` }}>
             {visibleDepts2.map((dept, idx) => {
               const Icon = DEPT_ICONS[dept.icon] || Bot;
-              const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+              const grad = DEPT_COLORS[dept.id] || "from-gray-400 to-gray-500";
               const isExpanded = expandedDept === dept.id;
               const headIsHuman = humanRoles[`${dept.id}:__head__`];
               const deptAi = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
@@ -539,44 +532,41 @@ export default function OnboardingCompany() {
                   animate={isBuilt ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.8 }}
                   transition={{ type: "spring", stiffness: 200, damping: 20 }}
                   className="flex flex-col items-center">
-                  {/* Vertical drop */}
-                  <svg width="2" height="12"><line x1="1" y1="0" x2="1" y2="12" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 2" /></svg>
+                  <svg width="2" height="12"><line x1="1" y1="0" x2="1" y2="12" stroke="var(--color-border)" strokeWidth="2" strokeDasharray="3 2" /></svg>
 
-                  {/* Dept card */}
                   <motion.button whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
                     onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
-                    className={`group relative w-full overflow-hidden rounded-xl border-2 p-3 text-center transition-all duration-300 ${
-                      isExpanded ? "border-aeos-400 bg-gradient-to-b from-aeos-50 to-white shadow-xl ring-1 ring-aeos-200" : "border-slate-200 bg-white shadow-md hover:shadow-lg hover:border-slate-300"
+                    className={`group relative w-full overflow-hidden rounded-xl border p-3 text-center transition-all duration-300 ${
+                      isExpanded ? "border-emerald-500/30 bg-emerald-500/[0.06] shadow-xl" : "border-border bg-surface-secondary shadow-md hover:bg-surface hover:border-border"
                     }`}>
                     <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${grad}`} />
                     <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${grad} text-white shadow-lg`}>
                       <Icon size={18} />
                     </div>
-                    <p className="text-xs font-bold text-slate-900 leading-tight mb-1.5">{dept.name}</p>
+                    <p className="text-xs font-bold text-fg leading-tight mb-1.5">{dept.name}</p>
                     <motion.span whileTap={{ scale: 0.9 }}
                       onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
                       className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-bold cursor-pointer transition-colors ${
-                        headIsHuman ? "bg-blue-100 text-blue-700 ring-1 ring-blue-200" : "bg-aeos-50 text-aeos-700 ring-1 ring-aeos-200"
+                        headIsHuman ? "bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20" : "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20"
                       }`}>
                       {headIsHuman ? <Users size={8} /> : <Bot size={8} />}
                       {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
                     </motion.span>
                     <div className="mt-1.5 flex items-center justify-center gap-2">
-                      <span className="flex items-center gap-0.5 text-2xs font-semibold text-aeos-600"><Bot size={8} />{deptAi}</span>
-                      <span className="h-3 w-px bg-slate-200" />
-                      <span className="flex items-center gap-0.5 text-2xs font-semibold text-blue-600"><Users size={8} />{deptHu}</span>
+                      <span className="flex items-center gap-0.5 text-2xs font-semibold text-emerald-400"><Bot size={8} />{deptAi}</span>
+                      <span className="h-3 w-px bg-border" />
+                      <span className="flex items-center gap-0.5 text-2xs font-semibold text-blue-400"><Users size={8} />{deptHu}</span>
                     </div>
-                    <ChevronDown size={12} className={`mx-auto mt-1 text-slate-300 transition-transform duration-300 ${isExpanded ? "rotate-180 text-aeos-500" : ""}`} />
+                    <ChevronDown size={12} className={`mx-auto mt-1 text-fg-hint transition-transform duration-300 ${isExpanded ? "rotate-180 text-emerald-400" : ""}`} />
                   </motion.button>
 
-                  {/* Expanded team */}
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="w-full overflow-hidden">
-                        <div className="flex justify-center"><svg width="2" height="12"><line x1="1" y1="0" x2="1" y2="12" stroke="#94a3b8" strokeWidth="2" strokeDasharray="3 2" /></svg></div>
-                        <div className="relative rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-2.5 shadow-inner">
-                          <div className="absolute left-[18px] top-3 bottom-3 w-px bg-gradient-to-b from-slate-300 to-transparent" />
+                        <div className="flex justify-center"><svg width="2" height="12"><line x1="1" y1="0" x2="1" y2="12" stroke="var(--color-border)" strokeWidth="2" strokeDasharray="3 2" /></svg></div>
+                        <div className="relative rounded-xl border border-border bg-surface-secondary p-2.5">
+                          <div className="absolute left-[18px] top-3 bottom-3 w-px bg-gradient-to-b from-border to-transparent" />
                           <div className="space-y-1.5">
                             {dept.ai_roles.map((role, ri) => {
                               const isH = humanRoles[`${dept.id}:${role}`];
@@ -585,16 +575,16 @@ export default function OnboardingCompany() {
                                   initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ri * 0.05 }}
                                   onClick={() => toggleRole(dept.id, role)}
                                   className={`relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-all ${
-                                    isH ? "bg-blue-50 ring-1 ring-blue-200 shadow-sm" : "bg-white ring-1 ring-slate-100 hover:ring-slate-200"
+                                    isH ? "bg-blue-500/[0.08] ring-1 ring-blue-500/20 shadow-sm" : "bg-surface ring-1 ring-border hover:ring-border"
                                   }`}>
-                                  <div className="absolute -left-[5px] top-1/2 h-px w-[12px] bg-slate-300" />
+                                  <div className="absolute -left-[5px] top-1/2 h-px w-[12px] bg-border" />
                                   <div className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full shadow-sm ${
-                                    isH ? "bg-gradient-to-br from-blue-400 to-blue-600" : "bg-gradient-to-br from-slate-300 to-slate-400"
+                                    isH ? "bg-gradient-to-br from-blue-400 to-blue-600" : "bg-gradient-to-br from-surface-secondary to-surface"
                                   }`}>
-                                    {isH ? <Users size={10} className="text-white" /> : <Bot size={10} className="text-white" />}
+                                    {isH ? <Users size={10} className="text-white" /> : <Bot size={10} className="text-fg-muted" />}
                                   </div>
-                                  <span className="flex-1 truncate text-xs text-slate-700">{role.replace(" Agent", "")}</span>
-                                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold ${isH ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"}`}>
+                                  <span className="flex-1 truncate text-xs text-fg-muted">{role.replace(" Agent", "")}</span>
+                                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold ${isH ? "bg-blue-500/10 text-blue-400" : "bg-surface-secondary text-fg-hint"}`}>
                                     {isH ? "Human" : "AI"}
                                   </span>
                                 </motion.button>
@@ -613,31 +603,31 @@ export default function OnboardingCompany() {
           {allDepts.length > 10 && !showAllDepts && (
             <div className="mt-4 flex justify-center">
               <motion.button whileHover={{ scale: 1.03 }} onClick={() => setShowAllDepts(true)}
-                className="flex items-center gap-2 rounded-xl bg-aeos-50 px-5 py-2 text-xs font-bold text-aeos-600 ring-1 ring-aeos-200 hover:bg-aeos-100">
+                className="flex items-center gap-2 rounded-xl bg-emerald-500/10 px-5 py-2 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20 hover:bg-emerald-500/[0.15]">
                 <ChevronDown size={14} /> Show all {allDepts.length} departments
               </motion.button>
             </div>
           )}
 
           {/* Legend */}
-          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+          <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
             <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-xs text-slate-500"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-aeos-400 to-aeos-600" />AI Agent</span>
-              <span className="flex items-center gap-1.5 text-xs text-slate-500"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600" />Human</span>
-              <span className="flex items-center gap-1.5 text-xs text-slate-500"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-500" />CEO (You)</span>
+              <span className="flex items-center gap-1.5 text-xs text-fg-hint"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600" />AI Agent</span>
+              <span className="flex items-center gap-1.5 text-xs text-fg-hint"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600" />Human</span>
+              <span className="flex items-center gap-1.5 text-xs text-fg-hint"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-500" />CEO (You)</span>
             </div>
             {humanCount > 0 && (
-              <span className="text-xs font-semibold text-blue-600">{humanCount} human positions · {aiCount} AI agents will deploy</span>
+              <span className="text-xs font-semibold text-blue-400">{humanCount} human positions · {aiCount} AI agents will deploy</span>
             )}
           </div>
         </motion.div>
       )}
 
-      {/* ═══ CONFIRM BUTTON ═══ */}
+      {/* === CONFIRM BUTTON === */}
       <motion.button onClick={handleConfirm} disabled={saving}
         whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 py-4 text-base font-bold text-white shadow-xl shadow-aeos-300/30 transition-all hover:shadow-2xl disabled:opacity-50">
+        className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30 disabled:opacity-50">
         {saving ? (
           <><Loader2 size={18} className="animate-spin" /> Deploying your AI agents...</>
         ) : (

@@ -1,82 +1,333 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Plus, X, Globe, ArrowRight, Loader2, Swords } from "lucide-react";
+import {
+  Plus,
+  X,
+  ArrowRight,
+  Loader2,
+  Swords,
+  Sparkles,
+  Check,
+  Globe,
+  Search,
+  Radar,
+} from "lucide-react";
 import api from "@/lib/api";
+
+interface DiscoveredCompetitor {
+  name: string;
+  url: string;
+  description: string;
+}
 
 export default function OnboardingCompetitors() {
   const router = useRouter();
-  const [urls, setUrls] = useState<string[]>(["", "", ""]);
+
+  // AI-discovered competitors
+  const [discovered, setDiscovered] = useState<DiscoveredCompetitor[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [scanning, setScanning] = useState(true);
+  const [scanError, setScanError] = useState(false);
+
+  // Manual entry
+  const [manualUrls, setManualUrls] = useState<string[]>([""]);
+  const [showManual, setShowManual] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
-  function updateUrl(i: number, val: string) {
-    const next = [...urls];
-    next[i] = val;
-    setUrls(next);
+  // Auto-discover on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get("/api/v1/onboarding/discover-competitors");
+        if (!cancelled && data.competitors?.length) {
+          setDiscovered(data.competitors);
+          setSelected(new Set(data.competitors.map((c: DiscoveredCompetitor) => c.url)));
+        } else if (!cancelled) {
+          setShowManual(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setScanError(true);
+          setShowManual(true);
+        }
+      } finally {
+        if (!cancelled) setScanning(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  function toggleCompetitor(url: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
+    });
   }
-  function addRow() { if (urls.length < 5) setUrls([...urls, ""]); }
-  function removeRow(i: number) { if (urls.length > 1) setUrls(urls.filter((_, idx) => idx !== i)); }
+
+  function updateManualUrl(i: number, val: string) {
+    const next = [...manualUrls];
+    next[i] = val;
+    setManualUrls(next);
+  }
+  function addManualRow() {
+    if (manualUrls.length < 5) setManualUrls([...manualUrls, ""]);
+  }
+  function removeManualRow(i: number) {
+    if (manualUrls.length > 1) setManualUrls(manualUrls.filter((_, idx) => idx !== i));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post("/api/v1/onboarding/competitors", { competitor_urls: urls.filter((u) => u.trim()) });
+      const allUrls = [
+        ...Array.from(selected),
+        ...manualUrls.filter((u) => u.trim()),
+      ];
+      await api.post("/api/v1/onboarding/competitors", { competitor_urls: allUrls });
       router.push("/app/onboarding/integrations");
-    } catch {} finally { setLoading(false); }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-100";
+  const totalSelected = selected.size + manualUrls.filter((u) => u.trim()).length;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 shadow-sm">
-            <Swords size={18} className="text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-slate-900">Who are your competitors?</h2>
-            <p className="text-sm text-slate-500">AEOS will analyze their digital presence and benchmark against yours.</p>
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      {/* Main card */}
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        {/* Header */}
+        <div className="border-b border-border px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 shadow-lg shadow-orange-500/20">
+              <Swords size={18} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-fg">Who are your competitors?</h2>
+              <p className="text-sm text-fg-hint">
+                AEOS will analyze their digital presence and benchmark against yours.
+              </p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {urls.map((url, i) => (
-            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }} className="flex items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
-                {i + 1}
+        <form onSubmit={handleSubmit}>
+          {/* AI Discovery Section */}
+          <div className="border-b border-border px-6 py-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Sparkles size={13} className="text-emerald-400" />
+              <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+                AI-Discovered Competitors
+              </span>
+            </div>
+
+            {scanning ? (
+              /* Scanning animation */
+              <div className="flex flex-col items-center gap-4 py-10">
+                <div className="relative flex h-14 w-14 items-center justify-center">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-emerald-500/10" />
+                  <div className="absolute inset-1 animate-pulse rounded-full bg-emerald-500/5" />
+                  <Radar size={24} className="animate-pulse text-emerald-400" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-fg-secondary">Scanning your industry...</p>
+                  <p className="mt-1 text-xs text-fg-hint">
+                    Finding competitors in your market
+                  </p>
+                </div>
+                {/* Fake progress stats */}
+                <div className="mt-2 flex gap-6">
+                  {[
+                    { label: "SCAN SPEED", value: "~3m" },
+                    { label: "CONFIDENCE", value: "90%+", accent: true },
+                    { label: "MARKET", value: "Local" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-hint">
+                        {stat.label}
+                      </p>
+                      <p className={`mt-0.5 text-sm font-bold ${stat.accent ? "text-emerald-400" : "text-fg-muted"}`}>
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <input type="url" value={url} onChange={(e) => updateUrl(i, e.target.value)}
-                placeholder={`https://competitor-${i + 1}.com`} className={ic} />
-              {urls.length > 1 && (
-                <button type="button" onClick={() => removeRow(i)}
-                  className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-500">
-                  <X size={14} />
-                </button>
-              )}
-            </motion.div>
-          ))}
+            ) : discovered.length > 0 ? (
+              /* Discovered competitors list */
+              <div className="space-y-2">
+                {discovered.map((comp, i) => {
+                  const isSelected = selected.has(comp.url);
+                  return (
+                    <motion.button
+                      key={comp.url}
+                      type="button"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.08 }}
+                      onClick={() => toggleCompetitor(comp.url)}
+                      className={`group flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
+                        isSelected
+                          ? "border-emerald-500/30 bg-emerald-500/[0.06]"
+                          : "border-border bg-surface-secondary hover:border-border hover:bg-surface"
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <div
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all ${
+                          isSelected
+                            ? "bg-emerald-500 shadow-sm shadow-emerald-500/30"
+                            : "border border-border bg-surface-secondary"
+                        }`}
+                      >
+                        {isSelected && <Check size={12} strokeWidth={3} className="text-white" />}
+                      </div>
 
-          {urls.length < 5 && (
-            <button type="button" onClick={addRow}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-aeos-600 transition hover:bg-aeos-50">
-              <Plus size={14} /> Add competitor
-            </button>
-          )}
+                      {/* Info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-fg">{comp.name}</span>
+                          {isSelected && (
+                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                              Selected
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          <Globe size={10} className="shrink-0 text-fg-hint" />
+                          <span className="truncate text-xs text-fg-hint">
+                            {comp.url.replace(/^https?:\/\//, "")}
+                          </span>
+                        </div>
+                        {comp.description && (
+                          <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+                            {comp.description}
+                          </p>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
 
-          <div className="flex items-center gap-3 pt-2">
-            <button type="submit" disabled={loading}
-              className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 py-3 text-sm font-bold text-white shadow-lg shadow-aeos-500/20 transition-all hover:shadow-xl disabled:opacity-50">
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <>Continue <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></>}
-            </button>
-            <button type="button" onClick={() => router.push("/app/onboarding/integrations")}
-              className="rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition hover:bg-slate-100">
-              Skip
-            </button>
+                {/* Match confidence tag */}
+                <div className="flex justify-end pt-1">
+                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
+                    {discovered.length} competitors found
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* No results */
+              <div className="py-6 text-center">
+                <p className="text-sm text-fg-hint">
+                  {scanError
+                    ? "Could not auto-discover competitors. Add them manually below."
+                    : "No competitors found automatically. Add them manually below."}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Manual Entry Section */}
+          <div className="px-6 py-5">
+            {!showManual && discovered.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowManual(true)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
+              >
+                <Plus size={14} /> Add more competitors manually
+              </button>
+            ) : showManual ? (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="space-y-3"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-fg-hint">
+                  Add manually
+                </p>
+                {manualUrls.map((url, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      type="url"
+                      value={url}
+                      onChange={(e) => updateManualUrl(i, e.target.value)}
+                      placeholder={`https://competitor-${i + 1}.com`}
+                      className="w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-emerald-500/40 focus:bg-surface focus:ring-2 focus:ring-emerald-500/10"
+                    />
+                    {manualUrls.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeManualRow(i)}
+                        className="rounded-lg p-2 text-fg-hint transition hover:bg-status-danger/10 hover:text-status-danger"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+                {manualUrls.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={addManualRow}
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
+                  >
+                    <Plus size={14} /> Add another
+                  </button>
+                )}
+              </motion.div>
+            ) : null}
+          </div>
+
+          {/* Action bar */}
+          <div className="border-t border-border px-6 py-4">
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50"
+              >
+                {loading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    Continue
+                    {totalSelected > 0 && (
+                      <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
+                        {totalSelected}
+                      </span>
+                    )}
+                    <ArrowRight
+                      size={14}
+                      className="transition-transform group-hover:translate-x-0.5"
+                    />
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/app/onboarding/integrations")}
+                className="rounded-xl px-5 py-3 text-sm font-medium text-fg-hint transition hover:bg-surface-secondary hover:text-fg-muted"
+              >
+                Skip
+              </button>
+            </div>
           </div>
         </form>
       </div>
