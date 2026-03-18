@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
@@ -21,57 +22,59 @@ module.exports = {
 
         /* ── Semantic surface tokens ──────────────────────────── */
         surface: {
-          DEFAULT: "#ffffff",
-          secondary: "#f8f9fb",
-          tertiary: "#f3f4f8",
-          inset: "#eef0f4",
+          base: "var(--surface-base)",
+          DEFAULT: "var(--surface)",
+          secondary: "var(--surface-secondary)",
+          tertiary: "var(--surface-tertiary)",
+          inset: "var(--surface-inset)",
         },
         border: {
-          DEFAULT: "#e2e5ed",
-          light: "#eef0f4",
-          focus: "#bbdaff",
+          DEFAULT: "var(--border)",
+          light: "var(--border-light)",
+          strong: "var(--border-strong)",
+          focus: "var(--border-focus)",
         },
         fg: {
-          DEFAULT: "#0f1729",
-          secondary: "#4b5468",
-          muted: "#7c8497",
-          hint: "#a3aab8",
-          inverse: "#ffffff",
+          DEFAULT: "var(--fg)",
+          secondary: "var(--fg-secondary)",
+          muted: "var(--fg-muted)",
+          hint: "var(--fg-hint)",
+          inverse: "var(--fg-inverse)",
         },
 
         /* ── Status tokens ────────────────────────────────────── */
         status: {
           success: "#10b981",
-          "success-light": "#ecfdf5",
-          "success-text": "#065f46",
+          "success-light": "var(--status-success-light)",
+          "success-text": "var(--status-success-text)",
           warning: "#f59e0b",
-          "warning-light": "#fffbeb",
-          "warning-text": "#92400e",
+          "warning-light": "var(--status-warning-light)",
+          "warning-text": "var(--status-warning-text)",
           danger: "#ef4444",
-          "danger-light": "#fef2f2",
-          "danger-text": "#991b1b",
+          "danger-light": "var(--status-danger-light)",
+          "danger-text": "var(--status-danger-text)",
           info: "#3b82f6",
-          "info-light": "#eff6ff",
-          "info-text": "#1e40af",
+          "info-light": "var(--status-info-light)",
+          "info-text": "var(--status-info-text)",
         },
 
         /* ── Category tokens (modules, departments) ───────────── */
         category: {
-          marketing: { DEFAULT: "#3b82f6", light: "#eff6ff", text: "#1e40af" },
-          growth: { DEFAULT: "#10b981", light: "#ecfdf5", text: "#065f46" },
-          operations: { DEFAULT: "#f59e0b", light: "#fffbeb", text: "#92400e" },
-          technology: { DEFAULT: "#8b5cf6", light: "#f5f3ff", text: "#5b21b6" },
-          hr: { DEFAULT: "#ec4899", light: "#fdf2f8", text: "#9d174d" },
-          finance: { DEFAULT: "#06b6d4", light: "#ecfeff", text: "#155e75" },
-          executive: { DEFAULT: "#6366f1", light: "#eef2ff", text: "#3730a3" },
+          marketing: { DEFAULT: "#3b82f6", light: "var(--cat-marketing-light)", text: "var(--cat-marketing-text)" },
+          growth: { DEFAULT: "#10b981", light: "var(--cat-growth-light)", text: "var(--cat-growth-text)" },
+          operations: { DEFAULT: "#f59e0b", light: "var(--cat-operations-light)", text: "var(--cat-operations-text)" },
+          technology: { DEFAULT: "#8b5cf6", light: "var(--cat-technology-light)", text: "var(--cat-technology-text)" },
+          hr: { DEFAULT: "#ec4899", light: "var(--cat-hr-light)", text: "var(--cat-hr-text)" },
+          finance: { DEFAULT: "#06b6d4", light: "var(--cat-finance-light)", text: "var(--cat-finance-text)" },
+          executive: { DEFAULT: "#6366f1", light: "var(--cat-executive-light)", text: "var(--cat-executive-text)" },
         },
 
         /* ── Severity tokens ──────────────────────────────────── */
         severity: {
-          critical: { DEFAULT: "#ef4444", light: "#fef2f2", text: "#991b1b" },
-          high: { DEFAULT: "#f59e0b", light: "#fffbeb", text: "#92400e" },
-          medium: { DEFAULT: "#eab308", light: "#fefce8", text: "#854d0e" },
-          low: { DEFAULT: "#94a3b8", light: "#f8fafc", text: "#475569" },
+          critical: { DEFAULT: "#ef4444", light: "var(--sev-critical-light)", text: "var(--sev-critical-text)" },
+          high: { DEFAULT: "#f59e0b", light: "var(--sev-high-light)", text: "var(--sev-high-text)" },
+          medium: { DEFAULT: "#eab308", light: "var(--sev-medium-light)", text: "var(--sev-medium-text)" },
+          low: { DEFAULT: "#94a3b8", light: "var(--sev-low-light)", text: "var(--sev-low-text)" },
         },
 
         /* ── Sidebar tokens ───────────────────────────────────── */
