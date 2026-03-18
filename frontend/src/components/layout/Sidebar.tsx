@@ -3,7 +3,7 @@
 import {
   LayoutDashboard, Megaphone, Users, Sparkles, Swords, Plug,
   FileBarChart, Settings, ChevronLeft, Zap, LogOut, Globe, Bot,
-  GitCompareArrows, Brain, BarChart3, DollarSign, Activity, Monitor,
+  GitCompareArrows, Brain, BarChart3, DollarSign, Activity, Monitor, ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Integrations", icon: <Plug size={18} />, href: "/app/integrations", section: "platform" },
   { label: "Reports", icon: <FileBarChart size={18} />, href: "/app/reports", section: "platform" },
   { label: "AI Copilot", icon: <Bot size={18} />, href: "/app/copilot", section: "platform" },
+  { label: "Admin", icon: <ShieldCheck size={18} />, href: "/app/admin", section: "platform" },
   { label: "Settings", icon: <Settings size={18} />, href: "/app/settings", section: "platform" },
 ];
 
