@@ -13,14 +13,7 @@ export { Card, CardWithHeader } from "./Card";
 export type { CardProps, CardWithHeaderProps } from "./Card";
 
 /* ── Badges ───────────────────────────────────────────────────── */
-export {
-  Badge,
-  CategoryBadge,
-  SeverityBadge,
-  TrendBadge,
-  CountBadge,
-} from "./Badge";
-export type { BadgeProps } from "./Badge";
+export { Badge } from "./Badge";
 
 /* ── Section header ───────────────────────────────────────────── */
 export { SectionHeader } from "./SectionHeader";
