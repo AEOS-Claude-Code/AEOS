@@ -4,28 +4,20 @@
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
-/* ── CSS custom properties (used by non-Tailwind contexts) ──── */
+/* ── CSS custom properties ──────────────────────────────────── */
 :root {
   --sidebar-w: 252px;
   --topbar-h: 60px;
-  --foreground: #0f1729;
-  --background: #f3f4f8;
   --surface: #ffffff;
   --sidebar-bg: #0f1729;
   --sidebar-fg: #94a3c3;
   --sidebar-active: #2e79ff;
   --sidebar-hover: rgba(255,255,255,0.06);
-  --border: #e2e5ed;
-  --muted: #7c8497;
+  --radius: 0.625rem;
 }
 
 * { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  color: var(--foreground);
-  background: var(--background);
-}
+body { margin: 0; }
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -33,6 +25,16 @@ body {
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* ── Legacy animation classes (kept for existing components) ── */
+/* ── Legacy animation classes ───────────────────────────────── */
 .card-animate { animation: card-in 0.4s ease-out both; }
 .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
