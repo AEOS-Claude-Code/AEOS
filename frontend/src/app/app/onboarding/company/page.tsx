@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import api from "@/lib/api";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe, Loader2, CheckCircle2, XCircle, Phone, Mail, Share2, Cpu,
-  Sparkles, MessageCircle, ExternalLink, Calendar, ChevronRight,
+  Sparkles, MessageCircle, ExternalLink, Calendar, ChevronRight, ChevronDown,
   Building2, Bot, Users, Brain, Target, Megaphone, Wallet, Shield,
-  Settings, Package, Heart, CalendarDays, Zap, ArrowRight, Check,
+  Settings, Package, Heart, CalendarDays, Zap, ArrowRight, Check, Rocket,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -75,23 +76,103 @@ interface OrgChart {
   departments:OrgDepartment[]; summary:string;
 }
 
-function ScanStep({ label, done, active }: { label:string; done:boolean; active:boolean }) {
+/* ── Animated loading screen ──────────────────────────────────── */
+
+const SCAN_STEPS = [
+  { icon: Globe, label: "Fetching website", color: "from-blue-500 to-cyan-500" },
+  { icon: Building2, label: "Detecting company info", color: "from-violet-500 to-purple-500" },
+  { icon: Phone, label: "Extracting contacts & social", color: "from-emerald-500 to-green-500" },
+  { icon: Bot, label: "Building your AI org chart", color: "from-aeos-500 to-aeos-700" },
+];
+
+function LoadingScreen() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const timers = [800, 1800, 2800, 3800].map((ms, i) => setTimeout(() => setStep(i + 1), ms));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const progress = Math.min(100, ((step) / SCAN_STEPS.length) * 100);
+
   return (
-    <div className={`flex items-center gap-2 transition-all duration-500 ${done?"opacity-100":active?"opacity-100":"opacity-30"}`}>
-      {done ? <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500"><Check size={11} className="text-white"/></div>
-        : active ? <Loader2 size={16} className="animate-spin text-aeos-500"/>
-        : <div className="h-5 w-5 rounded-full border-2 border-slate-200"/>}
-      <span className={`text-xs ${done?"text-emerald-700":active?"font-medium text-aeos-700":"text-fg-hint"}`}>{label}</span>
+    <div className="flex items-center justify-center py-12">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="w-full max-w-md rounded-2xl border border-slate-200/60 bg-white p-8 shadow-2xl shadow-slate-200/50">
+        {/* Animated icon */}
+        <div className="mb-6 flex justify-center">
+          <div className="relative">
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+              className="absolute -inset-3 rounded-full bg-gradient-to-r from-aeos-400/20 via-violet-400/20 to-emerald-400/20 blur-md" />
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-aeos-500 to-aeos-700 shadow-lg shadow-aeos-300/40">
+              <Globe size={36} className="text-white" />
+            </div>
+            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
+              className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg ring-2 ring-aeos-100">
+              <Loader2 size={16} className="animate-spin text-aeos-600" />
+            </motion.div>
+          </div>
+        </div>
+
+        <h2 className="mb-1 text-center text-lg font-bold text-slate-900">Analyzing your website</h2>
+        <p className="mb-6 text-center text-sm text-slate-500">Building your AI-powered company profile</p>
+
+        {/* Progress bar */}
+        <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <motion.div className="h-full rounded-full bg-gradient-to-r from-aeos-500 via-violet-500 to-emerald-500"
+            initial={{ width: "5%" }} animate={{ width: `${Math.max(5, progress)}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }} />
+        </div>
+
+        {/* Steps */}
+        <div className="space-y-3">
+          {SCAN_STEPS.map((s, i) => {
+            const Icon = s.icon;
+            const done = i < step;
+            const active = i === step;
+            return (
+              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.15 }}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300 ${
+                  active ? "bg-gradient-to-r " + s.color + " bg-opacity-5 shadow-sm ring-1 ring-inset ring-slate-100" :
+                  done ? "bg-emerald-50/50" : "opacity-40"
+                }`}>
+                {done ? (
+                  <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
+                    <Check size={14} className="text-white" />
+                  </motion.div>
+                ) : active ? (
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${s.color} shadow-sm`}>
+                    <Loader2 size={14} className="animate-spin text-white" />
+                  </div>
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                    <Icon size={14} className="text-slate-400" />
+                  </div>
+                )}
+                <span className={`text-sm ${done ? "font-medium text-emerald-700" : active ? "font-semibold text-slate-900" : "text-slate-400"}`}>
+                  {s.label}
+                </span>
+                {active && (
+                  <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.5, repeat: Infinity }}
+                    className="ml-auto text-2xs text-slate-400">Processing...</motion.div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
     </div>
   );
 }
+
+/* ── Main onboarding page ─────────────────────────────────────── */
 
 export default function OnboardingCompany() {
   const router = useRouter();
   const { workspace } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [scanStep, setScanStep] = useState(0);
   const [intake, setIntake] = useState<IntakeResult|null>(null);
   const [error, setError] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -101,12 +182,28 @@ export default function OnboardingCompany() {
   const [saving, setSaving] = useState(false);
   const [orgChart, setOrgChart] = useState<OrgChart|null>(null);
   const [showAllDepts, setShowAllDepts] = useState(false);
+  const [expandedDept, setExpandedDept] = useState<string|null>(null);
+  const [humanRoles, setHumanRoles] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (!loading) return;
-    const timers = [600,1400,2200,3000].map((ms,i) => setTimeout(() => setScanStep(i+1), ms));
-    return () => timers.forEach(clearTimeout);
-  }, [loading]);
+  function toggleRole(deptId: string, role: string) {
+    const key = `${deptId}:${role}`;
+    setHumanRoles(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+  function toggleHead(deptId: string) {
+    const key = `${deptId}:__head__`;
+    setHumanRoles(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const aiCount = orgChart ? orgChart.departments.reduce((sum, dept) => {
+    const headIsHuman = humanRoles[`${dept.id}:__head__`];
+    const humanAgents = dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+    return sum + (headIsHuman ? 0 : 1) + (dept.ai_roles.length - humanAgents);
+  }, 0) : 0;
+  const humanCount = orgChart ? orgChart.departments.reduce((sum, dept) => {
+    const headIsHuman = humanRoles[`${dept.id}:__head__`] ? 1 : 0;
+    const humanAgents = dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+    return sum + headIsHuman + humanAgents;
+  }, 0) : 0;
 
   useEffect(() => { fetchIntakeResults(); }, []); // eslint-disable-line
 
@@ -117,37 +214,37 @@ export default function OnboardingCompany() {
       applyIntake(res.data);
     } catch {
       if (workspace?.website_url) {
-        try { const res = await api.post("/api/v1/onboarding/intake-from-url",{url:workspace.website_url}); applyIntake(res.data); }
-        catch { setError("Could not analyze website."); setCompanyName(workspace?.name||""); }
-      } else { setCompanyName(workspace?.name||""); }
-    } finally { setTimeout(() => setLoading(false), 800); }
+        try { const res = await api.post("/api/v1/onboarding/intake-from-url", { url: workspace.website_url }); applyIntake(res.data); }
+        catch { setError("Could not analyze website."); setCompanyName(workspace?.name || ""); }
+      } else { setCompanyName(workspace?.name || ""); }
+    } finally { setTimeout(() => setLoading(false), 4200); }
   }
 
   function applyIntake(data: IntakeResult) {
     setIntake(data);
-    setCompanyName(data.detected_company_name||workspace?.name||"");
-    setIndustry(data.detected_industry||"other");
+    setCompanyName(data.detected_company_name || workspace?.name || "");
+    setIndustry(data.detected_industry || "other");
     if (data.detected_country) setCountry(data.detected_country);
     if (data.detected_city) setCity(data.detected_city);
   }
 
   useEffect(() => {
-    if (industry && industry!=="other") {
-      api.get(`/api/v1/onboarding/org-chart-recommendation?industry=${industry}`).then(r=>setOrgChart(r.data)).catch(()=>{});
+    if (industry && industry !== "other") {
+      api.get(`/api/v1/onboarding/org-chart-recommendation?industry=${industry}`).then(r => setOrgChart(r.data)).catch(() => {});
     }
   }, [industry]); // eslint-disable-line
 
   async function handleConfirm() {
     setSaving(true);
     try {
-      await api.post("/api/v1/onboarding/company",{industry,country,city,team_size:orgChart?.total_ai_agents||1,primary_goal:""});
+      await api.post("/api/v1/onboarding/company", { industry, country, city, team_size: orgChart?.total_ai_agents || 1, primary_goal: "" });
       if (intake) {
-        const sl: Record<string,string> = {};
-        for (const [p,urls] of Object.entries(intake.detected_social_links)) { if (urls.length>0) sl[p]=urls[0]; }
-        await api.post("/api/v1/onboarding/presence",{
-          website_url:intake.url||workspace?.website_url||"",social_links:sl,
-          whatsapp_link:intake.detected_whatsapp_links[0]||"",contact_page:intake.detected_contact_pages[0]||"",
-          phone:intake.detected_phone_numbers[0]||"",google_business_url:"",
+        const sl: Record<string, string> = {};
+        for (const [p, urls] of Object.entries(intake.detected_social_links)) { if (urls.length > 0) sl[p] = urls[0]; }
+        await api.post("/api/v1/onboarding/presence", {
+          website_url: intake.url || workspace?.website_url || "", social_links: sl,
+          whatsapp_link: intake.detected_whatsapp_links[0] || "", contact_page: intake.detected_contact_pages[0] || "",
+          phone: intake.detected_phone_numbers[0] || "", google_business_url: "",
         });
       }
       router.push("/app/onboarding/competitors");
@@ -155,192 +252,335 @@ export default function OnboardingCompany() {
     finally { setSaving(false); }
   }
 
-  const socialCount = intake ? Object.values(intake.detected_social_links).filter(u=>u.length>0).length : 0;
-  const totalDetected = intake ? (intake.detected_company_name?1:0)+(intake.detected_industry!=="other"?1:0)+intake.detected_phone_numbers.length+intake.detected_emails.length+socialCount+intake.detected_whatsapp_links.length+intake.detected_contact_pages.length+intake.detected_tech_stack.length : 0;
+  const socialCount = intake ? Object.values(intake.detected_social_links).filter(u => u.length > 0).length : 0;
+  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length : 0;
 
-  const ic = "w-full rounded-lg border border-border bg-surface-secondary px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-hint focus:border-aeos-400 focus:ring-1 focus:ring-aeos-100 transition-all";
+  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-100 transition-all";
 
-  // Loading
-  if (loading) {
-    return (
-      <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-        <div className="flex flex-col items-center gap-4 py-6">
-          <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-aeos-400 to-aeos-700 shadow-lg shadow-aeos-200">
-              <Globe size={32} className="text-white"/>
-            </div>
-            <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-md">
-              <Loader2 size={14} className="animate-spin text-aeos-500"/>
-            </div>
-          </div>
-          <h2 className="text-base font-bold text-fg">Analyzing your website</h2>
-          <div className="w-full max-w-[200px] space-y-2">
-            <ScanStep label="Fetching website" done={scanStep>=1} active={scanStep===0}/>
-            <ScanStep label="Detecting company info" done={scanStep>=2} active={scanStep===1}/>
-            <ScanStep label="Extracting contacts" done={scanStep>=3} active={scanStep===2}/>
-            <ScanStep label="Building AI org chart" done={scanStep>=4} active={scanStep===3}/>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
-  const visibleDepts = showAllDepts ? (orgChart?.departments||[]) : (orgChart?.departments||[]).slice(0,6);
+  const visibleDepts = showAllDepts ? (orgChart?.departments || []) : (orgChart?.departments || []).slice(0, 6);
 
   return (
-    <div className="space-y-3">
-      {/* Hero */}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+      className="space-y-4">
+      {/* Hero banner */}
       {intake && totalDetected > 0 && (
-        <div className="rounded-xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 px-4 py-3 text-white">
-          <div className="flex items-center gap-3">
-            <Zap size={20}/>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 px-5 py-4 text-white shadow-lg shadow-aeos-300/30">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3N2Zz4=')] opacity-50" />
+          <div className="relative flex items-center gap-4">
+            <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                <Sparkles size={24} className="text-white" />
+              </div>
+            </motion.div>
             <div>
-              <p className="text-sm font-bold">{totalDetected} items detected from your website</p>
-              <p className="text-2xs text-white/70">Review and confirm your company profile below</p>
+              <p className="text-base font-bold">{totalDetected} items detected from your website</p>
+              <p className="text-sm text-white/80">Review your profile and customize your AI team below</p>
+            </div>
+            <div className="ml-auto hidden sm:flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 backdrop-blur-sm">
+              <CheckCircle2 size={14} />
+              <span className="text-xs font-semibold">Analysis complete</span>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {error && !intake && <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{error}</div>}
+      {error && !intake && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700 border border-amber-200">{error}</motion.div>
+      )}
 
-      {/* Two-column layout: Left = identity + contacts, Right = org chart */}
-      <div className="grid gap-3 lg:grid-cols-2">
+      {/* Two-column layout */}
+      <div className="grid gap-4 lg:grid-cols-2">
         {/* Left column */}
-        <div className="space-y-3">
-          {/* Company Identity - compact */}
-          <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-            <div className="mb-3 flex items-center gap-1.5">
-              <Building2 size={14} className="text-aeos-600"/>
-              <h2 className="text-sm font-bold text-fg">Company Identity</h2>
-              {intake && <span className="ml-auto rounded-full bg-emerald-50 px-2 py-px text-2xs text-emerald-600">Auto-detected</span>}
-            </div>
-            <div className="space-y-2.5">
-              <div>
-                <label className="mb-1 block text-2xs font-medium text-fg-muted">Company name</label>
-                <input type="text" value={companyName} onChange={e=>setCompanyName(e.target.value)} placeholder="Company" className={ic}/>
+        <div className="space-y-4">
+          {/* Company Identity */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+            className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-600">
+                <Building2 size={15} className="text-white" />
               </div>
-              <div>
-                <label className="mb-1 block text-2xs font-medium text-fg-muted">
-                  Industry {intake && intake.industry_confidence>0 && <span className="ml-1 text-aeos-600">{Math.round(intake.industry_confidence*100)}%</span>}
-                </label>
-                <select value={industry} onChange={e=>setIndustry(e.target.value)} className={ic}>
-                  <option value="">Select</option>
-                  {INDUSTRIES.map(i=><option key={i} value={i}>{INDUSTRY_LABELS[i]||i}</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-1 block text-2xs font-medium text-fg-muted">Country {intake?.detected_country&&<span className="text-emerald-500">*</span>}</label>
-                  <input type="text" value={country} onChange={e=>setCountry(e.target.value)} placeholder="Country" className={ic}/>
-                </div>
-                <div>
-                  <label className="mb-1 block text-2xs font-medium text-fg-muted">City {intake?.detected_city&&<span className="text-emerald-500">*</span>}</label>
-                  <input type="text" value={city} onChange={e=>setCity(e.target.value)} placeholder="City" className={ic}/>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Contacts + Social - compact grid */}
-          {intake && (
-            <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-              <div className="mb-2.5 flex items-center gap-1.5">
-                <Phone size={14} className="text-aeos-600"/>
-                <h2 className="text-sm font-bold text-fg">Contacts & Social</h2>
-              </div>
-              {/* Contact items - mini */}
-              <div className="mb-3 grid grid-cols-2 gap-1.5">
-                {[
-                  {icon:Phone,label:"Phone",value:intake.detected_phone_numbers[0]||"",found:intake.detected_phone_numbers.length>0},
-                  {icon:Mail,label:"Email",value:intake.detected_emails[0]||"",found:intake.detected_emails.length>0},
-                  {icon:MessageCircle,label:"WhatsApp",value:intake.detected_whatsapp_links.length?"Found":"",found:intake.detected_whatsapp_links.length>0},
-                  {icon:ExternalLink,label:"Contact page",value:intake.detected_contact_pages.length?"Found":"",found:intake.detected_contact_pages.length>0},
-                ].map(({icon:Icon,label,value,found})=>(
-                  <div key={label} className="flex items-center gap-2 rounded-lg bg-surface-secondary px-2.5 py-1.5">
-                    {found?<CheckCircle2 size={12} className="shrink-0 text-emerald-500"/>:<XCircle size={12} className="shrink-0 text-slate-300"/>}
-                    <div className="min-w-0">
-                      <p className="text-2xs text-fg-hint">{label}</p>
-                      <p className={`truncate text-2xs ${found?"font-medium text-fg":"text-fg-hint"}`}>{found?value:"—"}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Social - inline pills */}
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(SOCIAL_LABELS).map(([p,label])=>{
-                  const found = (intake.detected_social_links[p]||[]).length>0;
-                  return (
-                    <span key={p} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs ${found?"bg-emerald-50 text-emerald-700 font-medium":"bg-slate-50 text-slate-400"}`}>
-                      {found?<Check size={9}/>:<XCircle size={9}/>}{label}
-                    </span>
-                  );
-                })}
-              </div>
-              {/* Tech stack pills */}
-              {intake.detected_tech_stack.length>0 && (
-                <div className="mt-2.5 flex flex-wrap gap-1 border-t border-border pt-2.5">
-                  <span className="text-2xs text-fg-hint mr-1">Tech:</span>
-                  {intake.detected_tech_stack.slice(0,6).map(t=>(
-                    <span key={t} className="rounded-full bg-blue-50 px-2 py-0.5 text-2xs font-medium text-blue-700">{t}</span>
-                  ))}
-                </div>
+              <h2 className="text-sm font-bold text-slate-900">Company Identity</h2>
+              {intake && (
+                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  className="ml-auto rounded-full bg-emerald-50 px-2.5 py-0.5 text-2xs font-semibold text-emerald-600 ring-1 ring-emerald-200">
+                  Auto-detected
+                </motion.span>
               )}
             </div>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Company name</label>
+                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company" className={ic} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">
+                  Industry
+                  {intake && intake.industry_confidence > 0 && (
+                    <span className="ml-1.5 rounded-full bg-aeos-50 px-1.5 py-px text-2xs font-bold text-aeos-600">
+                      {Math.round(intake.industry_confidence * 100)}% match
+                    </span>
+                  )}
+                </label>
+                <select value={industry} onChange={e => setIndustry(e.target.value)} className={ic}>
+                  <option value="">Select industry</option>
+                  {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-600">
+                    Country {intake?.detected_country && <CheckCircle2 size={10} className="text-emerald-500" />}
+                  </label>
+                  <input type="text" value={country} onChange={e => setCountry(e.target.value)} placeholder="e.g. Jordan" className={ic} />
+                </div>
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-600">
+                    City {intake?.detected_city && <CheckCircle2 size={10} className="text-emerald-500" />}
+                  </label>
+                  <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Amman" className={ic} />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Contacts & Social */}
+          {intake && (
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }}
+              className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+                  <Phone size={15} className="text-white" />
+                </div>
+                <h2 className="text-sm font-bold text-slate-900">Contacts & Social</h2>
+              </div>
+
+              {/* Contact grid */}
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                {[
+                  { icon: Phone, label: "Phone", value: intake.detected_phone_numbers[0] || "", found: intake.detected_phone_numbers.length > 0 },
+                  { icon: Mail, label: "Email", value: intake.detected_emails[0] || "", found: intake.detected_emails.length > 0 },
+                  { icon: MessageCircle, label: "WhatsApp", value: intake.detected_whatsapp_links.length ? "Connected" : "", found: intake.detected_whatsapp_links.length > 0 },
+                  { icon: ExternalLink, label: "Contact page", value: intake.detected_contact_pages.length ? "Found" : "", found: intake.detected_contact_pages.length > 0 },
+                ].map(({ icon: Icon, label, value, found }, i) => (
+                  <motion.div key={label} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 + i * 0.05 }}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all ${
+                      found ? "bg-emerald-50/70 ring-1 ring-emerald-100" : "bg-slate-50"
+                    }`}>
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${found ? "bg-emerald-500" : "bg-slate-200"}`}>
+                      <Icon size={12} className="text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-2xs text-slate-500">{label}</p>
+                      <p className={`truncate text-xs ${found ? "font-semibold text-slate-900" : "text-slate-400"}`}>
+                        {found ? value : "Not detected"}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Social profiles */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-600">Social profiles</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {Object.entries(SOCIAL_LABELS).map(([p, label]) => {
+                    const urls = intake.detected_social_links[p] || [];
+                    const found = urls.length > 0;
+                    if (!found) return null;
+                    const url = urls[0];
+                    const handle = url.replace(/https?:\/\/(www\.)?(linkedin\.com|facebook\.com|instagram\.com|twitter\.com|x\.com|youtube\.com|tiktok\.com|pinterest\.com|snapchat\.com)\/?/i, "").replace(/\/$/, "") || label;
+                    return (
+                      <motion.a key={p} href={url} target="_blank" rel="noopener noreferrer"
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                        className="flex items-center gap-2 rounded-xl bg-emerald-50/70 px-3 py-2 ring-1 ring-emerald-100 transition-colors hover:bg-emerald-100">
+                        <CheckCircle2 size={12} className="shrink-0 text-emerald-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-2xs font-bold text-emerald-700">{label}</p>
+                          <p className="truncate text-2xs text-emerald-600/60">{handle.length > 22 ? handle.slice(0, 22) + "..." : handle}</p>
+                        </div>
+                        <ExternalLink size={10} className="shrink-0 text-emerald-400" />
+                      </motion.a>
+                    );
+                  })}
+                </div>
+                {/* Not-found pills */}
+                {Object.entries(SOCIAL_LABELS).some(([p]) => !(intake.detected_social_links[p]?.length > 0)) && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {Object.entries(SOCIAL_LABELS).filter(([p]) => !(intake.detected_social_links[p]?.length > 0)).map(([p, label]) => (
+                      <span key={p} className="inline-flex items-center gap-0.5 rounded-full bg-slate-50 px-2 py-0.5 text-2xs text-slate-400 ring-1 ring-slate-100">
+                        <XCircle size={8} />{label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tech stack */}
+              {intake.detected_tech_stack.length > 0 && (
+                <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
+                  <p className="text-xs font-medium text-slate-600">Technologies</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {intake.detected_tech_stack.slice(0, 8).map((t, i) => (
+                      <motion.span key={t} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5 + i * 0.03 }}
+                        className="rounded-lg bg-blue-50 px-2 py-0.5 text-2xs font-semibold text-blue-700 ring-1 ring-blue-100">{t}</motion.span>
+                    ))}
+                    {intake.detected_tech_stack.length > 8 && (
+                      <span className="rounded-lg bg-slate-50 px-2 py-0.5 text-2xs text-slate-400">+{intake.detected_tech_stack.length - 8}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </motion.div>
           )}
         </div>
 
-        {/* Right column: AI Org Chart */}
+        {/* Right column: Interactive AI Org Chart */}
         {orgChart && (
-          <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-            <div className="mb-2 flex items-center gap-1.5">
-              <Bot size={14} className="text-aeos-600"/>
-              <h2 className="text-sm font-bold text-fg">Your AI Organization</h2>
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
+            className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
+                <Bot size={15} className="text-white" />
+              </div>
+              <h2 className="text-sm font-bold text-slate-900">Your AI Organization</h2>
+              <span className="ml-auto rounded-full bg-slate-50 px-2 py-0.5 text-2xs text-slate-500 ring-1 ring-slate-100">
+                Click to toggle
+              </span>
             </div>
-            {/* Stats row */}
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-700 px-3 py-2.5 text-white">
-                <p className="text-xl font-bold">{orgChart.total_ai_agents}</p>
+
+            {/* Live stats */}
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              <motion.div whileHover={{ scale: 1.03 }}
+                className="rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-700 px-3 py-2.5 text-white shadow-md shadow-aeos-200/40">
+                <p className="text-xl font-bold">{aiCount}</p>
                 <p className="text-2xs text-white/70">AI Agents</p>
-              </div>
-              <div className="rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 px-3 py-2.5 text-white">
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.03 }}
+                className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-3 py-2.5 text-white shadow-md shadow-blue-200/40">
+                <p className="text-xl font-bold">{humanCount}</p>
+                <p className="text-2xs text-white/70">Humans</p>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.03 }}
+                className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 px-3 py-2.5 text-white shadow-md shadow-emerald-200/40">
                 <p className="text-xl font-bold">{orgChart.total_departments}</p>
-                <p className="text-2xs text-white/70">Departments</p>
-              </div>
+                <p className="text-2xs text-white/70">Depts</p>
+              </motion.div>
             </div>
-            {/* Department mini cards */}
-            <div className="space-y-1.5">
-              {visibleDepts.map((dept,idx)=>{
-                const Icon = DEPT_ICONS[dept.icon]||Bot;
-                const grad = DEPT_COLORS[dept.id]||"from-gray-500 to-gray-600";
+
+            {/* Department list */}
+            <div className="max-h-[380px] space-y-1.5 overflow-y-auto pr-1 scrollbar-thin">
+              {visibleDepts.map((dept, idx) => {
+                const Icon = DEPT_ICONS[dept.icon] || Bot;
+                const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+                const isExpanded = expandedDept === dept.id;
+                const headIsHuman = humanRoles[`${dept.id}:__head__`];
+                const deptHumanCount = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+                const deptAiCount = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
+
                 return (
-                  <div key={dept.id} className="flex items-center gap-2.5 rounded-lg bg-surface-secondary px-2.5 py-2 transition-all hover:bg-aeos-50/50">
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white`}>
-                      <Icon size={12}/>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-fg leading-tight">{dept.name}</p>
-                      <p className="text-2xs text-fg-hint">{dept.ai_head} + {dept.ai_roles.length} agents</p>
-                    </div>
-                    {idx<3 && <span className="rounded-full bg-aeos-50 px-1.5 py-px text-2xs font-bold text-aeos-600">#{idx+1}</span>}
-                  </div>
+                  <motion.div key={dept.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 + idx * 0.04 }}
+                    className={`rounded-xl transition-all ${isExpanded ? "bg-slate-50 ring-1 ring-slate-200" : "hover:bg-slate-50/60"}`}>
+                    <button onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm`}>
+                        <Icon size={14} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-slate-900 leading-tight">{dept.name}</p>
+                        <p className="text-2xs text-slate-500">{deptAiCount} AI · {deptHumanCount} human</p>
+                      </div>
+                      <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+                          className="overflow-hidden">
+                          <div className="border-t border-slate-200/60 px-3 pb-3 pt-2 space-y-1.5">
+                            {/* Head */}
+                            <motion.button whileTap={{ scale: 0.98 }} onClick={() => toggleHead(dept.id)}
+                              className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all ${
+                                headIsHuman ? "bg-blue-50 ring-1 ring-blue-200" : "bg-aeos-50/50 ring-1 ring-aeos-100"
+                              }`}>
+                              <div className={`flex h-6 w-6 items-center justify-center rounded-full shadow-sm ${headIsHuman ? "bg-blue-500" : "bg-aeos-500"}`}>
+                                {headIsHuman ? <Users size={11} className="text-white" /> : <Bot size={11} className="text-white" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-slate-900">{dept.ai_head.replace(" AI", "")}</p>
+                                <p className="text-2xs text-slate-500">Department Head</p>
+                              </div>
+                              <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${
+                                headIsHuman ? "bg-blue-100 text-blue-700" : "bg-aeos-100 text-aeos-700"
+                              }`}>{headIsHuman ? "Human" : "AI"}</span>
+                            </motion.button>
+
+                            {/* Roles */}
+                            {dept.ai_roles.map(role => {
+                              const isHuman = humanRoles[`${dept.id}:${role}`];
+                              return (
+                                <motion.button key={role} whileTap={{ scale: 0.98 }} onClick={() => toggleRole(dept.id, role)}
+                                  className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-all ${
+                                    isHuman ? "bg-blue-50/60 ring-1 ring-blue-100" : "bg-white ring-1 ring-slate-100 hover:ring-slate-200"
+                                  }`}>
+                                  <div className={`flex h-5 w-5 items-center justify-center rounded-full ${isHuman ? "bg-blue-400" : "bg-slate-300"}`}>
+                                    {isHuman ? <Users size={9} className="text-white" /> : <Bot size={9} className="text-white" />}
+                                  </div>
+                                  <span className="flex-1 text-xs text-slate-700">{role.replace(" Agent", "")}</span>
+                                  <span className={`rounded-full px-1.5 py-px text-2xs font-medium ${
+                                    isHuman ? "bg-blue-100/80 text-blue-600" : "bg-slate-100 text-slate-500"
+                                  }`}>{isHuman ? "Human" : "AI"}</span>
+                                </motion.button>
+                              );
+                            })}
+                            <p className="pt-1 text-2xs text-slate-400 italic">{dept.description}</p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
                 );
               })}
             </div>
-            {orgChart.departments.length>6 && !showAllDepts && (
-              <button onClick={()=>setShowAllDepts(true)} className="mt-2 w-full text-center text-2xs font-medium text-aeos-600 hover:text-aeos-700">
+
+            {orgChart.departments.length > 6 && !showAllDepts && (
+              <button onClick={() => setShowAllDepts(true)}
+                className="mt-2 w-full rounded-lg bg-slate-50 py-2 text-center text-xs font-medium text-aeos-600 ring-1 ring-slate-100 transition-colors hover:bg-aeos-50 hover:ring-aeos-200">
                 Show all {orgChart.departments.length} departments
               </button>
             )}
-          </div>
+
+            {humanCount > 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="mt-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2.5 ring-1 ring-blue-100">
+                <p className="text-xs text-blue-700">
+                  <span className="font-bold">{humanCount}</span> position{humanCount > 1 ? "s" : ""} marked as human —
+                  AEOS will deploy <span className="font-bold">{aiCount}</span> AI agents for the rest.
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
         )}
       </div>
 
       {/* Confirm button */}
-      <button onClick={handleConfirm} disabled={saving}
-        className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-aeos-200/50 transition-all hover:shadow-xl disabled:opacity-50">
-        {saving ? <><Loader2 size={16} className="animate-spin"/>Deploying AI agents...</> : <>Confirm and deploy AI agents<ArrowRight size={16} className="transition-transform group-hover:translate-x-1"/></>}
-      </button>
-    </div>
+      <motion.button onClick={handleConfirm} disabled={saving}
+        whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+        className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 py-4 text-sm font-bold text-white shadow-xl shadow-aeos-300/30 transition-all hover:shadow-2xl disabled:opacity-50">
+        {saving ? (
+          <><Loader2 size={18} className="animate-spin" /> Deploying your AI agents...</>
+        ) : (
+          <><Rocket size={18} /> Confirm and deploy AI agents <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></>
+        )}
+      </motion.button>
+    </motion.div>
   );
 }
