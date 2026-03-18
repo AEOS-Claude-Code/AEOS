@@ -40,6 +40,7 @@ from app.engines.kpi_framework_engine.router import router as kpi_router
 from app.engines.financial_model_engine.router import router as financial_model_router
 from app.engines.reports_engine.router import router as reports_engine_router
 from app.engines.agent_framework_engine.router import router as agent_router
+from app.engines.command_dashboard.router import router as command_router
 from app.modules.billing.router import router as billing_router
 from app.modules.integrations.router import router as integrations_router
 from app.seed.router import seed_router
@@ -172,6 +173,7 @@ app.include_router(kpi_router, prefix="/api")
 app.include_router(financial_model_router, prefix="/api")
 app.include_router(reports_engine_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
+app.include_router(command_router, prefix="/api")
 app.include_router(copilot_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(integrations_router, prefix="/api")
