@@ -1,82 +1,178 @@
 "use client";
 
-import { useEngineData } from "@/lib/hooks/useEngineData";
-import DashCard from "@/components/dashboard/DashCard";
-import { CardEmpty } from "@/components/ui/CardStates";
-import { FileBarChart, Download, ExternalLink, Clock, Shield, TrendingUp, Users } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
+import {
+  FileBarChart, Loader2, Download, ExternalLink, Share2, Eye,
+  Shield, TrendingUp, Users, Brain, BarChart3, Target, Activity,
+  DollarSign, GitCompareArrows, Sparkles, Clock, Check, Link2,
+} from "lucide-react";
+import api from "@/lib/api";
 
-const REPORT_TEMPLATES = [
-  { name: "Company Intelligence Report", icon: <Shield size={16} />, description: "Full website analysis, SEO score, social presence, tech stack.", available: true, engine: "company_scanner" },
-  { name: "Lead Pipeline Report", icon: <Users size={16} />, description: "Lead volume, sources, conversion rates, and pipeline health.", available: true, engine: "lead_intelligence" },
-  { name: "Opportunity Assessment", icon: <TrendingUp size={16} />, description: "Ranked growth opportunities with impact and effort scores.", available: true, engine: "opportunity_radar" },
-  { name: "Strategic Intelligence Brief", icon: <FileBarChart size={16} />, description: "Executive summary with health score, priorities, risks, and roadmap.", available: true, engine: "strategic_intelligence" },
-  { name: "Competitive Analysis", icon: <FileBarChart size={16} />, description: "Competitor benchmarking, gap analysis, and market positioning.", available: false, engine: "competitor_intelligence" },
-  { name: "ROI Impact Report", icon: <FileBarChart size={16} />, description: "Return on investment analysis for marketing and sales initiatives.", available: false, engine: "roi_impact" },
-];
+const REPORT_TYPE_CONFIG: Record<string, { icon: any; color: string; description: string }> = {
+  company_intelligence: { icon: Shield, color: "from-blue-500 to-indigo-600", description: "Website analysis, digital presence, and company profile" },
+  strategic_brief: { icon: Brain, color: "from-violet-500 to-purple-600", description: "Executive summary combining all intelligence engines" },
+  competitive_analysis: { icon: GitCompareArrows, color: "from-orange-500 to-red-500", description: "Competitor benchmarking across 6 dimensions" },
+  financial_overview: { icon: DollarSign, color: "from-emerald-500 to-green-600", description: "Financial health, projections, and funding analysis" },
+  market_research: { icon: BarChart3, color: "from-indigo-500 to-violet-600", description: "TAM/SAM/SOM, industry benchmarks, and growth drivers" },
+  gap_analysis: { icon: Target, color: "from-amber-500 to-orange-600", description: "Organizational gap assessment by department" },
+  kpi_dashboard: { icon: Activity, color: "from-cyan-500 to-blue-600", description: "KPI framework with tracking status" },
+  full_business_plan: { icon: Sparkles, color: "from-aeos-500 to-aeos-700", description: "AI-generated 10-section business plan" },
+};
+
+interface ReportListItem {
+  id: string; report_type: string; title: string; status: string;
+  share_token: string; is_public: boolean; generated_at: string | null; created_at: string;
+}
+
+interface ReportType {
+  type: string; title: string;
+}
 
 export default function ReportsPage() {
-  const { companyScan } = useEngineData();
-  const shareToken = (companyScan as any)?.share_token;
+  const [types, setTypes] = useState<ReportType[]>([]);
+  const [reports, setReports] = useState<ReportListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [typesRes, reportsRes] = await Promise.allSettled([
+        api.get("/api/v1/reports/types"),
+        api.get("/api/v1/reports/list"),
+      ]);
+      if (typesRes.status === "fulfilled") setTypes(typesRes.value.data);
+      if (reportsRes.status === "fulfilled") setReports(reportsRes.value.data);
+    } catch {} finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  async function handleGenerate(reportType: string) {
+    setGenerating(reportType);
+    try {
+      await api.post("/api/v1/reports/generate", { report_type: reportType });
+      await fetchData();
+    } catch {} finally { setGenerating(null); }
+  }
+
+  async function handleToggleShare(reportId: string, isPublic: boolean) {
+    try {
+      await api.put(`/api/v1/reports/${reportId}/share`, { is_public: !isPublic });
+      await fetchData();
+    } catch {}
+  }
+
+  function copyShareLink(token: string) {
+    const url = `${window.location.origin}/report/${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedId(token);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  if (loading) return <div className="flex items-center justify-center py-24"><Loader2 size={32} className="animate-spin text-aeos-500" /></div>;
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-fg">Reports</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Generate and share intelligence reports powered by AEOS engines.
-        </p>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-lg font-bold text-slate-900">Reports</h1>
+        <p className="text-sm text-slate-500">Generate and share board-ready intelligence reports</p>
       </div>
 
-      {/* Shareable report banner */}
-      {shareToken && (
-        <div className="mb-6 flex items-center gap-4 rounded-2xl border border-aeos-200 bg-aeos-50/50 px-5 py-4">
-          <Shield size={20} className="shrink-0 text-aeos-600" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-aeos-800">Your free Company Intelligence Report is ready</p>
-            <p className="mt-0.5 text-2xs text-aeos-600">Share it with your team, investors, or clients.</p>
+      {/* Report type cards */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {types.map((t, i) => {
+          const config = REPORT_TYPE_CONFIG[t.type] || { icon: FileBarChart, color: "from-slate-500 to-gray-600", description: "" };
+          const Icon = config.icon;
+          const isGenerating = generating === t.type;
+          const existing = reports.filter(r => r.report_type === t.type);
+
+          return (
+            <motion.div key={t.type} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm transition-all hover:shadow-lg">
+              <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${config.color} shadow-sm`}>
+                <Icon size={18} className="text-white" />
+              </div>
+              <p className="text-sm font-bold text-slate-900">{t.title}</p>
+              <p className="mt-0.5 mb-3 text-2xs text-slate-500">{config.description}</p>
+
+              <button onClick={() => handleGenerate(t.type)} disabled={isGenerating}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-50 py-2 text-2xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-aeos-50 hover:text-aeos-700 hover:ring-aeos-200 disabled:opacity-50">
+                {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                {isGenerating ? "Generating..." : existing.length > 0 ? "Regenerate" : "Generate"}
+              </button>
+
+              {existing.length > 0 && (
+                <p className="mt-1.5 text-center text-2xs text-slate-400">{existing.length} report{existing.length > 1 ? "s" : ""} generated</p>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Generated reports list */}
+      {reports.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-slate-900">Generated Reports</h2>
+          <div className="space-y-2">
+            {reports.map((r, i) => {
+              const config = REPORT_TYPE_CONFIG[r.report_type] || { icon: FileBarChart, color: "from-slate-500 to-gray-600" };
+              const Icon = config.icon;
+
+              return (
+                <motion.div key={r.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200/60 bg-white px-4 py-3 shadow-sm">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${config.color}`}>
+                    <Icon size={15} className="text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 truncate">{r.title}</p>
+                    <p className="text-2xs text-slate-400">
+                      {r.generated_at ? new Date(r.generated_at).toLocaleDateString() : "Generating..."}
+                      {r.status === "completed" && <span className="ml-2 text-emerald-500">Ready</span>}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5">
+                    {r.status === "completed" && (
+                      <>
+                        <a href={`/report/${r.share_token}`} target="_blank" rel="noopener noreferrer"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-aeos-600">
+                          <Eye size={14} />
+                        </a>
+                        <button onClick={() => handleToggleShare(r.id, r.is_public)}
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${r.is_public ? "bg-emerald-50 text-emerald-600" : "text-slate-400 hover:bg-slate-50"}`}>
+                          <Share2 size={14} />
+                        </button>
+                        {r.is_public && (
+                          <button onClick={() => copyShareLink(r.share_token)}
+                            className="flex h-7 items-center gap-1 rounded-lg bg-aeos-50 px-2 text-2xs font-semibold text-aeos-700 ring-1 ring-aeos-200 transition hover:bg-aeos-100">
+                            {copiedId === r.share_token ? <><Check size={10} /> Copied</> : <><Link2 size={10} /> Copy link</>}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-          <a
-            href={`/report/${shareToken}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-widget bg-aeos-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-aeos-700"
-          >
-            <ExternalLink size={13} /> View report
-          </a>
         </div>
       )}
 
-      {/* Report templates */}
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        {REPORT_TEMPLATES.map((tmpl) => (
-          <div
-            key={tmpl.name}
-            className={`rounded-2xl border bg-surface p-5 shadow-card transition ${
-              tmpl.available ? "border-border hover:border-aeos-200 hover:shadow-md" : "border-border-light opacity-50"
-            }`}
-          >
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${tmpl.available ? "bg-aeos-50 text-aeos-600" : "bg-surface-secondary text-fg-hint"}`}>
-                {tmpl.icon}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-fg">{tmpl.name}</p>
-                {!tmpl.available && <span className="text-2xs text-fg-hint">Coming soon</span>}
-              </div>
-            </div>
-            <p className="mb-4 text-2xs leading-relaxed text-fg-muted">{tmpl.description}</p>
-            {tmpl.available ? (
-              <button className="flex w-full items-center justify-center gap-1.5 rounded-widget border border-aeos-200 bg-aeos-50/50 py-2 text-2xs font-medium text-aeos-700 transition hover:bg-aeos-100">
-                <Download size={12} /> Generate report
-              </button>
-            ) : (
-              <div className="flex items-center justify-center gap-1.5 rounded-widget bg-surface-secondary py-2 text-2xs text-fg-hint">
-                <Clock size={12} /> Available in a future phase
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+      {reports.length === 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+          <FileBarChart size={32} className="mx-auto mb-3 text-slate-300" />
+          <p className="text-sm text-slate-600">No reports generated yet</p>
+          <p className="text-2xs text-slate-400">Select a report type above to get started</p>
+        </div>
+      )}
+    </motion.div>
   );
 }
