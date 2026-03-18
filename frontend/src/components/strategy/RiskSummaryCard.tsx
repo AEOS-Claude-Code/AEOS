@@ -20,8 +20,8 @@ const SEVERITY_CONFIG: Record<
   },
   medium: {
     dot: "bg-yellow-400",
-    bg: "bg-yellow-50",
-    text: "text-yellow-800",
+    bg: "bg-yellow-50 dark:bg-yellow-900/20",
+    text: "text-yellow-800 dark:text-yellow-200",
     label: "Medium",
   },
   low: {
@@ -132,7 +132,7 @@ export default function RiskSummaryCard({
           Risk summary
         </h3>
         {riskCount > 0 && (
-          <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-status-danger-text">
+          <span className="rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-status-danger-text">
             {riskCount} area{riskCount > 1 ? "s" : ""} at risk
           </span>
         )}
