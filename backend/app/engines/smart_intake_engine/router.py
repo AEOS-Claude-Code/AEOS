@@ -94,6 +94,8 @@ async def get_intake_results(
             detected_company_name=workspace.name or "",
             detected_industry=profile.industry or "other",
             industry_confidence=0.8 if profile.industry and profile.industry != "general" else 0.0,
+            detected_country=profile.country or "",
+            detected_city=profile.city or "",
             detected_phone_numbers=[profile.phone] if profile.phone else [],
             detected_emails=[],
             detected_social_links=social_links,
@@ -137,6 +139,11 @@ async def get_intake_results(
         contacts = result.get("detected_contact_pages", [])
         if contacts:
             profile.contact_page = contacts[0]
+
+        if result.get("detected_country"):
+            profile.country = result["detected_country"]
+        if result.get("detected_city"):
+            profile.city = result["detected_city"]
 
         await db.flush()
         return result
