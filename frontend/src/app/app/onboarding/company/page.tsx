@@ -474,125 +474,155 @@ export default function OnboardingCompany() {
               </div>
             </div>
 
-            {/* ── Visual Org Chart Tree ────────────────────────── */}
-            <div className="relative overflow-x-auto pb-2">
-              {/* CEO Node at top */}
-              <div className="flex flex-col items-center">
+            {/* ── Visual Org Chart Hierarchy ───────────────────── */}
+            <div className="relative pb-2">
+              {/* === CEO Root Node === */}
+              <div className="flex justify-center">
                 <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="relative z-10 flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2.5 text-white shadow-lg">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 shadow">
-                    <Users size={14} className="text-slate-900" />
+                  className="relative z-10 flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-5 py-3 text-white shadow-xl shadow-slate-400/30 ring-1 ring-white/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg shadow-amber-500/30">
+                    <Users size={18} className="text-slate-900" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold">CEO / Owner</p>
-                    <p className="text-2xs text-slate-400">You</p>
+                    <p className="text-sm font-bold tracking-tight">CEO / Owner</p>
+                    <p className="text-2xs text-slate-400">You — overseeing {orgChart.total_departments} departments</p>
                   </div>
                 </motion.div>
+              </div>
 
-                {/* Vertical line from CEO */}
-                <div className="h-5 w-px bg-slate-300" />
+              {/* === SVG Tree Connectors === */}
+              <div className="relative flex justify-center">
+                <svg width="100%" height="40" className="overflow-visible">
+                  {/* Vertical line from CEO */}
+                  <line x1="50%" y1="0" x2="50%" y2="20" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
+                  {/* Horizontal distributor line */}
+                  <line x1="8%" y1="20" x2="92%" y2="20" stroke="#cbd5e1" strokeWidth="2" />
+                  {/* Vertical drops to each column */}
+                  {visibleDepts.map((_, i) => {
+                    const cols = Math.min(visibleDepts.length, 3);
+                    const pct = cols === 1 ? 50 : 8 + (i % cols) * (84 / (cols - 1));
+                    return <line key={i} x1={`${pct}%`} y1="20" x2={`${pct}%`} y2="40" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />;
+                  })}
+                </svg>
+              </div>
 
-                {/* Horizontal connector bar */}
-                <div className="relative w-full">
-                  <div className="mx-auto h-px bg-slate-300" style={{ width: `${Math.min(100, visibleDepts.length * 11)}%` }} />
-                </div>
+              {/* === Department Nodes === */}
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(visibleDepts.length, 3)}, 1fr)` }}>
+                {visibleDepts.map((dept, idx) => {
+                  const Icon = DEPT_ICONS[dept.icon] || Bot;
+                  const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+                  const isExpanded = expandedDept === dept.id;
+                  const headIsHuman = humanRoles[`${dept.id}:__head__`];
+                  const deptHumanCount = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+                  const deptAiCount = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
 
-                {/* Department heads grid with vertical lines */}
-                <div className="mt-0 grid w-full gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(visibleDepts.length, 3)}, 1fr)` }}>
-                  {visibleDepts.map((dept, idx) => {
-                    const Icon = DEPT_ICONS[dept.icon] || Bot;
-                    const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
-                    const isExpanded = expandedDept === dept.id;
-                    const headIsHuman = humanRoles[`${dept.id}:__head__`];
-                    const deptHumanCount = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
-                    const deptAiCount = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
+                  return (
+                    <motion.div key={dept.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 + idx * 0.06 }} className="flex flex-col items-center">
 
-                    return (
-                      <motion.div key={dept.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.35 + idx * 0.06 }}
-                        className="flex flex-col items-center">
-                        {/* Vertical connector from horizontal bar */}
-                        <div className="h-4 w-px bg-slate-300" />
-
-                        {/* Department head node */}
-                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                          onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
-                          className={`group relative w-full rounded-xl border p-2.5 text-center transition-all ${
-                            isExpanded
-                              ? "border-aeos-300 bg-aeos-50/50 shadow-md ring-1 ring-aeos-200"
-                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
+                      {/* Department head card */}
+                      <motion.button whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                        className={`group relative w-full overflow-hidden rounded-xl border-2 p-3 text-center transition-all duration-300 ${
+                          isExpanded
+                            ? "border-aeos-400 bg-gradient-to-b from-aeos-50 to-white shadow-lg shadow-aeos-200/30 ring-2 ring-aeos-100"
+                            : "border-slate-200 bg-white shadow-md shadow-slate-100/50 hover:border-slate-300 hover:shadow-lg"
+                        }`}>
+                        {/* Colored top bar */}
+                        <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${grad}`} />
+                        {/* Dept icon */}
+                        <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${grad} text-white shadow-md`}>
+                          <Icon size={18} />
+                        </div>
+                        {/* Dept name */}
+                        <p className="text-xs font-bold text-slate-900 leading-tight">{dept.name}</p>
+                        {/* Head toggle */}
+                        <motion.button whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
+                          className={`mx-auto mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-bold transition-all ${
+                            headIsHuman
+                              ? "bg-blue-100 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-200"
+                              : "bg-aeos-100 text-aeos-700 ring-1 ring-aeos-200 hover:bg-aeos-200"
                           }`}>
-                          {/* Dept icon */}
-                          <div className={`mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm`}>
-                            <Icon size={16} />
-                          </div>
-                          {/* Dept name */}
-                          <p className="text-2xs font-bold text-slate-900 leading-tight">{dept.name}</p>
-                          {/* Head name with AI/Human badge */}
-                          <motion.button whileTap={{ scale: 0.95 }}
-                            onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
-                            className={`mx-auto mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold transition-colors ${
-                              headIsHuman
-                                ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                                : "bg-aeos-100 text-aeos-700 hover:bg-aeos-200"
-                            }`}>
-                            {headIsHuman ? <Users size={8} /> : <Bot size={8} />}
-                            {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
-                          </motion.button>
-                          {/* Agent count */}
-                          <p className="mt-1 text-2xs text-slate-400">{deptAiCount} AI · {deptHumanCount} human</p>
-                          {/* Expand indicator */}
-                          <ChevronDown size={10} className={`mx-auto mt-0.5 text-slate-300 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          {headIsHuman ? <Users size={9} /> : <Bot size={9} />}
+                          {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
                         </motion.button>
+                        {/* Counts */}
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                          <span className="flex items-center gap-0.5 text-2xs text-aeos-600 font-semibold">
+                            <Bot size={8} />{deptAiCount}
+                          </span>
+                          <span className="h-2.5 w-px bg-slate-200" />
+                          <span className="flex items-center gap-0.5 text-2xs text-blue-600 font-semibold">
+                            <Users size={8} />{deptHumanCount}
+                          </span>
+                        </div>
+                        {/* Expand arrow */}
+                        <ChevronDown size={12} className={`mx-auto mt-1 text-slate-300 transition-transform duration-300 ${isExpanded ? "rotate-180 text-aeos-400" : ""}`} />
+                      </motion.button>
 
-                        {/* Expanded: Team members tree */}
-                        <AnimatePresence>
-                          {isExpanded && (
-                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
-                              className="w-full overflow-hidden">
-                              {/* Vertical line from dept to team */}
-                              <div className="mx-auto h-3 w-px bg-slate-300" />
-                              <div className="space-y-1 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+                      {/* Expanded: Team tree with SVG connectors */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
+                            className="w-full overflow-hidden">
+                            {/* SVG vertical connector from dept to team */}
+                            <div className="flex justify-center">
+                              <svg width="2" height="16"><line x1="1" y1="0" x2="1" y2="16" stroke="#94a3b8" strokeWidth="2" strokeDasharray="3 2" /></svg>
+                            </div>
+                            <div className="relative rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white p-2.5 shadow-inner">
+                              {/* Left vertical trunk line */}
+                              <div className="absolute left-[18px] top-3 bottom-3 w-px bg-gradient-to-b from-slate-300 via-slate-200 to-transparent" />
+                              <div className="space-y-1.5">
                                 {dept.ai_roles.map((role, ri) => {
                                   const isHuman = humanRoles[`${dept.id}:${role}`];
                                   return (
                                     <motion.button key={role} whileTap={{ scale: 0.97 }}
-                                      initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: ri * 0.04 }}
+                                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: ri * 0.05 }}
                                       onClick={() => toggleRole(dept.id, role)}
-                                      className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition-all ${
-                                        isHuman ? "bg-blue-50 ring-1 ring-blue-200" : "bg-white ring-1 ring-slate-100 hover:ring-slate-200"
+                                      className={`relative flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-all ${
+                                        isHuman
+                                          ? "bg-blue-50 ring-1 ring-blue-200 shadow-sm"
+                                          : "bg-white ring-1 ring-slate-100 hover:ring-slate-200 hover:shadow-sm"
                                       }`}>
-                                      {/* Connector dot */}
-                                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                                        isHuman ? "bg-blue-400" : "bg-slate-300"
+                                      {/* Branch connector */}
+                                      <div className="absolute -left-[5px] top-1/2 h-px w-[12px] bg-slate-300" />
+                                      {/* Node circle */}
+                                      <div className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full shadow-sm ${
+                                        isHuman ? "bg-gradient-to-br from-blue-400 to-blue-600" : "bg-gradient-to-br from-slate-300 to-slate-400"
                                       }`}>
-                                        {isHuman ? <Users size={8} className="text-white" /> : <Bot size={8} className="text-white" />}
+                                        {isHuman ? <Users size={10} className="text-white" /> : <Bot size={10} className="text-white" />}
                                       </div>
-                                      <span className="flex-1 truncate text-2xs text-slate-700">{role.replace(" Agent", "")}</span>
-                                      <span className={`shrink-0 rounded-full px-1.5 py-px text-2xs font-medium ${
+                                      <span className="flex-1 truncate text-2xs font-medium text-slate-700">{role.replace(" Agent", "")}</span>
+                                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-2xs font-bold ${
                                         isHuman ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
-                                      }`}>{isHuman ? "👤" : "🤖"}</span>
+                                      }`}>{isHuman ? "Human" : "AI"}</span>
                                     </motion.button>
                                   );
                                 })}
                               </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-
-                {orgChart.departments.length > 6 && !showAllDepts && (
-                  <button onClick={() => setShowAllDepts(true)}
-                    className="mt-3 rounded-lg bg-slate-50 px-4 py-2 text-xs font-medium text-aeos-600 ring-1 ring-slate-100 transition-colors hover:bg-aeos-50 hover:ring-aeos-200">
-                    Show all {orgChart.departments.length} departments ↓
-                  </button>
-                )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
               </div>
+
+              {/* Show more departments */}
+              {orgChart.departments.length > 6 && !showAllDepts && (
+                <div className="mt-4 flex justify-center">
+                  <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowAllDepts(true)}
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-50 to-aeos-50 px-5 py-2.5 text-xs font-bold text-aeos-600 shadow-sm ring-1 ring-aeos-200 transition-all hover:shadow-md hover:ring-aeos-300">
+                    <ChevronDown size={14} />
+                    Show all {orgChart.departments.length} departments
+                  </motion.button>
+                </div>
+              )}
             </div>
 
             {/* Legend */}
