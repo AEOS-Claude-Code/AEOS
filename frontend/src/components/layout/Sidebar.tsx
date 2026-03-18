@@ -2,7 +2,8 @@
 
 import {
   LayoutDashboard, Megaphone, Users, Sparkles, Swords, Plug,
-  FileBarChart, Settings, ChevronLeft, Zap, LogOut, Globe, Bot, GitCompareArrows, Brain, BarChart3, DollarSign,
+  FileBarChart, Settings, ChevronLeft, Zap, LogOut, Globe, Bot,
+  GitCompareArrows, Brain, BarChart3, DollarSign, Activity,
 } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -24,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Digital Presence", icon: <Globe size={18} />, href: "/app/digital-presence", section: "intelligence" },
   { label: "Gap Analysis", icon: <GitCompareArrows size={18} />, href: "/app/gap-analysis", section: "intelligence" },
   { label: "Business Plan", icon: <Brain size={18} />, href: "/app/business-plan", section: "intelligence" },
+  { label: "KPI Framework", icon: <Activity size={18} />, href: "/app/kpi-framework", section: "intelligence" },
   { label: "Market Research", icon: <BarChart3 size={18} />, href: "/app/market-research", section: "intelligence" },
   { label: "Financial Health", icon: <DollarSign size={18} />, href: "/app/financial-health", section: "intelligence" },
   { label: "Competitors", icon: <Swords size={18} />, href: "/app/competitors", section: "intelligence" },

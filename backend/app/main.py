@@ -36,6 +36,7 @@ from app.engines.strategy_agent_engine.router import router as business_plan_rou
 from app.engines.competitor_intelligence_engine.router import router as competitor_intel_router
 from app.engines.market_research_engine.router import router as market_research_router
 from app.engines.financial_health_engine.router import router as financial_health_router
+from app.engines.kpi_framework_engine.router import router as kpi_router
 from app.modules.billing.router import router as billing_router
 from app.modules.integrations.router import router as integrations_router
 from app.seed.router import seed_router
@@ -51,6 +52,7 @@ import app.engines.strategy_agent_engine.models  # noqa
 import app.engines.competitor_intelligence_engine.models  # noqa
 import app.engines.market_research_engine.models  # noqa
 import app.engines.financial_health_engine.models  # noqa
+import app.engines.kpi_framework_engine.models  # noqa
 import app.engines.executive_copilot_engine.models  # noqa
 import app.modules.billing.models  # noqa
 import app.modules.integrations.models  # noqa
@@ -160,6 +162,7 @@ app.include_router(business_plan_router, prefix="/api")
 app.include_router(competitor_intel_router, prefix="/api")
 app.include_router(market_research_router, prefix="/api")
 app.include_router(financial_health_router, prefix="/api")
+app.include_router(kpi_router, prefix="/api")
 app.include_router(copilot_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(integrations_router, prefix="/api")
