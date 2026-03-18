@@ -1,7 +1,7 @@
 # AEOS – Phase Implementation Tracker
 
 > Autonomous Enterprise Operating System
-> Last updated: 2026-03-17
+> Last updated: 2026-03-18
 
 ---
 
@@ -19,17 +19,23 @@
 | 7 | Website Scanner | COMPLETE | 2026-03-17 |
 | 8 | Digital Presence Engine | COMPLETE | 2026-03-17 |
 | 8.5 | Smart Intake Engine (URL-first Onboarding) | COMPLETE | 2026-03-17 |
-| 9 | Lead Intelligence Engine | PENDING | — |
-| 10 | Opportunity Engine | PENDING | — |
-| 11 | AI Copilot Strategy | PENDING | — |
-| 12 | Competitor Intelligence | PENDING | — |
-| 13 | Reports | PENDING | — |
-| 14 | Admin Console | PENDING | — |
-| 15 | Mobile Architecture | PENDING | — |
-| 16 | Future Modules Architecture | PENDING | — |
-| 17 | Ask AEOS Command Layer | PENDING | — |
-| 18 | Digital Twin & Workflow Layer | PENDING | — |
-| 19 | Deployment | PENDING | — |
+| 9 | Industry-Specific Org Chart Engine | COMPLETE | 2026-03-18 |
+| 9.5 | Premium UI Redesign (Phases A–E1) | COMPLETE | 2026-03-18 |
+| 10 | Organizational Gap Analysis Engine | COMPLETE | 2026-03-18 |
+| 11 | Competitor Intelligence Engine | PENDING | — |
+| 12 | Market Research Engine | PENDING | — |
+| 13 | Financial Health Assessment | PENDING | — |
+| 14 | AI Strategy Agent (Business Plan) | PENDING | — |
+| 15 | Financial Model Generator | PENDING | — |
+| 16 | KPI Framework Engine | PENDING | — |
+| 17 | Reports & PDF Engine | PENDING | — |
+| 18 | AI Agent Framework | PENDING | — |
+| 19–27 | Department AI Agents (HR, Finance, Legal, Sales, Marketing, Ops, IT, Procurement, Strategy) | PENDING | — |
+| 28 | Command Dashboard | PENDING | — |
+| 29 | Ask AEOS (Executive AI) | PENDING | — |
+| 30 | Admin Console | PENDING | — |
+| 31 | Mobile Architecture | PENDING | — |
+| 32 | Production Hardening | PENDING | — |
 
 ---
 
@@ -292,22 +298,129 @@
 
 ---
 
-## Phases 9–30 — Upcoming (Aligned with AEOS Vision Document)
+## Phase 9 — Industry-Specific Org Chart Engine
+
+**Scope:** AI organizational chart generator with industry-specific department structures and human/AI role toggling.
+
+**Delivered:**
+
+**Org Chart Engine (`backend/app/engines/smart_intake_engine/org_chart_engine.py`):**
+- 14 industry-specific department templates: travel, healthcare, restaurant, ecommerce, design_creative, engineering, construction, saas, real_estate, education, finance, manufacturing, logistics, technology
+- Each department: Director AI + 2-3 specialist sub-agents with descriptions
+- Core departments (Strategy, Sales, Marketing, HR, Finance, Legal, Operations, IT, Procurement) included for all industries
+- Priority ranking per department
+
+**20 Industry Categories Added:**
+- E-commerce, Healthcare, Travel & Tourism, Restaurant & Food, Education, Real Estate, SaaS/Software, Agency/Marketing, Design & Creative, Engineering & Solutions, Construction, Manufacturing, Technology & IT, Retail, Finance & Banking, Logistics & Supply Chain, Media & Entertainment, Non-profit, Professional Services, Other
+
+**Country/City Detection (`industry_inference.py`):**
+- TLD-based detection (50+ country TLDs)
+- Phone prefix detection (20+ country codes)
+- URL keyword matching (country names in domain)
+- Content keyword matching (country names in page text, including Arabic)
+- City detection for 17 countries (100+ cities)
+
+**Contact Page Follow:**
+- If phone/email not found on homepage, follows detected contact page URL
+- Extra fallback regex for phone numbers in JS strings and data attributes
+
+**Frontend Onboarding (`/app/onboarding/company`):**
+- Auto-triggers intake scan on page load using workspace URL
+- Two-column layout: Company Identity + Contacts/Social (left), AI Org Chart (right)
+- Interactive human/AI toggle per role with live counters
+- AnimatePresence expand/collapse for department roles
+- Saves role assignments to backend on confirm
+
+---
+
+## Phase 9.5 — Premium UI Redesign
+
+**Scope:** Complete visual overhaul of all AEOS screens using premium design patterns.
+
+**Delivered:**
+
+**Phase A: Foundation**
+- Installed framer-motion for animations
+- Premium color palette with gradients
+- Consistent `rounded-2xl`, `shadow-lg`, `ring-1` card styles
+
+**Phase B: Landing Page**
+- Full hero section with animated gradient background
+- Feature cards, social proof, pricing section
+- Premium footer
+
+**Phase C: Auth Pages**
+- Split-screen layout with animated illustrations
+- Enhanced form design with gradient buttons
+- Progress overlay during registration (6-step animation)
+
+**Phase D: Onboarding Flow**
+- Animated loading screen with gradient progress bar
+- Step-by-step scan animation (fetch → detect → extract → build)
+- Social links as clickable cards with handles
+- Tech stack pills with staggered animations
+
+**Phase E1: Sidebar + Topbar**
+- Premium sidebar with gradient active states
+- Collapsible sidebar with smooth transitions
+- Enhanced topbar with workspace selector
+
+---
+
+## Phase 10 — Organizational Gap Analysis Engine
+
+**Scope:** Score a company's operational maturity by comparing their team against the ideal industry structure.
+
+**Delivered:**
+
+**5-Dimension Scoring Algorithm:**
+- Department Coverage (25%) — what % of ideal departments have human presence
+- Role Coverage (25%) — what % of all roles are filled by humans
+- Leadership Gaps (20%) — departments without human department heads
+- Critical Functions (15%) — Legal, Finance, HR without any human
+- Operational Maturity (15%) — team size relative to ideal org size
+
+**Backend (`backend/app/engines/gap_analysis_engine/`):**
+- `models.py` — `OrgGapAnalysisReport` + `WorkspaceRoleAssignment` tables
+- `schemas.py` — GapDepartmentDetail, GapRecommendation, OrgGapAnalysisResponse
+- `scoring.py` — Deterministic scoring + recommendation generator (up to 7 prioritized actions)
+- `service.py` — Compute pipeline, get_latest, get_or_compute
+- `router.py` — 5 endpoints: GET/POST gap-analysis, GET recommendations, PUT/GET role-assignments
+- Token cost: 150 tokens per computation
+
+**New API Endpoints:**
+- `GET /api/v1/gap-analysis/latest` — Auto-computes if none exists
+- `POST /api/v1/gap-analysis/compute` — Force recomputation
+- `GET /api/v1/gap-analysis/recommendations` — Prioritized actions
+- `PUT /api/v1/workspace/role-assignments` — Save human/AI role map
+- `GET /api/v1/workspace/role-assignments` — Retrieve role map
+
+**Frontend (`/app/gap-analysis`):**
+- Overall gap score ring (inverted: 0=good, 100=critical)
+- 5 sub-score animated progress bars with weights
+- Department breakdown cards with expand/collapse
+- Per-role human vs AI indicators
+- Recommendation cards with priority, impact, effort badges
+- Sidebar: "Gap Analysis" added to Intelligence section
+- `useGapAnalysis` hook for data fetching
+
+---
+
+## Phases 11–32 — Upcoming (Aligned with AEOS Vision Document)
 
 > The AEOS Vision defines a 4-Phase Client Journey: (1) Intake & Onboarding, (2) AI Company Evaluation, (3) Business Plan & Financial Model, (4) AI Organizational Deployment. Phases below implement this journey end-to-end.
 
-### Client Journey Phase 1 — Company Intake (Phases 1–8.5 COMPLETE)
-> Website URL scan, company profile, industry detection, digital presence scoring
+### Client Journey Phase 1 — Company Intake (Phases 1–10 COMPLETE)
+> Website URL scan, company profile, industry detection, digital presence scoring, org chart, gap analysis
 
 ### Client Journey Phase 2 — AI Company Evaluation Engine
 
 | Phase | Name | Key Deliverables |
 |-------|------|-----------------|
-| 9 | Competitor Intelligence Engine | Live competitor scraping, benchmarking, market positioning, whitespace detection |
-| 10 | Market Research Engine | TAM/SAM/SOM analysis, market size, growth trajectory, sector intelligence |
-| 11 | Organizational Gap Analysis Engine | Map existing team vs. ideal structure, maturity scoring across 9 departments, gap report |
-| 12 | Financial Health Assessment | P&L analysis, revenue trends, cost structure, industry benchmarks, risk identification |
-| 13 | Company Evaluation Report | 360-degree evaluation report combining all Phase 2 engines, current state scoring |
+| 11 | Competitor Intelligence Engine | Live competitor scraping, benchmarking, market positioning, whitespace detection |
+| 12 | Market Research Engine | TAM/SAM/SOM analysis, market size, growth trajectory, sector intelligence |
+| 13 | Financial Health Assessment | P&L analysis, revenue trends, cost structure, industry benchmarks, risk identification |
+| — | Company Evaluation Report | 360-degree report combining all Phase 2 engines (auto-generated once 11-13 complete) |
 
 ### Client Journey Phase 3 — Business Plan & Financial Model
 
@@ -317,29 +430,21 @@
 | 15 | Business Plan Generator | Executive summary, market analysis, org structure, go-to-market strategy, risk plan |
 | 16 | Financial Model Generator | 3–5 year projections, cost modeling, EBITDA targets, break-even, funding requirements |
 | 17 | KPI Framework Engine | Department-level KPIs, cascade alignment, tracking dashboards |
-| 18 | Reports & PDF Engine | Board-ready PDF generation, executive summaries, shareable reports |
+| 17.5 | Reports & PDF Engine | Board-ready PDF generation, executive summaries, shareable reports |
 
 ### Client Journey Phase 4 — AI Organizational Deployment
 
 | Phase | Name | Key Deliverables |
 |-------|------|-----------------|
-| 19 | AI Agent Framework | Base agent architecture, department head + specialist agent patterns, agent registry |
-| 20 | HR Department AI | Hiring workflows, onboarding, performance management, payroll compliance agents |
-| 21 | Finance & Accounting AI | Bookkeeping, invoicing, financial reporting, budget management, cash flow agents |
-| 22 | Legal & Contracts AI | Contract drafting/review, compliance, NDAs, dispute management, regulatory agents |
-| 23 | Sales Department AI | Lead generation, pipeline management, proposals, CRM, client follow-up agents |
-| 24 | Marketing Department AI | Brand strategy, content creation, social media, SEO/SEM, email campaign agents |
-| 25 | Operations AI | Process optimization, project tracking, vendor management, QC, SOP agents |
-| 26 | IT & Technology AI | System management, cybersecurity, software procurement, data management agents |
-| 27 | Procurement AI | Vendor sourcing, RFQ management, purchase orders, supplier relationships agents |
-| 28 | Strategy & BI AI | Business plan execution monitoring, KPI tracking, market intelligence, strategic advisory |
+| 18 | AI Agent Framework | Base agent architecture, department head + specialist agent patterns, agent registry |
+| 19–27 | Department AI Agents | HR, Finance, Legal, Sales, Marketing, Operations, IT, Procurement, Strategy BI agents |
 
 ### Platform & Infrastructure
 
 | Phase | Name | Key Deliverables |
 |-------|------|-----------------|
-| 29 | Command Dashboard | Real-time ops dashboard, department status, KPI live tracking, agent activity feed |
-| 30 | Ask AEOS (Executive AI) | Natural language executive queries, cross-department intelligence, quick actions |
-| 31 | Admin Console | Multi-tenant admin, client management, billing admin, monitoring |
-| 32 | Mobile Architecture | Responsive PWA, push notifications, mobile-first command dashboard |
-| 33 | Production Hardening | Docker production config, CI/CD, monitoring, backup, scaling |
+| 28 | Command Dashboard | Real-time ops dashboard, department status, KPI live tracking, agent activity feed |
+| 29 | Ask AEOS (Executive AI) | Natural language executive queries, cross-department intelligence, quick actions |
+| 30 | Admin Console | Multi-tenant admin, client management, billing admin, monitoring |
+| 31 | Mobile Architecture | Responsive PWA, push notifications, mobile-first command dashboard |
+| 32 | Production Hardening | Docker production config, CI/CD, monitoring, backup, scaling |
