@@ -19,43 +19,43 @@ export const CATEGORY_STYLES: Record<
     dot: "bg-category-marketing",
     bg: "bg-category-marketing-light",
     text: "text-category-marketing-text",
-    border: "border-blue-200",
+    border: "border-blue-200 dark:border-blue-500/20",
   },
   growth: {
     dot: "bg-category-growth",
     bg: "bg-category-growth-light",
     text: "text-category-growth-text",
-    border: "border-emerald-200",
+    border: "border-emerald-200 dark:border-emerald-500/20",
   },
   operations: {
     dot: "bg-category-operations",
     bg: "bg-category-operations-light",
     text: "text-category-operations-text",
-    border: "border-amber-200",
+    border: "border-amber-200 dark:border-amber-500/20",
   },
   technology: {
     dot: "bg-category-technology",
     bg: "bg-category-technology-light",
     text: "text-category-technology-text",
-    border: "border-violet-200",
+    border: "border-violet-200 dark:border-violet-500/20",
   },
   hr: {
     dot: "bg-category-hr",
     bg: "bg-category-hr-light",
     text: "text-category-hr-text",
-    border: "border-pink-200",
+    border: "border-pink-200 dark:border-pink-500/20",
   },
   finance: {
     dot: "bg-category-finance",
     bg: "bg-category-finance-light",
     text: "text-category-finance-text",
-    border: "border-cyan-200",
+    border: "border-cyan-200 dark:border-cyan-500/20",
   },
   executive: {
     dot: "bg-category-executive",
     bg: "bg-category-executive-light",
     text: "text-category-executive-text",
-    border: "border-indigo-200",
+    border: "border-indigo-200 dark:border-indigo-500/20",
   },
 };
 
@@ -69,28 +69,28 @@ export const SEVERITY_STYLES: Record<
     dot: "bg-severity-critical",
     bg: "bg-severity-critical-light",
     text: "text-severity-critical-text",
-    border: "border-red-200",
+    border: "border-red-200 dark:border-red-500/20",
     label: "Critical",
   },
   high: {
     dot: "bg-severity-high",
     bg: "bg-severity-high-light",
     text: "text-severity-high-text",
-    border: "border-amber-200",
+    border: "border-amber-200 dark:border-amber-500/20",
     label: "High",
   },
   medium: {
     dot: "bg-severity-medium",
     bg: "bg-severity-medium-light",
     text: "text-severity-medium-text",
-    border: "border-yellow-200",
+    border: "border-yellow-200 dark:border-yellow-500/20",
     label: "Medium",
   },
   low: {
     dot: "bg-severity-low",
     bg: "bg-severity-low-light",
     text: "text-severity-low-text",
-    border: "border-slate-200",
+    border: "border-slate-200 dark:border-slate-500/20",
     label: "Low",
   },
 };
@@ -121,6 +121,7 @@ export function scoreBarColor(value: number): string {
   return "bg-status-danger";
 }
 
+/** Score hex values — these accent colors are the same in light and dark mode (spec §2.5). */
 export function scoreHex(value: number): string {
   if (value >= 70) return "#10b981";
   if (value >= 45) return "#f59e0b";
@@ -130,8 +131,8 @@ export function scoreHex(value: number): string {
 /* ── Impact → badge style ────────────────────────────────────── */
 
 export const IMPACT_STYLES: Record<string, string> = {
-  high: "bg-severity-critical-light text-severity-critical-text border-red-200",
-  medium: "bg-severity-high-light text-severity-high-text border-amber-200",
+  high: "bg-severity-critical-light text-severity-critical-text border-red-200 dark:border-red-500/20",
+  medium: "bg-severity-high-light text-severity-high-text border-amber-200 dark:border-amber-500/20",
   low: "bg-surface-secondary text-fg-secondary border-border",
 };
 
