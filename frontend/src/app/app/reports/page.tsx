@@ -78,8 +78,8 @@ export default function ReportsPage() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-bold text-slate-900">Reports</h1>
-        <p className="text-sm text-slate-500">Generate and share board-ready intelligence reports</p>
+        <h1 className="text-lg font-bold text-fg">Reports</h1>
+        <p className="text-sm text-fg-muted">Generate and share board-ready intelligence reports</p>
       </div>
 
       {/* Report type cards */}
@@ -93,21 +93,21 @@ export default function ReportsPage() {
           return (
             <motion.div key={t.type} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm transition-all hover:shadow-lg">
+              className="rounded-2xl border border-border/60 bg-surface p-4 shadow-sm transition-all hover:shadow-lg">
               <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${config.color} shadow-sm`}>
                 <Icon size={18} className="text-white" />
               </div>
-              <p className="text-sm font-bold text-slate-900">{t.title}</p>
-              <p className="mt-0.5 mb-3 text-2xs text-slate-500">{config.description}</p>
+              <p className="text-sm font-bold text-fg">{t.title}</p>
+              <p className="mt-0.5 mb-3 text-2xs text-fg-muted">{config.description}</p>
 
               <button onClick={() => handleGenerate(t.type)} disabled={isGenerating}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-50 py-2 text-2xs font-semibold text-slate-700 ring-1 ring-slate-100 transition hover:bg-aeos-50 hover:text-aeos-700 hover:ring-aeos-200 disabled:opacity-50">
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-secondary py-2 text-2xs font-semibold text-fg ring-1 ring-border-light transition hover:bg-aeos-50 hover:text-aeos-700 hover:ring-aeos-200 disabled:opacity-50">
                 {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
                 {isGenerating ? "Generating..." : existing.length > 0 ? "Regenerate" : "Generate"}
               </button>
 
               {existing.length > 0 && (
-                <p className="mt-1.5 text-center text-2xs text-slate-400">{existing.length} report{existing.length > 1 ? "s" : ""} generated</p>
+                <p className="mt-1.5 text-center text-2xs text-fg-hint">{existing.length} report{existing.length > 1 ? "s" : ""} generated</p>
               )}
             </motion.div>
           );
@@ -117,7 +117,7 @@ export default function ReportsPage() {
       {/* Generated reports list */}
       {reports.length > 0 && (
         <div>
-          <h2 className="mb-3 text-sm font-bold text-slate-900">Generated Reports</h2>
+          <h2 className="mb-3 text-sm font-bold text-fg">Generated Reports</h2>
           <div className="space-y-2">
             {reports.map((r, i) => {
               const config = REPORT_TYPE_CONFIG[r.report_type] || { icon: FileBarChart, color: "from-slate-500 to-gray-600" };
@@ -126,13 +126,13 @@ export default function ReportsPage() {
               return (
                 <motion.div key={r.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.03 }}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200/60 bg-white px-4 py-3 shadow-sm">
+                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface px-4 py-3 shadow-sm">
                   <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${config.color}`}>
                     <Icon size={15} className="text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-900 truncate">{r.title}</p>
-                    <p className="text-2xs text-slate-400">
+                    <p className="text-xs font-bold text-fg truncate">{r.title}</p>
+                    <p className="text-2xs text-fg-hint">
                       {r.generated_at ? new Date(r.generated_at).toLocaleDateString() : "Generating..."}
                       {r.status === "completed" && <span className="ml-2 text-emerald-500">Ready</span>}
                     </p>
@@ -143,11 +143,11 @@ export default function ReportsPage() {
                     {r.status === "completed" && (
                       <>
                         <a href={`/report/${r.share_token}`} target="_blank" rel="noopener noreferrer"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-aeos-600">
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-fg-hint transition hover:bg-surface-secondary hover:text-aeos-600">
                           <Eye size={14} />
                         </a>
                         <button onClick={() => handleToggleShare(r.id, r.is_public)}
-                          className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${r.is_public ? "bg-emerald-50 text-emerald-600" : "text-slate-400 hover:bg-slate-50"}`}>
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${r.is_public ? "bg-emerald-50 text-emerald-600" : "text-fg-hint hover:bg-surface-secondary"}`}>
                           <Share2 size={14} />
                         </button>
                         {r.is_public && (
@@ -167,10 +167,10 @@ export default function ReportsPage() {
       )}
 
       {reports.length === 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <FileBarChart size={32} className="mx-auto mb-3 text-slate-300" />
-          <p className="text-sm text-slate-600">No reports generated yet</p>
-          <p className="text-2xs text-slate-400">Select a report type above to get started</p>
+        <div className="rounded-2xl border border-border bg-surface p-8 text-center">
+          <FileBarChart size={32} className="mx-auto mb-3 text-fg-hint" />
+          <p className="text-sm text-fg-secondary">No reports generated yet</p>
+          <p className="text-2xs text-fg-hint">Select a report type above to get started</p>
         </div>
       )}
     </motion.div>

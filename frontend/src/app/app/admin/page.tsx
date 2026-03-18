@@ -72,11 +72,11 @@ export default function AdminConsolePage() {
             <ShieldCheck size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Admin Console</h1>
-            <p className="text-xs text-slate-500">Platform management & monitoring</p>
+            <h1 className="text-lg font-bold text-fg">Admin Console</h1>
+            <p className="text-xs text-fg-muted">Platform management & monitoring</p>
           </div>
         </div>
-        <button onClick={fetch} className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+        <button onClick={fetch} className="flex items-center gap-2 rounded-xl bg-surface-inset px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-secondary">
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
@@ -104,10 +104,10 @@ export default function AdminConsolePage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+      <div className="flex gap-1 rounded-xl bg-surface-inset p-1">
         {(["overview", "workspaces", "users"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${tab === t ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${tab === t ? "bg-surface text-fg shadow-sm" : "text-fg-muted hover:text-fg"}`}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
@@ -116,8 +116,8 @@ export default function AdminConsolePage() {
       {/* Tab content */}
       {tab === "overview" && stats && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">Platform Metrics</p>
+          <div className="rounded-2xl border border-border/60 bg-surface p-5 shadow-sm">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">Platform Metrics</p>
             <div className="space-y-2.5">
               {[
                 { label: "Total Users", value: stats.total_users, icon: Users },
@@ -127,28 +127,28 @@ export default function AdminConsolePage() {
                 { label: "Tasks Executed", value: stats.total_agent_tasks, icon: Zap },
                 { label: "Reports Generated", value: stats.total_reports, icon: FileBarChart },
               ].map(m => (
-                <div key={m.label} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <div key={m.label} className="flex items-center justify-between rounded-lg bg-surface-secondary px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <m.icon size={14} className="text-slate-500" />
-                    <span className="text-xs text-slate-700">{m.label}</span>
+                    <m.icon size={14} className="text-fg-muted" />
+                    <span className="text-xs text-fg">{m.label}</span>
                   </div>
-                  <span className="text-sm font-bold text-slate-900">{m.value}</span>
+                  <span className="text-sm font-bold text-fg">{m.value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">System Health</p>
+          <div className="rounded-2xl border border-border/60 bg-surface p-5 shadow-sm">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">System Health</p>
             <div className="space-y-2.5">
               {[
                 { label: "Database", status: "Healthy", color: "text-emerald-600" },
                 { label: "API Server", status: "Running", color: "text-emerald-600" },
                 { label: "Engines", status: "11 registered", color: "text-blue-600" },
-                { label: "API Version", status: "v0.4.0", color: "text-slate-600" },
+                { label: "API Version", status: "v0.4.0", color: "text-fg-secondary" },
               ].map(h => (
-                <div key={h.label} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                  <span className="text-xs text-slate-700">{h.label}</span>
+                <div key={h.label} className="flex items-center justify-between rounded-lg bg-surface-secondary px-3 py-2">
+                  <span className="text-xs text-fg">{h.label}</span>
                   <span className={`text-xs font-bold ${h.color}`}>{h.status}</span>
                 </div>
               ))}
@@ -159,35 +159,35 @@ export default function AdminConsolePage() {
 
       {tab === "workspaces" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm">
+          className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Workspace</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Industry</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Country</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Team</th>
-                  <th className="px-4 py-3 text-right font-semibold text-slate-600">Members</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Created</th>
+                <tr className="border-b border-border-light bg-surface-secondary/50">
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Workspace</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Industry</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Country</th>
+                  <th className="px-4 py-3 text-right font-semibold text-fg-secondary">Team</th>
+                  <th className="px-4 py-3 text-right font-semibold text-fg-secondary">Members</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Created</th>
                 </tr>
               </thead>
               <tbody>
                 {workspaces.map(ws => (
-                  <tr key={ws.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <tr key={ws.id} className="border-b border-border-light hover:bg-surface-secondary/50">
                     <td className="px-4 py-2.5">
-                      <p className="font-bold text-slate-900">{ws.name}</p>
-                      <p className="text-2xs text-slate-400">{ws.website || ws.slug}</p>
+                      <p className="font-bold text-fg">{ws.name}</p>
+                      <p className="text-2xs text-fg-hint">{ws.website || ws.slug}</p>
                     </td>
-                    <td className="px-4 py-2.5 text-slate-600">{ws.industry?.replace("_", " ") || "—"}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{ws.country || "—"}</td>
-                    <td className="px-4 py-2.5 text-right text-slate-600">{ws.team_size}</td>
-                    <td className="px-4 py-2.5 text-right text-slate-600">{ws.members}</td>
-                    <td className="px-4 py-2.5 text-slate-400">{ws.created_at ? new Date(ws.created_at).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-2.5 text-fg-secondary">{ws.industry?.replace("_", " ") || "—"}</td>
+                    <td className="px-4 py-2.5 text-fg-secondary">{ws.country || "—"}</td>
+                    <td className="px-4 py-2.5 text-right text-fg-secondary">{ws.team_size}</td>
+                    <td className="px-4 py-2.5 text-right text-fg-secondary">{ws.members}</td>
+                    <td className="px-4 py-2.5 text-fg-hint">{ws.created_at ? new Date(ws.created_at).toLocaleDateString() : "—"}</td>
                   </tr>
                 ))}
                 {workspaces.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No workspaces found</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-fg-hint">No workspaces found</td></tr>
                 )}
               </tbody>
             </table>
@@ -197,36 +197,36 @@ export default function AdminConsolePage() {
 
       {tab === "users" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm">
+          className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50">
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">User</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Email</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Role</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Last Login</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-600">Joined</th>
+                <tr className="border-b border-border-light bg-surface-secondary/50">
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">User</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Email</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Role</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Last Login</th>
+                  <th className="px-4 py-3 text-left font-semibold text-fg-secondary">Joined</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => (
-                  <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                    <td className="px-4 py-2.5 font-bold text-slate-900">{u.full_name}</td>
-                    <td className="px-4 py-2.5 text-slate-600">{u.email}</td>
+                  <tr key={u.id} className="border-b border-border-light hover:bg-surface-secondary/50">
+                    <td className="px-4 py-2.5 font-bold text-fg">{u.full_name}</td>
+                    <td className="px-4 py-2.5 text-fg-secondary">{u.email}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${u.role === "admin" ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-600"}`}>{u.role}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${u.role === "admin" ? "bg-violet-100 text-violet-700" : "bg-surface-inset text-fg-secondary"}`}>{u.role}</span>
                     </td>
                     <td className="px-4 py-2.5">
                       <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${u.is_active ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>{u.is_active ? "Active" : "Inactive"}</span>
                     </td>
-                    <td className="px-4 py-2.5 text-slate-400">{u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : "Never"}</td>
-                    <td className="px-4 py-2.5 text-slate-400">{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-2.5 text-fg-hint">{u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : "Never"}</td>
+                    <td className="px-4 py-2.5 text-fg-hint">{new Date(u.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
                 {users.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No users found</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-fg-hint">No users found</td></tr>
                 )}
               </tbody>
             </table>

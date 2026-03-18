@@ -25,16 +25,16 @@ const DEPT_COLORS: Record<string, string> = {
 
 function AgentCard({ agent, onRun }: { agent: Agent; onRun: (a: Agent) => void }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 ring-1 ring-slate-100 transition-all hover:ring-aeos-200 hover:shadow-sm">
+    <div className="flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5 ring-1 ring-border-light transition-all hover:ring-aeos-200 hover:shadow-sm">
       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${agent.agent_type === "director" ? "bg-aeos-500" : "bg-slate-400"}`}>
         <Bot size={14} className="text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-bold text-slate-900">{agent.name}</p>
-        <p className="text-2xs text-slate-500">{agent.tasks_completed} tasks completed</p>
+        <p className="text-xs font-bold text-fg">{agent.name}</p>
+        <p className="text-2xs text-fg-muted">{agent.tasks_completed} tasks completed</p>
       </div>
       <button onClick={() => onRun(agent)}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-aeos-50 hover:text-aeos-600">
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-fg-hint transition hover:bg-aeos-50 hover:text-aeos-600">
         <Play size={12} />
       </button>
     </div>
@@ -49,24 +49,24 @@ function DeptSection({ group, onRunAgent }: { group: DepartmentGroup; onRunAgent
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-slate-200/60 bg-white shadow-sm">
+      className="rounded-2xl border border-border/60 bg-surface shadow-sm">
       <button onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-3 px-5 py-4 text-left">
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${color} shadow-sm`}>
           <Icon size={18} className="text-white" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold text-slate-900">{group.department.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</p>
-          <p className="text-2xs text-slate-500">{allAgents.length} agents · {group.total_tasks} tasks</p>
+          <p className="text-sm font-bold text-fg">{group.department.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</p>
+          <p className="text-2xs text-fg-muted">{allAgents.length} agents · {group.total_tasks} tasks</p>
         </div>
         <div className="flex items-center gap-2">
           {allAgents.slice(0, 3).map((a, i) => (
-            <div key={a.id} className={`flex h-6 w-6 items-center justify-center rounded-full ${a.agent_type === "director" ? "bg-aeos-100 text-aeos-600" : "bg-slate-100 text-slate-500"}`}
+            <div key={a.id} className={`flex h-6 w-6 items-center justify-center rounded-full ${a.agent_type === "director" ? "bg-aeos-100 text-aeos-600" : "bg-surface-inset text-fg-muted"}`}
               style={{ marginLeft: i > 0 ? "-4px" : 0 }}>
               <Bot size={10} />
             </div>
           ))}
-          <ChevronDown size={16} className={`text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          <ChevronDown size={16} className={`text-fg-hint transition-transform ${expanded ? "rotate-180" : ""}`} />
         </div>
       </button>
 
@@ -74,7 +74,7 @@ function DeptSection({ group, onRunAgent }: { group: DepartmentGroup; onRunAgent
         {expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="space-y-1.5 border-t border-slate-100 px-5 py-3">
+            <div className="space-y-1.5 border-t border-border-light px-5 py-3">
               {allAgents.map(a => <AgentCard key={a.id} agent={a} onRun={onRunAgent} />)}
             </div>
           </motion.div>
@@ -136,8 +136,8 @@ export default function AgentsPage() {
             <Bot size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">AI Agents</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-lg font-bold text-fg">AI Agents</h1>
+            <p className="text-xs text-fg-muted">
               {hasAgents ? `${data.total_agents} agents across ${data.departments} departments` : "Deploy your AI organization"}
             </p>
           </div>
@@ -171,10 +171,10 @@ export default function AgentsPage() {
 
       {/* Empty state */}
       {!hasAgents && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-          <Bot size={48} className="mx-auto mb-4 text-slate-300" />
-          <h2 className="mb-2 text-lg font-bold text-slate-900">No agents deployed yet</h2>
-          <p className="mb-6 text-sm text-slate-500">Click "Deploy Agents" to create your AI organization based on your company profile.</p>
+        <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+          <Bot size={48} className="mx-auto mb-4 text-fg-hint" />
+          <h2 className="mb-2 text-lg font-bold text-fg">No agents deployed yet</h2>
+          <p className="mb-6 text-sm text-fg-muted">Click "Deploy Agents" to create your AI organization based on your company profile.</p>
         </div>
       )}
 
@@ -195,21 +195,21 @@ export default function AgentsPage() {
             onClick={() => { setTaskModal(null); setTaskResult(null); setTaskInput(""); }}>
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+              className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-aeos-500">
                   <Bot size={18} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900">{taskModal.name}</p>
-                  <p className="text-2xs text-slate-500">{taskModal.description}</p>
+                  <p className="text-sm font-bold text-fg">{taskModal.name}</p>
+                  <p className="text-2xs text-fg-muted">{taskModal.description}</p>
                 </div>
               </div>
 
               {/* Template quick actions */}
               {templates.length > 0 && !selectedTemplate && (
                 <div className="mb-3">
-                  <p className="mb-2 text-2xs font-semibold text-slate-500">Quick Actions</p>
+                  <p className="mb-2 text-2xs font-semibold text-fg-muted">Quick Actions</p>
                   <div className="flex flex-wrap gap-1.5">
                     {templates.map(t => (
                       <button key={t.id} onClick={() => { setSelectedTemplate(t); setTaskInput(""); }}
@@ -224,14 +224,14 @@ export default function AgentsPage() {
               {selectedTemplate && (
                 <div className="mb-2 flex items-center gap-2">
                   <span className="rounded-full bg-aeos-100 px-2 py-0.5 text-2xs font-bold text-aeos-700">{selectedTemplate.name}</span>
-                  <button onClick={() => setSelectedTemplate(null)} className="text-2xs text-slate-400 hover:text-slate-600">Clear</button>
+                  <button onClick={() => setSelectedTemplate(null)} className="text-2xs text-fg-hint hover:text-fg-secondary">Clear</button>
                 </div>
               )}
 
               <div className="mb-3">
                 <textarea value={taskInput} onChange={e => setTaskInput(e.target.value)}
                   placeholder={selectedTemplate?.input_placeholder || "Describe the task for this agent..."}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
+                  className="w-full rounded-xl border border-border bg-surface-secondary px-4 py-3 text-sm outline-none placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
                   rows={3} />
               </div>
 
@@ -247,7 +247,7 @@ export default function AgentsPage() {
                     <CheckCircle2 size={14} /> Task Complete
                     {taskResult.tokens_used > 0 && <span className="ml-auto text-2xs text-emerald-500">{taskResult.tokens_used} tokens</span>}
                   </div>
-                  <p className="whitespace-pre-wrap text-xs text-slate-700">{taskResult.result_summary}</p>
+                  <p className="whitespace-pre-wrap text-xs text-fg">{taskResult.result_summary}</p>
                 </div>
               )}
             </motion.div>

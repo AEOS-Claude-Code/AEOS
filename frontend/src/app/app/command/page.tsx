@@ -53,7 +53,7 @@ export default function CommandDashboardPage() {
 
   if (loading) return <div className="flex items-center justify-center py-24"><Loader2 size={32} className="animate-spin text-aeos-500" /></div>;
 
-  if (!data) return <div className="text-center py-12 text-slate-500">No data available</div>;
+  if (!data) return <div className="text-center py-12 text-fg-muted">No data available</div>;
 
   const avgScore = data.engines.filter(e => e.status === "active" && e.score > 0);
   const overallHealth = avgScore.length > 0 ? avgScore.reduce((s, e) => s + e.score, 0) / avgScore.length : 0;
@@ -69,11 +69,11 @@ export default function CommandDashboardPage() {
             <Monitor size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Command Center</h1>
-            <p className="text-xs text-slate-500">{data.company.name} — Real-time operations dashboard</p>
+            <h1 className="text-lg font-bold text-fg">Command Center</h1>
+            <p className="text-xs text-fg-muted">{data.company.name} — Real-time operations dashboard</p>
           </div>
         </div>
-        <button onClick={fetch} className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+        <button onClick={fetch} className="flex items-center gap-2 rounded-xl bg-surface-inset px-4 py-2 text-sm font-medium text-fg transition hover:bg-surface-secondary">
           <RefreshCw size={14} /> Refresh
         </button>
       </div>
@@ -82,14 +82,14 @@ export default function CommandDashboardPage() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {/* Overall Health */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 rounded-2xl border border-slate-200/60 bg-white p-4 shadow-lg shadow-slate-100/50">
+          className="flex items-center gap-4 rounded-2xl border border-border/60 bg-surface p-4 shadow-lg shadow-slate-100/50">
           <div className="relative">
             <ScoreMini score={overallHealth} />
             <span className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${healthColor}`}>{overallHealth.toFixed(0)}</span>
           </div>
           <div>
             <p className={`text-sm font-bold ${healthColor}`}>{healthLabel}</p>
-            <p className="text-2xs text-slate-500">Overall Health</p>
+            <p className="text-2xs text-fg-muted">Overall Health</p>
           </div>
         </motion.div>
 
@@ -128,26 +128,26 @@ export default function CommandDashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Engine Status */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="col-span-2 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-slate-500">Engine Status</p>
+          className="col-span-2 rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-fg-muted">Engine Status</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {data.engines.map((eng, i) => {
               const Icon = ENGINE_ICONS[eng.name] || Zap;
               const isActive = eng.status === "active";
-              const scoreColor = eng.score >= 65 ? "text-emerald-600" : eng.score >= 40 ? "text-blue-600" : eng.score >= 20 ? "text-amber-600" : "text-slate-400";
+              const scoreColor = eng.score >= 65 ? "text-emerald-600" : eng.score >= 40 ? "text-blue-600" : eng.score >= 20 ? "text-amber-600" : "text-fg-hint";
 
               return (
                 <motion.div key={eng.name} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.25 + i * 0.04 }}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${isActive ? "bg-white ring-1 ring-slate-100 hover:ring-aeos-200" : "bg-slate-50/50"}`}>
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
+                  className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${isActive ? "bg-surface ring-1 ring-border-light hover:ring-aeos-200" : "bg-surface-secondary/50"}`}>
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${isActive ? "bg-emerald-50 text-emerald-600" : "bg-surface-inset text-fg-hint"}`}>
                     <Icon size={16} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-900">{eng.name}</p>
+                    <p className="text-xs font-bold text-fg">{eng.name}</p>
                     <div className="flex items-center gap-1.5">
-                      {isActive ? <CheckCircle2 size={10} className="text-emerald-500" /> : <Clock size={10} className="text-slate-400" />}
-                      <span className="text-2xs text-slate-500">{isActive ? "Active" : "Inactive"}</span>
+                      {isActive ? <CheckCircle2 size={10} className="text-emerald-500" /> : <Clock size={10} className="text-fg-hint" />}
+                      <span className="text-2xs text-fg-muted">{isActive ? "Active" : "Inactive"}</span>
                     </div>
                   </div>
                   <span className={`text-sm font-bold ${scoreColor}`}>{eng.score > 0 ? `${eng.score.toFixed(0)}` : "—"}</span>
@@ -159,8 +159,8 @@ export default function CommandDashboardPage() {
 
         {/* Activity Feed */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-slate-500">Activity Feed</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-fg-muted">Activity Feed</p>
           <div className="space-y-2.5">
             {data.activity_feed.length > 0 ? data.activity_feed.slice(0, 10).map((item, i) => (
               <div key={i} className="flex items-start gap-2.5">
@@ -168,12 +168,12 @@ export default function CommandDashboardPage() {
                   {item.type === "task" ? <Bot size={10} /> : <Zap size={10} />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-2xs text-slate-700">{item.title}</p>
-                  <p className="text-2xs text-slate-400">{item.time ? new Date(item.time).toLocaleString() : ""}</p>
+                  <p className="text-2xs text-fg">{item.title}</p>
+                  <p className="text-2xs text-fg-hint">{item.time ? new Date(item.time).toLocaleString() : ""}</p>
                 </div>
               </div>
             )) : (
-              <p className="text-center text-2xs text-slate-400 py-4">No activity yet. Deploy agents to get started.</p>
+              <p className="text-center text-2xs text-fg-hint py-4">No activity yet. Deploy agents to get started.</p>
             )}
           </div>
         </motion.div>
@@ -182,8 +182,8 @@ export default function CommandDashboardPage() {
       {/* Score breakdown */}
       {Object.keys(data.scores).length > 0 && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-          className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-slate-500">Intelligence Scores</p>
+          className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
+          <p className="mb-4 text-xs font-bold uppercase tracking-wide text-fg-muted">Intelligence Scores</p>
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {Object.entries(data.scores).map(([key, score]) => {
               const label = key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -193,7 +193,7 @@ export default function CommandDashboardPage() {
                   <div className={`mx-auto mb-1.5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${color} text-white shadow-sm`}>
                     <span className="text-sm font-bold">{score.toFixed(0)}</span>
                   </div>
-                  <p className="text-2xs text-slate-600">{label}</p>
+                  <p className="text-2xs text-fg-secondary">{label}</p>
                 </div>
               );
             })}
