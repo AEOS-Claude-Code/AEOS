@@ -444,122 +444,178 @@ export default function OnboardingCompany() {
           )}
         </div>
 
-        {/* Right column: Interactive AI Org Chart */}
+        {/* Right column: Interactive AI Org Chart Hierarchy */}
         {orgChart && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
             className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-            <div className="mb-3 flex items-center gap-2">
+            <div className="mb-4 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
                 <Bot size={15} className="text-white" />
               </div>
-              <h2 className="text-sm font-bold text-slate-900">Your AI Organization</h2>
+              <h2 className="text-sm font-bold text-slate-900">AI Organization Chart</h2>
               <span className="ml-auto rounded-full bg-slate-50 px-2 py-0.5 text-2xs text-slate-500 ring-1 ring-slate-100">
-                Click to toggle
+                Click nodes to toggle
               </span>
             </div>
 
-            {/* Live stats */}
-            <div className="mb-4 grid grid-cols-3 gap-2">
-              <motion.div whileHover={{ scale: 1.03 }}
-                className="rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-700 px-3 py-2.5 text-white shadow-md shadow-aeos-200/40">
-                <p className="text-xl font-bold">{aiCount}</p>
+            {/* Stats bar */}
+            <div className="mb-4 flex gap-2">
+              <div className="flex-1 rounded-lg bg-gradient-to-r from-aeos-500 to-aeos-600 px-3 py-2 text-white text-center shadow-sm">
+                <p className="text-lg font-bold">{aiCount}</p>
                 <p className="text-2xs text-white/70">AI Agents</p>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03 }}
-                className="rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 px-3 py-2.5 text-white shadow-md shadow-blue-200/40">
-                <p className="text-xl font-bold">{humanCount}</p>
+              </div>
+              <div className="flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-3 py-2 text-white text-center shadow-sm">
+                <p className="text-lg font-bold">{humanCount}</p>
                 <p className="text-2xs text-white/70">Humans</p>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03 }}
-                className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 px-3 py-2.5 text-white shadow-md shadow-emerald-200/40">
-                <p className="text-xl font-bold">{orgChart.total_departments}</p>
+              </div>
+              <div className="flex-1 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-700 px-3 py-2 text-white text-center shadow-sm">
+                <p className="text-lg font-bold">{orgChart.total_departments}</p>
                 <p className="text-2xs text-white/70">Depts</p>
-              </motion.div>
+              </div>
             </div>
 
-            {/* Department list */}
-            <div className="max-h-[380px] space-y-1.5 overflow-y-auto pr-1 scrollbar-thin">
-              {visibleDepts.map((dept, idx) => {
-                const Icon = DEPT_ICONS[dept.icon] || Bot;
-                const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
-                const isExpanded = expandedDept === dept.id;
-                const headIsHuman = humanRoles[`${dept.id}:__head__`];
-                const deptHumanCount = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
-                const deptAiCount = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
+            {/* ── Visual Org Chart Tree ────────────────────────── */}
+            <div className="relative overflow-x-auto pb-2">
+              {/* CEO Node at top */}
+              <div className="flex flex-col items-center">
+                <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  className="relative z-10 flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2.5 text-white shadow-lg">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 shadow">
+                    <Users size={14} className="text-slate-900" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">CEO / Owner</p>
+                    <p className="text-2xs text-slate-400">You</p>
+                  </div>
+                </motion.div>
 
-                return (
-                  <motion.div key={dept.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 + idx * 0.04 }}
-                    className={`rounded-xl transition-all ${isExpanded ? "bg-slate-50 ring-1 ring-slate-200" : "hover:bg-slate-50/60"}`}>
-                    <button onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
-                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm`}>
-                        <Icon size={14} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-slate-900 leading-tight">{dept.name}</p>
-                        <p className="text-2xs text-slate-500">{deptAiCount} AI · {deptHumanCount} human</p>
-                      </div>
-                      <ChevronDown size={14} className={`shrink-0 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                    </button>
+                {/* Vertical line from CEO */}
+                <div className="h-5 w-px bg-slate-300" />
 
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-                          className="overflow-hidden">
-                          <div className="border-t border-slate-200/60 px-3 pb-3 pt-2 space-y-1.5">
-                            {/* Head */}
-                            <motion.button whileTap={{ scale: 0.98 }} onClick={() => toggleHead(dept.id)}
-                              className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-all ${
-                                headIsHuman ? "bg-blue-50 ring-1 ring-blue-200" : "bg-aeos-50/50 ring-1 ring-aeos-100"
-                              }`}>
-                              <div className={`flex h-6 w-6 items-center justify-center rounded-full shadow-sm ${headIsHuman ? "bg-blue-500" : "bg-aeos-500"}`}>
-                                {headIsHuman ? <Users size={11} className="text-white" /> : <Bot size={11} className="text-white" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-slate-900">{dept.ai_head.replace(" AI", "")}</p>
-                                <p className="text-2xs text-slate-500">Department Head</p>
-                              </div>
-                              <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${
-                                headIsHuman ? "bg-blue-100 text-blue-700" : "bg-aeos-100 text-aeos-700"
-                              }`}>{headIsHuman ? "Human" : "AI"}</span>
-                            </motion.button>
+                {/* Horizontal connector bar */}
+                <div className="relative w-full">
+                  <div className="mx-auto h-px bg-slate-300" style={{ width: `${Math.min(100, visibleDepts.length * 11)}%` }} />
+                </div>
 
-                            {/* Roles */}
-                            {dept.ai_roles.map(role => {
-                              const isHuman = humanRoles[`${dept.id}:${role}`];
-                              return (
-                                <motion.button key={role} whileTap={{ scale: 0.98 }} onClick={() => toggleRole(dept.id, role)}
-                                  className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-all ${
-                                    isHuman ? "bg-blue-50/60 ring-1 ring-blue-100" : "bg-white ring-1 ring-slate-100 hover:ring-slate-200"
-                                  }`}>
-                                  <div className={`flex h-5 w-5 items-center justify-center rounded-full ${isHuman ? "bg-blue-400" : "bg-slate-300"}`}>
-                                    {isHuman ? <Users size={9} className="text-white" /> : <Bot size={9} className="text-white" />}
-                                  </div>
-                                  <span className="flex-1 text-xs text-slate-700">{role.replace(" Agent", "")}</span>
-                                  <span className={`rounded-full px-1.5 py-px text-2xs font-medium ${
-                                    isHuman ? "bg-blue-100/80 text-blue-600" : "bg-slate-100 text-slate-500"
-                                  }`}>{isHuman ? "Human" : "AI"}</span>
-                                </motion.button>
-                              );
-                            })}
-                            <p className="pt-1 text-2xs text-slate-400 italic">{dept.description}</p>
+                {/* Department heads grid with vertical lines */}
+                <div className="mt-0 grid w-full gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(visibleDepts.length, 3)}, 1fr)` }}>
+                  {visibleDepts.map((dept, idx) => {
+                    const Icon = DEPT_ICONS[dept.icon] || Bot;
+                    const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+                    const isExpanded = expandedDept === dept.id;
+                    const headIsHuman = humanRoles[`${dept.id}:__head__`];
+                    const deptHumanCount = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+                    const deptAiCount = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
+
+                    return (
+                      <motion.div key={dept.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.35 + idx * 0.06 }}
+                        className="flex flex-col items-center">
+                        {/* Vertical connector from horizontal bar */}
+                        <div className="h-4 w-px bg-slate-300" />
+
+                        {/* Department head node */}
+                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                          onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                          className={`group relative w-full rounded-xl border p-2.5 text-center transition-all ${
+                            isExpanded
+                              ? "border-aeos-300 bg-aeos-50/50 shadow-md ring-1 ring-aeos-200"
+                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
+                          }`}>
+                          {/* Dept icon */}
+                          <div className={`mx-auto mb-1.5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-sm`}>
+                            <Icon size={16} />
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
+                          {/* Dept name */}
+                          <p className="text-2xs font-bold text-slate-900 leading-tight">{dept.name}</p>
+                          {/* Head name with AI/Human badge */}
+                          <motion.button whileTap={{ scale: 0.95 }}
+                            onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
+                            className={`mx-auto mt-1.5 flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold transition-colors ${
+                              headIsHuman
+                                ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                : "bg-aeos-100 text-aeos-700 hover:bg-aeos-200"
+                            }`}>
+                            {headIsHuman ? <Users size={8} /> : <Bot size={8} />}
+                            {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
+                          </motion.button>
+                          {/* Agent count */}
+                          <p className="mt-1 text-2xs text-slate-400">{deptAiCount} AI · {deptHumanCount} human</p>
+                          {/* Expand indicator */}
+                          <ChevronDown size={10} className={`mx-auto mt-0.5 text-slate-300 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                        </motion.button>
+
+                        {/* Expanded: Team members tree */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}
+                              className="w-full overflow-hidden">
+                              {/* Vertical line from dept to team */}
+                              <div className="mx-auto h-3 w-px bg-slate-300" />
+                              <div className="space-y-1 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+                                {dept.ai_roles.map((role, ri) => {
+                                  const isHuman = humanRoles[`${dept.id}:${role}`];
+                                  return (
+                                    <motion.button key={role} whileTap={{ scale: 0.97 }}
+                                      initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay: ri * 0.04 }}
+                                      onClick={() => toggleRole(dept.id, role)}
+                                      className={`flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left transition-all ${
+                                        isHuman ? "bg-blue-50 ring-1 ring-blue-200" : "bg-white ring-1 ring-slate-100 hover:ring-slate-200"
+                                      }`}>
+                                      {/* Connector dot */}
+                                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                                        isHuman ? "bg-blue-400" : "bg-slate-300"
+                                      }`}>
+                                        {isHuman ? <Users size={8} className="text-white" /> : <Bot size={8} className="text-white" />}
+                                      </div>
+                                      <span className="flex-1 truncate text-2xs text-slate-700">{role.replace(" Agent", "")}</span>
+                                      <span className={`shrink-0 rounded-full px-1.5 py-px text-2xs font-medium ${
+                                        isHuman ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
+                                      }`}>{isHuman ? "👤" : "🤖"}</span>
+                                    </motion.button>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {orgChart.departments.length > 6 && !showAllDepts && (
+                  <button onClick={() => setShowAllDepts(true)}
+                    className="mt-3 rounded-lg bg-slate-50 px-4 py-2 text-xs font-medium text-aeos-600 ring-1 ring-slate-100 transition-colors hover:bg-aeos-50 hover:ring-aeos-200">
+                    Show all {orgChart.departments.length} departments ↓
+                  </button>
+                )}
+              </div>
             </div>
 
-            {orgChart.departments.length > 6 && !showAllDepts && (
-              <button onClick={() => setShowAllDepts(true)}
-                className="mt-2 w-full rounded-lg bg-slate-50 py-2 text-center text-xs font-medium text-aeos-600 ring-1 ring-slate-100 transition-colors hover:bg-aeos-50 hover:ring-aeos-200">
-                Show all {orgChart.departments.length} departments
-              </button>
-            )}
+            {/* Legend */}
+            <div className="mt-3 flex items-center justify-center gap-4 border-t border-slate-100 pt-3">
+              <div className="flex items-center gap-1.5">
+                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-aeos-500">
+                  <Bot size={8} className="text-white" />
+                </div>
+                <span className="text-2xs text-slate-500">AI Agent</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
+                  <Users size={8} className="text-white" />
+                </div>
+                <span className="text-2xs text-slate-500">Human</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400">
+                  <Users size={8} className="text-slate-900" />
+                </div>
+                <span className="text-2xs text-slate-500">You (CEO)</span>
+              </div>
+            </div>
 
             {humanCount > 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
