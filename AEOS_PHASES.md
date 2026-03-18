@@ -1,7 +1,7 @@
 # AEOS – Phase Implementation Tracker
 
 > Autonomous Enterprise Operating System
-> Last updated: 2026-03-19
+> Last updated: 2026-03-19 (Phase 11 complete)
 
 ---
 
@@ -23,7 +23,7 @@
 | 9.5 | Premium UI Redesign (Phases A–E1) | COMPLETE | 2026-03-18 |
 | 10 | Organizational Gap Analysis Engine | COMPLETE | 2026-03-18 |
 | 14 | AI Strategy Agent (Business Plan) | COMPLETE | 2026-03-18 |
-| 11 | Competitor Intelligence Engine | PENDING | — |
+| 11 | Competitor Intelligence Engine | COMPLETE | 2026-03-19 |
 | 12 | Market Research Engine | PENDING | — |
 | 13 | Financial Health Assessment | PENDING | — |
 | 15 | Financial Model Generator | PENDING | — |
@@ -461,7 +461,54 @@
 
 ---
 
-## Phases 11–32 — Upcoming (Aligned with AEOS Vision Document)
+## Phase 11 — Competitor Intelligence Engine
+
+**Scope:** Live competitor website scanning, 6-dimension benchmarking, competitive positioning report with strengths/weaknesses/opportunities.
+
+**Delivered:**
+
+**Competitor Scanner (`scanner.py`):**
+- Reuses Company Scanner collectors: SEO, performance, security, tech stack
+- Reuses Smart Intake social extractor for social media presence detection
+- Playwright (headless Chromium) with httpx fallback for website fetching
+- Derives competitor name from domain
+
+**6-Dimension Comparison Engine (`comparison.py`):**
+- SEO & Search Visibility (25%) — seo_score from scanner
+- Website Performance (20%) — response time, page size, compression
+- Social Media Presence (20%) — platform count across 8 networks
+- Technology & Security (15%) — tech stack + security headers
+- Content & Structure (10%) — keywords, headings, structured data
+- Digital Maturity (10%) — overall composite score
+
+**Competitive Positioning Report:**
+- Overall positioning score (0-100, 50 = equal, >50 = client ahead)
+- Per-dimension client vs competitor average comparison with gap scoring
+- Auto-generated strengths (dimensions where client leads by >10 points)
+- Auto-generated weaknesses (dimensions where client trails by >10 points)
+- Whitespace opportunities (dimensions where ALL players score low)
+- Technology adoption and social media expansion recommendations
+- Per-competitor summary with vs_client differential
+
+**API Endpoints:**
+- `POST /api/v1/competitors/scan` — Scan all competitor URLs + generate report
+- `GET /api/v1/competitors/list` — List competitors with scores
+- `GET /api/v1/competitors/report` — Competitive positioning report
+- `POST /api/v1/competitors/add` — Add new competitor URL
+- `GET /api/v1/competitors/{id}` — Single competitor detail
+
+**Frontend (`/app/competitors` — full rewrite):**
+- Competitive positioning ring (0-100) with Market Leader/Competitive/Catching Up labels
+- You vs Competitors dimension comparison bars (dual-bar per dimension)
+- Strengths/Weaknesses/Opportunities insight cards (green/red/blue)
+- Competitor cards with SEO/Perf/Overall scores, tech stack pills, social presence badges
+- Add competitor URL input
+- "Scan all" button to trigger batch scanning
+- Billing: 300 tokens per scan batch
+
+---
+
+## Phases 12–32 — Upcoming (Aligned with AEOS Vision Document)
 
 > The AEOS Vision defines a 4-Phase Client Journey: (1) Intake & Onboarding, (2) AI Company Evaluation, (3) Business Plan & Financial Model, (4) AI Organizational Deployment. Phases below implement this journey end-to-end.
 
@@ -472,7 +519,7 @@
 
 | Phase | Name | Key Deliverables |
 |-------|------|-----------------|
-| 11 | Competitor Intelligence Engine | Live competitor scraping, benchmarking, market positioning, whitespace detection |
+| 11 | Competitor Intelligence Engine | ~~COMPLETE~~ Live competitor scraping, 6-dimension benchmarking, positioning report |
 | 12 | Market Research Engine | TAM/SAM/SOM analysis, market size, growth trajectory, sector intelligence |
 | 13 | Financial Health Assessment | P&L analysis, revenue trends, cost structure, industry benchmarks, risk identification |
 | — | Company Evaluation Report | 360-degree report combining all Phase 2 engines (auto-generated once 11-13 complete) |
