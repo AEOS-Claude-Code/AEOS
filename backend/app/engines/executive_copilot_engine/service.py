@@ -129,20 +129,120 @@ async def _gather_context(db: AsyncSession, workspace: Workspace) -> dict:
         ctx["connected_integrations"] = []
         ctx["integration_count"] = 0
 
+    # ── New engine data (Phase 29 enhancement) ──
+
+    # Digital Presence
+    try:
+        from app.engines.digital_presence_engine.service import get_latest_report
+        dp = await get_latest_report(db, workspace_id)
+        if dp:
+            ctx["digital_presence_score"] = dp.overall_score or 0
+            ctx["dp_website"] = dp.website_performance or 0
+            ctx["dp_seo"] = dp.search_visibility or 0
+            ctx["dp_social"] = dp.social_presence or 0
+            ctx["dp_reputation"] = dp.reputation or 0
+    except Exception:
+        pass
+
+    # Gap Analysis
+    try:
+        from app.engines.gap_analysis_engine.service import get_latest_report as get_gap
+        gap = await get_gap(db, workspace_id)
+        if gap:
+            ctx["gap_score"] = gap.overall_gap_score or 0
+            ctx["gap_dept_coverage"] = gap.department_coverage_score or 0
+            ctx["gap_recommendations"] = [r.get("title", "") for r in (gap.recommendations or [])[:3]]
+    except Exception:
+        pass
+
+    # Competitor Intelligence
+    try:
+        from app.engines.competitor_intelligence_engine.service import get_latest_report as get_comp
+        comp = await get_comp(db, workspace_id)
+        if comp:
+            ctx["competitive_positioning"] = comp.overall_positioning or 0
+            ctx["comp_strengths"] = [s.get("title", "") for s in (comp.strengths or [])[:3]]
+            ctx["comp_weaknesses"] = [w.get("title", "") for w in (comp.weaknesses or [])[:3]]
+    except Exception:
+        pass
+
+    # Market Research
+    try:
+        from app.engines.market_research_engine.service import get_latest_report as get_market
+        market = await get_market(db, workspace_id)
+        if market:
+            ctx["market_tam"] = market.tam or 0
+            ctx["market_sam"] = market.sam or 0
+            ctx["market_growth_rate"] = market.market_growth_rate or 0
+            ctx["market_position_score"] = (market.market_positioning or {}).get("score", 0)
+    except Exception:
+        pass
+
+    # Financial Health
+    try:
+        from app.engines.financial_health_engine.service import get_latest_report as get_fin
+        fin = await get_fin(db, workspace_id)
+        if fin:
+            ctx["financial_health_score"] = fin.overall_score or 0
+            ctx["est_revenue"] = (fin.revenue_model or {}).get("estimated_annual_revenue", 0)
+            ctx["cost_ratio"] = (fin.cost_structure or {}).get("cost_to_revenue_ratio", 0)
+            ctx["ai_savings_potential"] = (fin.cost_structure or {}).get("optimization_potential", 0)
+    except Exception:
+        pass
+
+    # Financial Model
+    try:
+        from app.engines.financial_model_engine.service import get_latest as get_model
+        model = await get_model(db, workspace_id)
+        if model:
+            ctx["model_y1_revenue"] = model.year1_revenue or 0
+            ctx["model_y5_revenue"] = model.year5_revenue or 0
+            ctx["model_ebitda_margin"] = model.year3_ebitda_margin or 0
+            ctx["model_break_even"] = model.break_even_month or 0
+    except Exception:
+        pass
+
+    # KPI Framework
+    try:
+        from app.engines.kpi_framework_engine.service import get_latest as get_kpi
+        kpi = await get_kpi(db, workspace_id)
+        if kpi:
+            ctx["kpi_health"] = kpi.overall_kpi_score or 0
+            ctx["kpi_total"] = int(kpi.total_kpis or 0)
+            ctx["kpi_tracked"] = int(kpi.tracked_kpis or 0)
+    except Exception:
+        pass
+
+    # AI Agents
+    try:
+        from app.engines.agent_framework_engine.models import AIAgent
+        agent_count = (await db.execute(
+            select(func.count(AIAgent.id)).where(AIAgent.workspace_id == workspace_id)
+        )).scalar() or 0
+        ctx["ai_agents"] = agent_count
+    except Exception:
+        pass
+
     return ctx
 
 
 # ── Answer generation ────────────────────────────────────────────────
 
 TOPIC_PATTERNS: dict[str, list[str]] = {
-    "opportunities": ["opportunit", "growth", "improve", "gaps", "potential"],
+    "opportunities": ["opportunit", "growth", "improve", "potential"],
     "leads": ["lead", "prospect", "pipeline", "funnel", "convert"],
     "seo": ["seo", "search", "ranking", "website", "traffic", "organic"],
     "social": ["social", "facebook", "instagram", "linkedin", "twitter", "youtube"],
     "strategy": ["strategy", "priorit", "roadmap", "plan", "focus"],
-    "health": ["health", "score", "how are we", "overview", "status"],
-    "competitors": ["competitor", "competition", "rival", "market position"],
+    "health": ["health", "score", "how are we", "overview", "status", "dashboard"],
+    "competitors": ["competitor", "competition", "rival", "benchmark", "versus"],
     "integrations": ["integration", "connect", "platform", "tool", "sync"],
+    "digital": ["digital", "presence", "online", "web score"],
+    "gaps": ["gap", "structure", "organization", "department", "missing"],
+    "market": ["market", "tam", "sam", "som", "industry", "sector", "size"],
+    "financial": ["financ", "revenue", "cost", "profit", "ebitda", "money", "budget"],
+    "kpi": ["kpi", "metric", "track", "measure", "indicator", "performance"],
+    "agents": ["agent", "ai team", "deploy", "virtual employee"],
 }
 
 
@@ -343,7 +443,31 @@ async def _ask_claude(ctx: dict, question: str, api_key: str) -> str | None:
     if top_opps:
         context_text += f"Top opportunities: {'; '.join(f'{t[0]} (impact {t[1]})' for t in top_opps[:3])}\n"
 
-    async with httpx.AsyncClient(timeout=15) as client:
+    # Enhanced context from all engines
+    if ctx.get("digital_presence_score"):
+        context_text += f"Digital Presence Score: {ctx['digital_presence_score']:.0f}/100 (Website: {ctx.get('dp_website', 0):.0f}, SEO: {ctx.get('dp_seo', 0):.0f}, Social: {ctx.get('dp_social', 0):.0f})\n"
+    if ctx.get("gap_score") is not None:
+        context_text += f"Organizational Gap Score: {ctx['gap_score']:.0f}/100 (lower=better, dept coverage gap: {ctx.get('gap_dept_coverage', 0):.0f}%)\n"
+        if ctx.get("gap_recommendations"):
+            context_text += f"Gap recommendations: {'; '.join(ctx['gap_recommendations'])}\n"
+    if ctx.get("competitive_positioning"):
+        context_text += f"Competitive Positioning: {ctx['competitive_positioning']:.0f}/100 (>50=ahead of competitors)\n"
+        if ctx.get("comp_strengths"):
+            context_text += f"Competitive strengths: {'; '.join(ctx['comp_strengths'])}\n"
+        if ctx.get("comp_weaknesses"):
+            context_text += f"Competitive weaknesses: {'; '.join(ctx['comp_weaknesses'])}\n"
+    if ctx.get("market_tam"):
+        context_text += f"Market: TAM ${ctx['market_tam']:.1f}B, SAM ${ctx['market_sam']:.1f}B, Growth {ctx.get('market_growth_rate', 0)}% CAGR\n"
+    if ctx.get("financial_health_score"):
+        context_text += f"Financial Health: {ctx['financial_health_score']:.0f}/100, Est. Revenue: ${ctx.get('est_revenue', 0):,.0f}, Cost ratio: {ctx.get('cost_ratio', 0):.0%}\n"
+    if ctx.get("model_y1_revenue"):
+        context_text += f"Financial Model: Y1 ${ctx['model_y1_revenue']:,.0f} → Y5 ${ctx.get('model_y5_revenue', 0):,.0f}, Y3 EBITDA margin: {ctx.get('model_ebitda_margin', 0):.1f}%\n"
+    if ctx.get("kpi_health"):
+        context_text += f"KPI Framework: {ctx['kpi_health']:.0f}/100 health, {ctx.get('kpi_tracked', 0)}/{ctx.get('kpi_total', 0)} tracked\n"
+    if ctx.get("ai_agents"):
+        context_text += f"AI Agents: {ctx['ai_agents']} deployed\n"
+
+    async with httpx.AsyncClient(timeout=20) as client:
         resp = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={
@@ -355,9 +479,12 @@ async def _ask_claude(ctx: dict, question: str, api_key: str) -> str | None:
                 "model": "claude-sonnet-4-20250514",
                 "max_tokens": 500,
                 "system": (
-                    "You are AEOS, an AI business intelligence copilot. "
-                    "Answer the user's question about their company using ONLY the data provided. "
-                    "Be concise, actionable, and specific. Use numbers from the data."
+                    "You are AEOS, the AI Enterprise Operating System executive copilot. "
+                    "You have access to comprehensive company intelligence: digital presence, "
+                    "organizational gap analysis, competitive benchmarking, market research, "
+                    "financial health, 5-year financial projections, KPI tracking, and AI agent deployment. "
+                    "Answer using ONLY the data provided. Be concise, actionable, and cite specific numbers. "
+                    "When appropriate, recommend which AEOS engine or feature the user should use next."
                 ),
                 "messages": [
                     {"role": "user", "content": f"Company data:\n{context_text}\n\nQuestion: {question}"},
