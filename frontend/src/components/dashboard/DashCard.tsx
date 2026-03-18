@@ -17,15 +17,15 @@ export default function DashCard({
 }: DashCardProps) {
   return (
     <div
-      className="card-animate rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50"
+      className="card-animate rounded-2xl border border-slate-200/60 bg-white shadow-lg shadow-slate-100/50 transition-all hover:shadow-xl"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Header */}
-      <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
+      <div className="flex items-start justify-between border-b border-slate-100 px-5 py-3.5">
         <div>
-          <h3 className="text-[13px] font-semibold text-slate-800">{title}</h3>
+          <h3 className="text-sm font-bold text-slate-900">{title}</h3>
           {subtitle && (
-            <p className="mt-0.5 text-[11px] text-slate-400">{subtitle}</p>
+            <p className="mt-0.5 text-2xs text-slate-500">{subtitle}</p>
           )}
         </div>
         {badge && <div>{badge}</div>}

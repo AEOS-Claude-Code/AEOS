@@ -41,11 +41,14 @@ export default function OpportunitiesPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-fg">Opportunities</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          AI-detected growth opportunities ranked by impact and effort.
-        </p>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-200/40">
+          <Sparkles size={20} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Opportunities</h1>
+          <p className="text-xs text-slate-500">AI-detected growth opportunities ranked by impact</p>
+        </div>
       </div>
 
       {/* Summary cards */}

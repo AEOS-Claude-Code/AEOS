@@ -64,19 +64,21 @@ function ConnectionBar({
   };
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-surface px-4 py-2.5 shadow-card">
-      <span className="text-2xs font-semibold uppercase tracking-wider text-fg-hint">
-        Intelligence engines
+    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
+      <span className="text-2xs font-bold uppercase tracking-wider text-slate-400">
+        Engines
       </span>
       {sources.map((s) => (
-        <span key={s.label} className="flex items-center gap-1.5 text-xs-tight text-fg-secondary">
+        <span key={s.label} className="flex items-center gap-1.5 text-xs text-slate-600">
           <span
-            className={`h-1.5 w-1.5 rounded-full ${dotColor[s.status] ?? "bg-slate-300"} ${
+            className={`h-2 w-2 rounded-full ${dotColor[s.status] ?? "bg-slate-300"} ${
               s.status === "live" ? "pulse-dot" : ""
             }`}
           />
           {s.label}
-          <span className="font-medium text-fg-muted">{labelText[s.status] ?? s.status}</span>
+          <span className={`text-2xs font-semibold ${s.status === "live" ? "text-emerald-600" : s.status === "error" ? "text-red-500" : "text-amber-500"}`}>
+            {labelText[s.status] ?? s.status}
+          </span>
         </span>
       ))}
     </div>
@@ -166,11 +168,18 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="mb-2">
-        <h1 className="text-xl font-bold text-fg">Dashboard</h1>
-        <p className="mt-0.5 text-sm text-fg-muted">
-          Executive overview of {summary.company_name}
-        </p>
+      {/* Premium header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Dashboard</h1>
+          <p className="text-xs text-slate-500">
+            Executive overview — {summary.company_name}
+          </p>
+        </div>
+        <button onClick={refreshAll}
+          className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-2xs font-medium text-slate-600 transition hover:bg-slate-200">
+          Refresh all
+        </button>
       </div>
 
       <ConnectionBar

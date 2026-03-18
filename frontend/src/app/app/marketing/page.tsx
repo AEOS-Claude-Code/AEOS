@@ -17,11 +17,14 @@ export default function MarketingPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-fg">Marketing</h1>
-        <p className="mt-1 text-sm text-fg-muted">
-          Campaign performance, channel analytics, and marketing automation.
-        </p>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 shadow-lg shadow-pink-200/40">
+          <Megaphone size={20} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Marketing</h1>
+          <p className="text-xs text-slate-500">Campaign performance, channels, and automation</p>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">

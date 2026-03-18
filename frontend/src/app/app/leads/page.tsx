@@ -38,16 +38,21 @@ export default function LeadsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-fg">Leads</h1>
-          <p className="mt-1 text-sm text-fg-muted">Track, score, and manage your sales pipeline.</p>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200/40">
+            <Users size={20} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">Leads</h1>
+            <p className="text-xs text-slate-500">Track, score, and manage your sales pipeline</p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-1.5 rounded-widget border border-border px-3 py-2 text-xs font-medium text-fg-secondary transition hover:bg-surface-secondary">
+          <button className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200">
             <Filter size={13} /> Filter
           </button>
-          <button className="flex items-center gap-1.5 rounded-widget border border-border px-3 py-2 text-xs font-medium text-fg-secondary transition hover:bg-surface-secondary">
+          <button className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-200">
             <Download size={13} /> Export
           </button>
         </div>
@@ -68,30 +73,30 @@ export default function LeadsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border-light text-2xs font-semibold uppercase tracking-wider text-fg-hint">
-                  <th className="pb-2 pr-4">Name</th>
-                  <th className="pb-2 pr-4">Company</th>
-                  <th className="pb-2 pr-4">Source</th>
-                  <th className="pb-2 pr-4">Score</th>
-                  <th className="pb-2 pr-4">Status</th>
-                  <th className="pb-2">Date</th>
+                <tr className="border-b border-slate-100 text-2xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="px-3 py-2.5">Name</th>
+                  <th className="px-3 py-2.5">Company</th>
+                  <th className="px-3 py-2.5">Source</th>
+                  <th className="px-3 py-2.5">Score</th>
+                  <th className="px-3 py-2.5">Status</th>
+                  <th className="px-3 py-2.5">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {leads.slice(0, 15).map((lead) => (
-                  <tr key={lead.id} className="border-b border-border-light last:border-0">
-                    <td className="py-2.5 pr-4 font-medium text-fg">{lead.name}</td>
-                    <td className="py-2.5 pr-4 text-fg-secondary">{lead.company}</td>
-                    <td className="py-2.5 pr-4 text-fg-secondary">{lead.source.replace(/_/g, " ")}</td>
-                    <td className="py-2.5 pr-4">
-                      <span className="tabular-nums font-semibold text-fg">{lead.score}</span>
+                  <tr key={lead.id} className="border-b border-slate-50 transition-colors hover:bg-slate-50/50 last:border-0">
+                    <td className="px-3 py-2.5 font-bold text-slate-900">{lead.name}</td>
+                    <td className="px-3 py-2.5 text-slate-600">{lead.company}</td>
+                    <td className="px-3 py-2.5 text-slate-600">{lead.source.replace(/_/g, " ")}</td>
+                    <td className="px-3 py-2.5">
+                      <span className="tabular-nums font-bold text-slate-900">{lead.score}</span>
                     </td>
-                    <td className="py-2.5 pr-4">
-                      <span className={`rounded-pill px-2 py-0.5 text-2xs font-semibold ${STATUS_COLORS[lead.status] ?? "bg-surface-inset text-fg-hint"}`}>
+                    <td className="px-3 py-2.5">
+                      <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${STATUS_COLORS[lead.status] ?? "bg-slate-100 text-slate-500"}`}>
                         {lead.status}
                       </span>
                     </td>
-                    <td className="py-2.5 text-fg-hint">{new Date(lead.created_at).toLocaleDateString()}</td>
+                    <td className="px-3 py-2.5 text-slate-400">{new Date(lead.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
