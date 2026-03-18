@@ -253,6 +253,7 @@ OPERATION_COSTS: dict[str, int] = {
     "gap_analysis_compute": 150,
     "business_plan_generation": 2000,
     "business_plan_section_regen": 200,
+    "competitor_scan": 300,
 }
 
 
