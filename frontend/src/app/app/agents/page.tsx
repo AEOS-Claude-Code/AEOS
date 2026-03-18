@@ -7,6 +7,7 @@ import {
   Brain, Target, Megaphone, Wallet, Shield, Settings, Cpu, Package,
   Heart, Sparkles, Zap, Clock, Send,
 } from "lucide-react";
+import api from "@/lib/api";
 import { useAgents, type Agent, type DepartmentGroup, type TaskResult } from "@/lib/hooks/useAgents";
 
 const DEPT_ICONS: Record<string, any> = {
@@ -89,13 +90,36 @@ export default function AgentsPage() {
   const [taskInput, setTaskInput] = useState("");
   const [taskRunning, setTaskRunning] = useState(false);
   const [taskResult, setTaskResult] = useState<TaskResult | null>(null);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+
+  async function openTaskModal(agent: Agent) {
+    setTaskModal(agent);
+    setTaskResult(null);
+    setTaskInput("");
+    setSelectedTemplate(null);
+    try {
+      const res = await api.get(`/api/v1/agents/task-templates?department=${agent.department}`);
+      setTemplates(res.data || []);
+    } catch { setTemplates([]); }
+  }
 
   async function handleRunTask() {
     if (!taskModal || !taskInput.trim()) return;
     setTaskRunning(true);
     setTaskResult(null);
-    const result = await runTask(taskModal.id, "user_request", taskInput, taskInput);
-    setTaskResult(result);
+
+    if (selectedTemplate) {
+      try {
+        const res = await api.post(
+          `/api/v1/agents/task-from-template?agent_id=${taskModal.id}&template_id=${selectedTemplate.id}&user_input=${encodeURIComponent(taskInput)}`
+        );
+        setTaskResult(res.data);
+      } catch { }
+    } else {
+      const result = await runTask(taskModal.id, "user_request", taskInput, taskInput);
+      setTaskResult(result);
+    }
     setTaskRunning(false);
   }
 
@@ -158,7 +182,7 @@ export default function AgentsPage() {
       {departments.length > 0 && (
         <div className="space-y-3">
           {departments.map(g => (
-            <DeptSection key={g.department} group={g} onRunAgent={setTaskModal} />
+            <DeptSection key={g.department} group={g} onRunAgent={openTaskModal} />
           ))}
         </div>
       )}
@@ -182,9 +206,31 @@ export default function AgentsPage() {
                 </div>
               </div>
 
+              {/* Template quick actions */}
+              {templates.length > 0 && !selectedTemplate && (
+                <div className="mb-3">
+                  <p className="mb-2 text-2xs font-semibold text-slate-500">Quick Actions</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {templates.map(t => (
+                      <button key={t.id} onClick={() => { setSelectedTemplate(t); setTaskInput(""); }}
+                        className="rounded-lg bg-aeos-50 px-2.5 py-1.5 text-2xs font-medium text-aeos-700 ring-1 ring-aeos-200 transition hover:bg-aeos-100">
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedTemplate && (
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="rounded-full bg-aeos-100 px-2 py-0.5 text-2xs font-bold text-aeos-700">{selectedTemplate.name}</span>
+                  <button onClick={() => setSelectedTemplate(null)} className="text-2xs text-slate-400 hover:text-slate-600">Clear</button>
+                </div>
+              )}
+
               <div className="mb-3">
                 <textarea value={taskInput} onChange={e => setTaskInput(e.target.value)}
-                  placeholder="Describe the task for this agent..."
+                  placeholder={selectedTemplate?.input_placeholder || "Describe the task for this agent..."}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100"
                   rows={3} />
               </div>
@@ -192,7 +238,7 @@ export default function AgentsPage() {
               <button onClick={handleRunTask} disabled={taskRunning || !taskInput.trim()}
                 className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-aeos-600 py-2.5 text-sm font-bold text-white disabled:opacity-50">
                 {taskRunning ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                {taskRunning ? "Running..." : "Run Task"}
+                {taskRunning ? "Running..." : selectedTemplate ? `Run: ${selectedTemplate.name}` : "Run Task"}
               </button>
 
               {taskResult && (

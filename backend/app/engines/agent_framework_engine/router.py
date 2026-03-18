@@ -98,6 +98,56 @@ async def create_task(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/task-templates")
+async def get_task_templates(
+    department: str = None,
+    user: User = Depends(get_current_user),
+    membership: Membership = Depends(get_current_membership),
+):
+    """Get available task templates, optionally filtered by department."""
+    from .task_templates import get_department_tasks, get_all_task_templates
+    if department:
+        return get_department_tasks(department)
+    return get_all_task_templates()
+
+
+@router.post("/task-from-template", response_model=TaskResult)
+async def run_template_task(
+    agent_id: str,
+    template_id: str,
+    user_input: str = "",
+    user: User = Depends(get_current_user),
+    membership: Membership = Depends(get_current_membership),
+    db: AsyncSession = Depends(get_db),
+):
+    """Run a predefined task template on an agent."""
+    from .task_templates import get_task_template
+    from .service import get_agent
+
+    agent = await get_agent(db, agent_id)
+    if not agent or agent.workspace_id != membership.workspace_id:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    template = get_task_template(agent.department, template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Task template not found")
+
+    prompt = template["prompt"].replace("{input}", user_input or "N/A")
+
+    task = await assign_task(
+        db, membership.workspace_id, agent_id,
+        template_id, template["name"], prompt,
+        {"template_id": template_id, "user_input": user_input},
+    )
+    await db.commit()
+    return TaskResult(
+        task_id=task.id, status=task.status,
+        result_summary=task.result_summary or "",
+        output_data=task.output_data or {},
+        tokens_used=task.tokens_used or 0,
+    )
+
+
 @router.get("/tasks", response_model=list[TaskResponse])
 async def list_tasks(
     agent_id: str = None,
