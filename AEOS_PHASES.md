@@ -1,7 +1,7 @@
 # AEOS – Phase Implementation Tracker
 
 > Autonomous Enterprise Operating System
-> Last updated: 2026-03-18
+> Last updated: 2026-03-19
 
 ---
 
@@ -22,10 +22,10 @@
 | 9 | Industry-Specific Org Chart Engine | COMPLETE | 2026-03-18 |
 | 9.5 | Premium UI Redesign (Phases A–E1) | COMPLETE | 2026-03-18 |
 | 10 | Organizational Gap Analysis Engine | COMPLETE | 2026-03-18 |
+| 14 | AI Strategy Agent (Business Plan) | COMPLETE | 2026-03-18 |
 | 11 | Competitor Intelligence Engine | PENDING | — |
 | 12 | Market Research Engine | PENDING | — |
 | 13 | Financial Health Assessment | PENDING | — |
-| 14 | AI Strategy Agent (Business Plan) | PENDING | — |
 | 15 | Financial Model Generator | PENDING | — |
 | 16 | KPI Framework Engine | PENDING | — |
 | 17 | Reports & PDF Engine | PENDING | — |
@@ -403,6 +403,61 @@
 - Recommendation cards with priority, impact, effort badges
 - Sidebar: "Gap Analysis" added to Intelligence section
 - `useGapAnalysis` hook for data fetching
+
+---
+
+## Phase 14 — AI Strategy Agent ("McKinsey on Demand")
+
+**Scope:** Claude-powered business plan generator that produces a 10-section strategic plan using all available company intelligence data.
+
+**Delivered:**
+
+**Context Builder (`context_builder.py`):**
+- Aggregates data from 8 sources: workspace profile, digital presence, gap analysis, org chart, company scan, strategic intelligence, leads, opportunities
+- Section-specific context formatting — each section receives only relevant data
+- Formatted text blocks for each data source (company, digital presence, gap analysis, org chart, strategy, scan)
+
+**10 McKinsey-Grade Prompt Templates (`prompts.py`):**
+1. Executive Summary — positioning, key findings, top 3 recommendations
+2. Company Overview — digital maturity, infrastructure, strengths/weaknesses
+3. Market Analysis — industry landscape, competitive positioning, trends
+4. Organizational Structure — gap scores, staffing priorities, AI deployment strategy
+5. Marketing & Sales Strategy — SEO, social, lead generation, quick wins
+6. Operations Plan — tech stack, process optimization, AI automation
+7. Financial Projections — 3-year growth trajectory, cost drivers, ROI
+8. Risk Assessment — strategic, operational, digital, organizational risks
+9. Implementation Roadmap — 30/60/90 day plan with success metrics
+10. KPI Framework — company-level + department-level + digital KPIs
+
+**Claude API Generator (`generator.py`):**
+- Model: `claude-sonnet-4-20250514` (configurable via `AI_DEFAULT_MODEL`)
+- 800 max tokens per section (~400 words output)
+- Big 4 consulting system prompt (McKinsey/BCG/Bain methodology)
+- Template fallback when no `ANTHROPIC_API_KEY` configured
+- httpx-based API calls matching executive copilot pattern
+
+**Service Orchestration (`service.py`):**
+- Sequential section generation with progressive DB flushes
+- Duplicate generation prevention (409 if already generating)
+- Version tracking (v1, v2, etc. per workspace)
+- Context snapshot stored for section regeneration
+- Token billing: 2000 per full plan, 200 per section regen
+
+**API Endpoints:**
+- `POST /api/v1/business-plan/generate` — Kick off generation
+- `GET /api/v1/business-plan/latest` — Latest completed/generating plan
+- `GET /api/v1/business-plan/{id}` — Full plan with all sections
+- `GET /api/v1/business-plan/{id}/progress` — Lightweight poll (status + sections_completed)
+- `POST /api/v1/business-plan/{id}/regenerate/{section}` — Redo one section
+- `GET /api/v1/business-plan/history` — All plans for workspace
+
+**Frontend (`/app/business-plan`):**
+- Empty state: animated CTA with feature highlights + "Generate Business Plan" button
+- Generating state: progress bar + section checklist with status icons + "Writing..." animation
+- Complete state: left TOC sidebar + rendered markdown sections + regenerate buttons per section
+- `useBusinessPlan` hook with 3-second polling during generation
+- Simple markdown-to-HTML renderer for section content
+- Sidebar: "Business Plan" added to Intelligence section
 
 ---
 
