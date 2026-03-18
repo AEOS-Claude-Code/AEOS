@@ -285,13 +285,39 @@ CITY_PATTERNS: dict[str, list[str]] = {
 }
 
 
+# Country names to detect from URL or content
+COUNTRY_KEYWORDS: dict[str, list[str]] = {
+    "Jordan": ["jordan", "jordanian", "الأردن"],
+    "Saudi Arabia": ["saudi", "ksa", "المملكة العربية السعودية", "السعودية"],
+    "United Arab Emirates": ["uae", "emirates", "emirati", "الإمارات"],
+    "Qatar": ["qatar", "qatari", "قطر"],
+    "Kuwait": ["kuwait", "kuwaiti", "الكويت"],
+    "Bahrain": ["bahrain", "bahraini", "البحرين"],
+    "Oman": ["oman", "omani", "عمان"],
+    "Egypt": ["egypt", "egyptian", "مصر"],
+    "Lebanon": ["lebanon", "lebanese", "لبنان"],
+    "Morocco": ["morocco", "moroccan", "المغرب"],
+    "Tunisia": ["tunisia", "tunisian", "تونس"],
+    "Iraq": ["iraq", "iraqi", "العراق"],
+    "Palestine": ["palestine", "palestinian", "فلسطين"],
+    "United Kingdom": ["united kingdom", "british", "england", "scotland", "wales"],
+    "United States": ["united states", "usa", "american"],
+    "Germany": ["germany", "german", "deutschland"],
+    "France": ["france", "french"],
+    "Turkey": ["turkey", "turkish", "türkiye"],
+    "India": ["india", "indian"],
+    "Pakistan": ["pakistan", "pakistani"],
+}
+
+
 def detect_location(
     url: str = "",
     corpus: str = "",
     phone_numbers: list[str] | None = None,
 ) -> dict[str, str]:
     """
-    Detect country and city from URL TLD, phone numbers, and content.
+    Detect country and city from URL TLD, phone numbers, URL keywords,
+    country names in content, and city names in content.
     Returns {"country": "...", "city": "..."}.
     """
     country = ""
@@ -302,7 +328,6 @@ def detect_location(
     from urllib.parse import urlparse
     try:
         host = urlparse(url).netloc or url
-        # Check longest TLD first (e.g., .co.uk before .uk)
         for tld in sorted(TLD_COUNTRY.keys(), key=len, reverse=True):
             if host.endswith(tld):
                 country = TLD_COUNTRY[tld]
@@ -310,26 +335,60 @@ def detect_location(
     except Exception:
         pass
 
-    # 2. Check phone prefixes
+    # 2. Check phone prefixes (try all phones, handle various formats)
     if not country:
         for phone in phone_numbers:
-            clean = phone.strip().replace(" ", "").replace("-", "")
-            for prefix, c in sorted(PHONE_PREFIX_COUNTRY.items(), key=lambda x: -len(x[0])):
-                if clean.startswith(prefix):
+            # Normalize: remove spaces, dashes, parens, but keep + and digits
+            clean = re.sub(r"[^\d+]", "", phone.strip())
+            # Also try with + if it starts with 00
+            variants = [clean]
+            if clean.startswith("00"):
+                variants.append("+" + clean[2:])
+            if not clean.startswith("+") and not clean.startswith("00"):
+                variants.append("+" + clean)
+
+            for variant in variants:
+                for prefix, c in sorted(PHONE_PREFIX_COUNTRY.items(), key=lambda x: -len(x[0])):
+                    if variant.startswith(prefix):
+                        country = c
+                        break
+                if country:
+                    break
+            if country:
+                break
+
+    # 3. Check country names in URL (e.g., "jordantours-travel.com")
+    if not country:
+        url_lower = url.lower()
+        for c, keywords in COUNTRY_KEYWORDS.items():
+            for kw in keywords:
+                if kw in url_lower:
                     country = c
                     break
             if country:
                 break
 
-    # 3. Detect city from content
+    # 4. Check country names in content
+    if not country:
+        lower_corpus = corpus.lower()
+        for c, keywords in COUNTRY_KEYWORDS.items():
+            for kw in keywords:
+                if kw in lower_corpus:
+                    country = c
+                    break
+            if country:
+                break
+
+    # 5. Detect city from content
     lower_corpus = corpus.lower()
     if country and country in CITY_PATTERNS:
         for city_name in CITY_PATTERNS[country]:
             if city_name in lower_corpus:
                 city = city_name.title()
                 break
-    else:
-        # Search all cities if country not yet detected
+
+    # Also try all cities if no city found yet
+    if not city:
         for c, cities in CITY_PATTERNS.items():
             for city_name in cities:
                 if city_name in lower_corpus:
