@@ -104,24 +104,25 @@ export default function LandingPage() {
 
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Transform your company into an
+            Your company deserves a
             <br />
             <span className="bg-gradient-to-r from-aeos-600 via-violet-500 to-aeos-600 bg-clip-text text-transparent">
-              AI-powered organization
+              complete organization
             </span>
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-500">
-            AEOS evaluates your company, identifies every structural gap, and deploys
-            AI agents across all departments. A 7-person startup operates like a 30-person enterprise.
+            Enter your website. AEOS scans it, builds your company profile, identifies every
+            missing department, and deploys AI agents to fill the gaps — giving a 7-person
+            team the operational depth of a 70-person enterprise.
           </motion.p>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/register"
               className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 px-8 py-3.5 text-sm font-bold text-white shadow-xl shadow-aeos-600/25 transition-all hover:shadow-2xl hover:shadow-aeos-600/30">
-              Start free — get your AI team
+              Get your free company report
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
             <Link href="#how-it-works"
@@ -134,9 +135,9 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
             className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs text-slate-400">
             <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> No credit card required</span>
-            <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> Free website analysis</span>
-            <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> 22+ AI agents deployed</span>
-            <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> Set up in 2 minutes</span>
+            <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> Free company intelligence report</span>
+            <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> 15 AI engines activate instantly</span>
+            <span className="flex items-center gap-1"><Check size={14} className="text-emerald-500" /> McKinsey-grade strategy AI</span>
           </motion.div>
         </div>
       </section>
@@ -145,10 +146,10 @@ export default function LandingPage() {
       <section className="border-y border-slate-100 bg-slate-50/50 py-12">
         <AnimateWhenVisible className="mx-auto grid max-w-5xl grid-cols-2 gap-8 px-6 md:grid-cols-4">
           {[
-            { value: "22+", label: "AI Agents per company" },
-            { value: "9", label: "Departments covered" },
-            { value: "20+", label: "Industries supported" },
-            { value: "2 min", label: "Setup time" },
+            { value: "27", label: "AI agent task types" },
+            { value: "9", label: "Departments automated" },
+            { value: "15", label: "Intelligence engines" },
+            { value: "2 min", label: "From signup to AI team" },
           ].map((stat) => (
             <motion.div key={stat.label} variants={fadeUp} className="text-center">
               <p className="text-3xl font-extrabold text-aeos-600">{stat.value}</p>
@@ -281,9 +282,9 @@ export default function LandingPage() {
 
           <div className="grid gap-6 md:grid-cols-3">
             {[
-              { name: "Starter", price: "$19", period: "/mo", desc: "Perfect for small teams getting started", features: ["1 workspace", "5 AI agents", "Website analysis", "Basic reports", "Email support"], popular: false },
-              { name: "Growth", price: "$59", period: "/mo", desc: "For growing companies ready to scale", features: ["3 workspaces", "15 AI agents", "Full department AI", "Advanced analytics", "Priority support", "Business plan AI"], popular: true },
-              { name: "Professional", price: "$149", period: "/mo", desc: "Enterprise-grade AI for serious businesses", features: ["10 workspaces", "All 22+ AI agents", "Financial modeling", "Custom reports", "Dedicated support", "API access", "White-label"], popular: false },
+              { name: "Starter", price: "Free", period: "", desc: "Scan your website and see what AEOS can do", features: ["1 workspace", "Company intelligence report", "Website analysis & SEO audit", "Digital presence scoring", "Basic AI copilot"], popular: false },
+              { name: "Growth", price: "$49", period: "/mo", desc: "Full AI organization for growing companies", features: ["3 workspaces", "All 22+ AI agents", "Business plan generator", "Competitor intelligence", "Market research & financials", "KPI framework"], popular: true },
+              { name: "Business", price: "$149", period: "/mo", desc: "Enterprise-grade intelligence at SME scale", features: ["10 workspaces", "Unlimited AI agents", "Financial model generator", "8 shareable report types", "Command center dashboard", "Priority support", "API access"], popular: false },
             ].map((plan) => (
               <motion.div key={plan.name} variants={fadeUp}
                 className={`relative rounded-2xl border p-6 transition-all hover:shadow-lg ${
@@ -328,16 +329,16 @@ export default function LandingPage() {
           <motion.div variants={fadeUp}
             className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-aeos-600 via-aeos-500 to-violet-600 p-12 text-center text-white shadow-2xl shadow-aeos-600/20">
             <h2 className="text-3xl font-bold lg:text-4xl">
-              Ready to build your AI organization?
+              Every company deserves a complete organization
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-base text-white/80">
-              Enter your website URL and AEOS will analyze your company, detect every gap, and deploy
-              AI agents to fill them — in minutes, not months.
+              The tools, intelligence, and strategic capability that were once exclusive to
+              large corporations — now available to every ambitious business from Day 1.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/register"
                 className="group flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-bold text-aeos-700 shadow-xl transition hover:shadow-2xl">
-                Start free — deploy your AI team
+                Start free — get your intelligence report
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
