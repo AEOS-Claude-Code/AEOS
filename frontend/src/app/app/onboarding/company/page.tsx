@@ -237,6 +237,10 @@ export default function OnboardingCompany() {
   async function handleConfirm() {
     setSaving(true);
     try {
+      // Save role assignments (human/AI toggles)
+      if (Object.keys(humanRoles).length > 0) {
+        await api.put("/api/v1/workspace/role-assignments", { role_map: humanRoles }).catch(() => {});
+      }
       await api.post("/api/v1/onboarding/company", { industry, country, city, team_size: orgChart?.total_ai_agents || 1, primary_goal: "" });
       if (intake) {
         const sl: Record<string, string> = {};
