@@ -8,7 +8,9 @@ import DashboardShell from "@/components/layout/DashboardShell";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
-      <AppShell>{children}</AppShell>
+      <div className="bg-surface-base min-h-screen">
+        <AppShell>{children}</AppShell>
+      </div>
     </RequireAuth>
   );
 }

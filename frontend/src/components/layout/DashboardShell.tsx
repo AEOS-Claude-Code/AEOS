@@ -17,12 +17,12 @@ function MobileNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-slate-200 bg-white/95 backdrop-blur-sm px-2 py-1.5 safe-area-pb lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t border-border bg-surface/95 backdrop-blur-sm px-2 py-1.5 safe-area-pb lg:hidden">
       {items.map(({ icon: Icon, href, label }) => {
         const active = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link key={href} href={href}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition ${active ? "text-aeos-600" : "text-slate-400"}`}>
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition ${active ? "text-aeos-600" : "text-fg-hint"}`}>
             <Icon size={20} />
             <span className="text-[10px] font-medium">{label}</span>
           </Link>
