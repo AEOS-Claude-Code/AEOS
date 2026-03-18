@@ -23,16 +23,24 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
 /* ── Progress steps config ─────────────────────────────────────── */
 
 const PROGRESS_STEPS = [
-  { icon: Globe, label: "Creating your workspace", sublabel: "Setting up your account...", delay: 0 },
-  { icon: Globe, label: "Scanning website", sublabel: "Fetching pages with headless browser...", delay: 2000 },
-  { icon: Building2, label: "Detecting company info", sublabel: "Company name, industry, location...", delay: 5000 },
-  { icon: Phone, label: "Extracting contacts", sublabel: "Phone numbers, emails, WhatsApp...", delay: 8000 },
-  { icon: Share2, label: "Finding social profiles", sublabel: "LinkedIn, Instagram, Facebook...", delay: 11000 },
-  { icon: Brain, label: "Analyzing tech stack", sublabel: "Technologies and platforms...", delay: 14000 },
-  { icon: Bot, label: "Building AI org chart", sublabel: "Preparing your AI-powered team...", delay: 17000 },
+  { icon: Globe, label: "Workspace", delay: 0 },
+  { icon: Globe, label: "Scanning", delay: 2500 },
+  { icon: Building2, label: "Company", delay: 6000 },
+  { icon: Phone, label: "Contacts", delay: 10000 },
+  { icon: Share2, label: "Social", delay: 14000 },
+  { icon: Bot, label: "AI Agents", delay: 18000 },
 ];
 
 /* ── Animated progress overlay ─────────────────────────────────── */
+
+const ACTIVE_MESSAGES = [
+  "Setting up your account...",
+  "Fetching pages with headless browser...",
+  "Detecting name, industry, location...",
+  "Phone numbers, emails, WhatsApp...",
+  "LinkedIn, Instagram, Facebook...",
+  "Preparing your AI-powered team...",
+];
 
 function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -44,28 +52,25 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Progress bar width
   const progress = Math.min(100, ((currentStep + 1) / PROGRESS_STEPS.length) * 100);
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
-        {/* Header */}
-        <div className="mb-8 flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-aeos-400 to-aeos-700 shadow-lg shadow-aeos-200">
-              <Globe size={36} className="text-white" />
+    <div className="w-full max-w-md">
+      <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        {/* Header row */}
+        <div className="mb-5 flex items-center gap-4">
+          <div className="relative shrink-0">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-400 to-aeos-700 shadow-md shadow-aeos-200">
+              <Globe size={28} className="text-white" />
             </div>
-            <div className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md">
-              <Loader2 size={18} className="animate-spin text-aeos-500" />
+            <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
+              <Loader2 size={12} className="animate-spin text-aeos-500" />
             </div>
-            {/* Pulse ring */}
-            <div className="absolute inset-0 -m-3 animate-ping rounded-2xl border-2 border-aeos-200 opacity-20" />
           </div>
-          <div className="text-center">
-            <h2 className="text-lg font-bold text-fg">Setting up your AEOS workspace</h2>
+          <div>
+            <h2 className="text-base font-bold text-fg">Setting up your AEOS workspace</h2>
             {websiteUrl && (
-              <p className="mt-1 text-sm text-fg-muted">
+              <p className="text-sm text-fg-muted">
                 Analyzing <span className="font-medium text-aeos-600">{websiteUrl.replace(/https?:\/\/(www\.)?/, "")}</span>
               </p>
             )}
@@ -73,61 +78,47 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
         </div>
 
         {/* Progress bar */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-aeos-500 to-emerald-500 transition-all duration-1000 ease-out"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full rounded-full bg-gradient-to-r from-aeos-500 to-emerald-500 transition-all duration-1000 ease-out"
+              style={{ width: `${progress}%` }} />
           </div>
-          <p className="mt-1.5 text-right text-2xs text-fg-hint">{Math.round(progress)}%</p>
         </div>
 
-        {/* Steps */}
-        <div className="space-y-3">
+        {/* Horizontal steps */}
+        <div className="flex items-center justify-between gap-1">
           {PROGRESS_STEPS.map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
             const Icon = step.icon;
-
             return (
-              <div
-                key={i}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-500 ${
-                  active ? "bg-aeos-50 shadow-sm" : done ? "opacity-70" : "opacity-30"
-                }`}
-              >
+              <div key={i} className="flex flex-col items-center gap-1">
                 {done ? (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
                     <Check size={14} className="text-white" />
                   </div>
                 ) : active ? (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-aeos-100">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-aeos-100 shadow-sm ring-2 ring-aeos-300">
                     <Loader2 size={14} className="animate-spin text-aeos-600" />
                   </div>
                 ) : (
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                    <Icon size={14} className="text-slate-400" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+                    <Icon size={14} className="text-slate-300" />
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <p className={`text-sm ${active ? "font-semibold text-aeos-800" : done ? "font-medium text-emerald-700" : "text-fg-hint"}`}>
-                    {step.label}
-                  </p>
-                  {active && (
-                    <p className="mt-0.5 text-2xs text-aeos-600">{step.sublabel}</p>
-                  )}
-                </div>
+                <span className={`text-center text-2xs leading-tight ${
+                  done ? "font-medium text-emerald-600" : active ? "font-semibold text-aeos-700" : "text-fg-hint"
+                }`}>
+                  {step.label}
+                </span>
               </div>
             );
           })}
         </div>
 
-        {/* Fun fact */}
-        <div className="mt-6 rounded-xl bg-slate-50 p-3 text-center">
-          <p className="text-2xs text-fg-muted">
-            AEOS uses a headless browser to render JavaScript and extract every detail from your website
-          </p>
+        {/* Active step message */}
+        <div className="mt-4 rounded-lg bg-aeos-50 px-3 py-2 text-center">
+          <p className="text-xs text-aeos-700">{ACTIVE_MESSAGES[currentStep] || "Processing..."}</p>
         </div>
       </div>
     </div>
