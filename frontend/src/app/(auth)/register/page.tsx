@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
-import { Zap, Globe, Check, Loader2, Building2, Phone, Share2, Brain, Bot } from "lucide-react";
+import { motion } from "framer-motion";
+import { Zap, Globe, Check, Loader2, Building2, Phone, Share2, Bot, ArrowRight } from "lucide-react";
 
 function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
   if (!pw) return { label: "", color: "bg-gray-200", width: "w-0" };
@@ -13,14 +14,11 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
   if (/[a-z]/.test(pw)) score++;
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-
   if (score <= 2) return { label: "Weak", color: "bg-red-400", width: "w-1/4" };
   if (score === 3) return { label: "Fair", color: "bg-yellow-400", width: "w-2/4" };
   if (score === 4) return { label: "Good", color: "bg-blue-400", width: "w-3/4" };
   return { label: "Strong", color: "bg-green-500", width: "w-full" };
 }
-
-/* ── Progress steps config ─────────────────────────────────────── */
 
 const PROGRESS_STEPS = [
   { icon: Globe, label: "Workspace", delay: 0 },
@@ -30,8 +28,6 @@ const PROGRESS_STEPS = [
   { icon: Share2, label: "Social", delay: 14000 },
   { icon: Bot, label: "AI Agents", delay: 18000 },
 ];
-
-/* ── Animated progress overlay ─────────────────────────────────── */
 
 const ACTIVE_MESSAGES = [
   "Setting up your account...",
@@ -44,23 +40,18 @@ const ACTIVE_MESSAGES = [
 
 function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
   const [currentStep, setCurrentStep] = useState(0);
-
   useEffect(() => {
-    const timers = PROGRESS_STEPS.map((step, i) =>
-      setTimeout(() => setCurrentStep(i), step.delay)
-    );
+    const timers = PROGRESS_STEPS.map((step, i) => setTimeout(() => setCurrentStep(i), step.delay));
     return () => timers.forEach(clearTimeout);
   }, []);
-
   const progress = Math.min(100, ((currentStep + 1) / PROGRESS_STEPS.length) * 100);
 
   return (
-    <div className="w-full max-w-md">
-      <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-        {/* Header row */}
-        <div className="mb-5 flex items-center gap-4">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md">
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
+        <div className="mb-6 flex items-center gap-4">
           <div className="relative shrink-0">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-400 to-aeos-700 shadow-md shadow-aeos-200">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-400 to-aeos-700 shadow-lg shadow-aeos-200">
               <Globe size={28} className="text-white" />
             </div>
             <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
@@ -68,64 +59,59 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
             </div>
           </div>
           <div>
-            <h2 className="text-base font-bold text-fg">Setting up your AEOS workspace</h2>
+            <h2 className="text-lg font-bold text-slate-900">Setting up your AEOS workspace</h2>
             {websiteUrl && (
-              <p className="text-sm text-fg-muted">
-                Analyzing <span className="font-medium text-aeos-600">{websiteUrl.replace(/https?:\/\/(www\.)?/, "")}</span>
+              <p className="text-sm text-slate-500">
+                Analyzing <span className="font-semibold text-aeos-600">{websiteUrl.replace(/https?:\/\/(www\.)?/, "")}</span>
               </p>
             )}
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="mb-4">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-gradient-to-r from-aeos-500 to-emerald-500 transition-all duration-1000 ease-out"
-              style={{ width: `${progress}%` }} />
+        <div className="mb-5">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <motion.div className="h-full rounded-full bg-gradient-to-r from-aeos-500 to-emerald-500"
+              initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.8 }} />
           </div>
         </div>
 
-        {/* Horizontal steps */}
         <div className="flex items-center justify-between gap-1">
           {PROGRESS_STEPS.map((step, i) => {
             const done = i < currentStep;
             const active = i === currentStep;
             const Icon = step.icon;
             return (
-              <div key={i} className="flex flex-col items-center gap-1">
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }} className="flex flex-col items-center gap-1.5">
                 {done ? (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 shadow-sm">
-                    <Check size={14} className="text-white" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 shadow">
+                    <Check size={16} className="text-white" />
                   </div>
                 ) : active ? (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-aeos-100 shadow-sm ring-2 ring-aeos-300">
-                    <Loader2 size={14} className="animate-spin text-aeos-600" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-aeos-50 shadow ring-2 ring-aeos-400">
+                    <Loader2 size={16} className="animate-spin text-aeos-600" />
                   </div>
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-                    <Icon size={14} className="text-slate-300" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50">
+                    <Icon size={16} className="text-slate-300" />
                   </div>
                 )}
                 <span className={`text-center text-2xs leading-tight ${
-                  done ? "font-medium text-emerald-600" : active ? "font-semibold text-aeos-700" : "text-fg-hint"
-                }`}>
-                  {step.label}
-                </span>
-              </div>
+                  done ? "font-medium text-emerald-600" : active ? "font-bold text-aeos-700" : "text-slate-400"
+                }`}>{step.label}</span>
+              </motion.div>
             );
           })}
         </div>
 
-        {/* Active step message */}
-        <div className="mt-4 rounded-lg bg-aeos-50 px-3 py-2 text-center">
-          <p className="text-xs text-aeos-700">{ACTIVE_MESSAGES[currentStep] || "Processing..."}</p>
-        </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+          className="mt-5 rounded-xl bg-gradient-to-r from-aeos-50 to-violet-50 px-4 py-2.5 text-center">
+          <p className="text-xs font-medium text-aeos-700">{ACTIVE_MESSAGES[currentStep] || "Processing..."}</p>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
-
-/* ── Main register page ────────────────────────────────────────── */
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -143,120 +129,95 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
+    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
-      setError("Password must contain uppercase, lowercase, and a digit.");
-      return;
+      setError("Password must contain uppercase, lowercase, and a digit."); return;
     }
-
     setLoading(true);
     try {
       await register(email, password, fullName, websiteUrl);
     } catch (err: any) {
       const status = err?.response?.status;
       const detail = err?.response?.data?.detail;
-      if (status === 502 || status === 503) {
-        setError("Server is starting up. Please wait a moment and try again.");
-      } else if (Array.isArray(detail)) {
-        setError(detail.map((d: any) => d.msg || d).join(". "));
-      } else {
-        setError(detail || "Registration failed. Please try again.");
-      }
-    } finally {
-      setLoading(false);
-    }
+      if (status === 502 || status === 503) setError("Server is starting up. Please wait a moment and try again.");
+      else if (Array.isArray(detail)) setError(detail.map((d: any) => d.msg || d).join(". "));
+      else setError(detail || "Registration failed. Please try again.");
+    } finally { setLoading(false); }
   }
 
-  const inputClass = "w-full rounded-xl border border-border bg-surface-secondary px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:ring-2 focus:ring-aeos-100";
+  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-100";
 
-  /* ── Loading: show progress overlay ──────────────────────────── */
-
-  if (loading) {
-    return <ProgressOverlay websiteUrl={websiteUrl} />;
-  }
-
-  /* ── Registration form ───────────────────────────────────────── */
+  if (loading) return <ProgressOverlay websiteUrl={websiteUrl} />;
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="rounded-2xl border border-border bg-surface p-8 shadow-card">
-        <h1 className="mb-1 text-xl font-bold text-fg">Create your workspace</h1>
-        <p className="mb-6 text-sm text-fg-muted">Get a free company intelligence report</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Full name</label>
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-              placeholder="Dana Chen" className={inputClass} required />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Work email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com" className={inputClass} required />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">
-              Company website
-              <span className="ml-1.5 rounded-full bg-aeos-50 px-1.5 py-px text-2xs font-semibold text-aeos-700">
-                Free report
-              </span>
-            </label>
-            <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://yourcompany.com" className={inputClass} />
-            <p className="mt-1 text-2xs text-fg-hint">
-              We'll analyze your website and generate a shareable intelligence report — free.
-            </p>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder={"\u2022".repeat(8)} minLength={8} className={inputClass} required />
-            {password && (
-              <div className="mt-1.5">
-                <div className="h-1 w-full rounded-full bg-gray-100">
-                  <div className={`h-1 rounded-full transition-all ${strength.color} ${strength.width}`} />
-                </div>
-                <p className="mt-0.5 text-2xs text-fg-hint">{strength.label} — min 8 chars, uppercase, lowercase, digit</p>
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-fg-secondary">Confirm password</label>
-            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder={"\u2022".repeat(8)} minLength={8}
-              className={`${inputClass} ${passwordMismatch ? "border-red-400 focus:border-red-400 focus:ring-red-100" : ""}`}
-              required />
-            {passwordMismatch && (
-              <p className="mt-1 text-2xs text-red-500">Passwords do not match</p>
-            )}
-          </div>
-
-          {error && (
-            <p className="rounded-lg bg-status-danger-light px-3 py-2 text-xs text-status-danger-text">{error}</p>
-          )}
-
-          <button type="submit" disabled={loading || passwordMismatch}
-            className="w-full rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 py-3 text-sm font-bold text-white shadow-md shadow-aeos-200/50 transition-all hover:shadow-lg hover:shadow-aeos-300/50 disabled:opacity-50">
-            <span className="flex items-center justify-center gap-2">
-              <Zap size={16} />
-              Get free report
-            </span>
-          </button>
-        </form>
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-slate-900">Create your workspace</h1>
+        <p className="mt-1 text-sm text-slate-500">Get a free AI-powered company intelligence report</p>
       </div>
 
-      <p className="mt-6 text-center text-sm text-fg-muted">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Full name</label>
+          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+            placeholder="Your full name" className={ic} required />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Work email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com" className={ic} required />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+            Company website
+            <span className="ml-2 rounded-full bg-gradient-to-r from-aeos-50 to-violet-50 px-2 py-0.5 text-2xs font-bold text-aeos-700">
+              Free report
+            </span>
+          </label>
+          <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)}
+            placeholder="https://yourcompany.com" className={ic} />
+          <p className="mt-1 text-2xs text-slate-400">
+            AEOS will scan your website and deploy AI agents for your company.
+          </p>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Password</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            placeholder={"\u2022".repeat(8)} minLength={8} className={ic} required />
+          {password && (
+            <div className="mt-2">
+              <div className="h-1 w-full rounded-full bg-slate-100">
+                <div className={`h-1 rounded-full transition-all ${strength.color} ${strength.width}`} />
+              </div>
+              <p className="mt-0.5 text-2xs text-slate-400">{strength.label}</p>
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Confirm password</label>
+          <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder={"\u2022".repeat(8)} minLength={8}
+            className={`${ic} ${passwordMismatch ? "border-red-300 focus:border-red-400 focus:ring-red-100" : ""}`} required />
+          {passwordMismatch && <p className="mt-1 text-2xs text-red-500">Passwords do not match</p>}
+        </div>
+
+        {error && (
+          <div className="rounded-xl bg-red-50 px-4 py-2.5 text-xs text-red-600">{error}</div>
+        )}
+
+        <button type="submit" disabled={loading || passwordMismatch}
+          className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 py-3 text-sm font-bold text-white shadow-lg shadow-aeos-500/20 transition-all hover:shadow-xl disabled:opacity-50">
+          <Zap size={16} />
+          Get free report
+          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+        </button>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-slate-500">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-aeos-600 hover:text-aeos-700">Sign in</Link>
+        <Link href="/login" className="font-semibold text-aeos-600 hover:text-aeos-700 transition">Sign in</Link>
       </p>
-    </div>
+    </motion.div>
   );
 }
