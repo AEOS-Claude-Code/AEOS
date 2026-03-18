@@ -407,6 +407,17 @@ def extract_contacts(html: str, base_url: str) -> dict:
         for match in STRICT_PHONE_REGEX.finditer(visible_text):
             add_phone(match.group())
 
+    # ── 6. Extra fallback: look for any clickable phone-like patterns in HTML ──
+    if not result["phone_numbers"]:
+        # Some sites hide phones in onclick, data attributes, or JS
+        for match in re.finditer(r'["\']((?:\+|00)\d[\d\s\-().]{6,18}\d)["\']', html):
+            candidate = match.group(1).strip()
+            digits = re.sub(r"[^\d]", "", candidate)
+            if 8 <= len(digits) <= 15:
+                add_phone(candidate)
+                if len(result["phone_numbers"]) >= 3:
+                    break
+
     # Cap results
     result["phone_numbers"] = result["phone_numbers"][:5]
     result["emails"] = result["emails"][:10]

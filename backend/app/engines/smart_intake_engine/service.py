@@ -50,12 +50,39 @@ async def intake_from_url(url: str) -> dict:
         url=url,
     )
 
+    # 5b. Follow contact page to extract more contacts if we missed phone/email
+    if (not contacts["phone_numbers"] or not contacts["emails"]) and contacts["contact_pages"]:
+        try:
+            contact_url = contacts["contact_pages"][0]
+            logger.info("Following contact page %s for more data", contact_url)
+            contact_profile = await collect_website_profile(contact_url)
+            contact_html = contact_profile.get("html", "")
+            if contact_html:
+                extra_contacts = extract_contacts(contact_html, contact_url)
+                # Merge new findings
+                seen_phones = set(contacts["phone_numbers"])
+                for phone in extra_contacts["phone_numbers"]:
+                    if phone not in seen_phones:
+                        contacts["phone_numbers"].append(phone)
+                        seen_phones.add(phone)
+                seen_emails = set(contacts["emails"])
+                for email in extra_contacts["emails"]:
+                    if email not in seen_emails:
+                        contacts["emails"].append(email)
+                        seen_emails.add(email)
+                if not contacts["whatsapp_links"]:
+                    contacts["whatsapp_links"] = extra_contacts["whatsapp_links"]
+                # Also add contact page HTML to corpus for country/city detection
+                html = html + " " + contact_html[:5000]
+        except Exception as e:
+            logger.info("Contact page follow failed: %s", str(e)[:100])
+
     # 6. Detect country/city
     corpus = " ".join([
         profile.get("title", ""),
         profile.get("description", ""),
         " ".join(profile.get("headings", [])),
-        html[:5000],  # First 5K chars of HTML for address patterns
+        html[:10000],  # First 10K chars of HTML for address patterns
     ])
     location = detect_location(
         url=url,
