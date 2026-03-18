@@ -28,6 +28,8 @@ import {
   Shield,
   Settings,
   Package,
+  Heart,
+  CalendarDays,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -118,6 +120,9 @@ const DEPT_ICONS: Record<string, any> = {
   settings: Settings,
   cpu: Cpu,
   package: Package,
+  heart: Heart,
+  calendar: CalendarDays,
+  sparkles: Sparkles,
 };
 
 const DEPT_COLORS: Record<string, string> = {
@@ -130,6 +135,39 @@ const DEPT_COLORS: Record<string, string> = {
   operations: "from-amber-500 to-yellow-600",
   it: "from-cyan-500 to-teal-500",
   procurement: "from-lime-500 to-green-500",
+  reservations: "from-blue-400 to-blue-600",
+  guest_relations: "from-rose-400 to-pink-600",
+  partnerships: "from-teal-500 to-emerald-600",
+  patient_care: "from-red-400 to-rose-500",
+  clinical_ops: "from-sky-500 to-blue-600",
+  billing: "from-emerald-500 to-green-600",
+  compliance: "from-gray-500 to-slate-600",
+  front_house: "from-amber-400 to-orange-500",
+  kitchen_ops: "from-red-500 to-orange-600",
+  delivery: "from-blue-500 to-cyan-500",
+  customer_service: "from-pink-400 to-rose-500",
+  customer_success: "from-pink-400 to-rose-500",
+  creative: "from-fuchsia-500 to-purple-600",
+  project_mgmt: "from-indigo-500 to-blue-600",
+  client_services: "from-orange-400 to-amber-500",
+  digital: "from-cyan-500 to-blue-500",
+  technical: "from-slate-500 to-gray-700",
+  safety: "from-red-500 to-red-700",
+  product: "from-violet-500 to-indigo-600",
+  devops: "from-gray-600 to-gray-800",
+  elearning: "from-blue-400 to-indigo-500",
+  academic: "from-emerald-400 to-teal-500",
+  student_services: "from-amber-400 to-orange-500",
+  risk: "from-red-500 to-rose-600",
+  production: "from-orange-500 to-amber-600",
+  supply_chain: "from-teal-500 to-green-600",
+  rd: "from-purple-500 to-violet-600",
+  warehouse: "from-amber-500 to-yellow-600",
+  customs: "from-slate-500 to-gray-600",
+  estimating: "from-blue-500 to-indigo-500",
+  property_mgmt: "from-amber-500 to-orange-500",
+  valuation: "from-emerald-500 to-teal-500",
+  transactions: "from-slate-500 to-gray-600",
 };
 
 function DetectedItem({ icon: Icon, label, value, found }: {
