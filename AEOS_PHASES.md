@@ -1,7 +1,7 @@
 # AEOS – Phase Implementation Tracker
 
 > Autonomous Enterprise Operating System
-> Last updated: 2026-03-19 (Phase 11 complete)
+> Last updated: 2026-03-19 (Phase 12 complete)
 
 ---
 
@@ -24,7 +24,7 @@
 | 10 | Organizational Gap Analysis Engine | COMPLETE | 2026-03-18 |
 | 14 | AI Strategy Agent (Business Plan) | COMPLETE | 2026-03-18 |
 | 11 | Competitor Intelligence Engine | COMPLETE | 2026-03-19 |
-| 12 | Market Research Engine | PENDING | — |
+| 12 | Market Research Engine | COMPLETE | 2026-03-19 |
 | 13 | Financial Health Assessment | PENDING | — |
 | 15 | Financial Model Generator | PENDING | — |
 | 16 | KPI Framework Engine | PENDING | — |
@@ -508,7 +508,45 @@
 
 ---
 
-## Phases 12–32 — Upcoming (Aligned with AEOS Vision Document)
+## Phase 12 — Market Research Engine
+
+**Scope:** TAM/SAM/SOM market sizing, industry benchmarks, growth drivers, threats, and market positioning intelligence.
+
+**Delivered:**
+
+**Industry Knowledge Base (`industry_data.py`):**
+- 20 industries with curated data: global market size (B$), CAGR, revenue/employee, digital maturity benchmark
+- Per-industry growth drivers (3-4 each with impact rating and category)
+- Per-industry threats (2-3 each with severity rating)
+- Technology adoption profiles per industry
+- 24-country regional multipliers (GCC, MENA, EU, US, Asia focus)
+
+**TAM/SAM/SOM Calculator (`calculator.py`):**
+- TAM = global market size * regional multiplier
+- SAM = TAM * SME serviceable fraction (45%)
+- SOM = SAM * obtainable fraction (adjusted by digital maturity + team size)
+- Benchmark generator comparing company metrics vs industry averages
+- Market positioning score (0-100) combining digital maturity, gap score, competitor positioning, team size
+- Opportunity generator with GCC-specific insights
+
+**API Endpoints:**
+- `GET /api/v1/market-research/latest` — Get or auto-compute report
+- `POST /api/v1/market-research/compute` — Force recomputation
+- `GET /api/v1/market-research/benchmarks` — Industry benchmarks only
+
+**Frontend (`/app/market-research`):**
+- TAM/SAM/SOM funnel visualization (nested rounded bars with gradient colors)
+- Market positioning score with label (Early Stage/Growing/Established/Market Leader)
+- Strengths and growth areas derived from positioning factors
+- Industry benchmarks with above/below/neutral indicators
+- Growth drivers, threats, and opportunities in 3-column card layout
+- Market growth rate (CAGR) badge
+- Sidebar: "Market Research" added to Intelligence section
+- Billing: 150 tokens per computation
+
+---
+
+## Phases 13–32 — Upcoming (Aligned with AEOS Vision Document)
 
 > The AEOS Vision defines a 4-Phase Client Journey: (1) Intake & Onboarding, (2) AI Company Evaluation, (3) Business Plan & Financial Model, (4) AI Organizational Deployment. Phases below implement this journey end-to-end.
 
@@ -520,7 +558,7 @@
 | Phase | Name | Key Deliverables |
 |-------|------|-----------------|
 | 11 | Competitor Intelligence Engine | ~~COMPLETE~~ Live competitor scraping, 6-dimension benchmarking, positioning report |
-| 12 | Market Research Engine | TAM/SAM/SOM analysis, market size, growth trajectory, sector intelligence |
+| 12 | Market Research Engine | ~~COMPLETE~~ TAM/SAM/SOM sizing, 20-industry knowledge base, market positioning |
 | 13 | Financial Health Assessment | P&L analysis, revenue trends, cost structure, industry benchmarks, risk identification |
 | — | Company Evaluation Report | 360-degree report combining all Phase 2 engines (auto-generated once 11-13 complete) |
 
