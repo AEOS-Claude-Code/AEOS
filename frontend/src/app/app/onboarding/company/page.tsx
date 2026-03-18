@@ -59,6 +59,51 @@ const DEPT_COLORS: Record<string,string> = {
   valuation:"from-emerald-500 to-teal-500",transactions:"from-slate-500 to-gray-600",
 };
 
+const COUNTRY_CITIES: Record<string, string[]> = {
+  "Jordan": ["Amman","Irbid","Zarqa","Aqaba","Madaba","Salt","Jerash","Mafraq","Karak","Ajloun"],
+  "Saudi Arabia": ["Riyadh","Jeddah","Mecca","Medina","Dammam","Khobar","Dhahran","Tabuk","Abha","Taif","Jubail","Yanbu","Buraidah","Hail"],
+  "UAE": ["Dubai","Abu Dhabi","Sharjah","Ajman","Ras Al Khaimah","Fujairah","Al Ain","Umm Al Quwain"],
+  "Qatar": ["Doha","Al Wakrah","Al Khor","Al Rayyan","Umm Salal","Lusail"],
+  "Kuwait": ["Kuwait City","Hawalli","Salmiya","Farwaniya","Jahra","Ahmadi","Mangaf"],
+  "Bahrain": ["Manama","Muharraq","Riffa","Hamad Town","Isa Town","Sitra","Budaiya"],
+  "Oman": ["Muscat","Salalah","Sohar","Nizwa","Sur","Ibri","Barka","Rustaq"],
+  "Egypt": ["Cairo","Alexandria","Giza","Sharm El Sheikh","Hurghada","Luxor","Aswan","Tanta","Mansoura","Port Said"],
+  "Lebanon": ["Beirut","Tripoli","Sidon","Tyre","Jounieh","Byblos","Zahle","Baalbek"],
+  "Iraq": ["Baghdad","Erbil","Basra","Sulaymaniyah","Mosul","Kirkuk","Najaf","Karbala"],
+  "Palestine": ["Ramallah","Gaza","Nablus","Hebron","Bethlehem","Jenin","Jericho","Tulkarm"],
+  "United States": ["New York","Los Angeles","Chicago","Houston","Phoenix","San Francisco","Seattle","Boston","Miami","Denver","Austin","Dallas","Atlanta","San Diego","Portland"],
+  "United Kingdom": ["London","Manchester","Birmingham","Leeds","Glasgow","Liverpool","Edinburgh","Bristol","Sheffield","Cardiff"],
+  "Canada": ["Toronto","Vancouver","Montreal","Calgary","Ottawa","Edmonton","Winnipeg","Quebec City","Halifax"],
+  "Germany": ["Berlin","Munich","Hamburg","Frankfurt","Cologne","Stuttgart","Dusseldorf","Leipzig","Dresden"],
+  "France": ["Paris","Marseille","Lyon","Toulouse","Nice","Nantes","Strasbourg","Bordeaux","Lille"],
+  "India": ["Mumbai","Delhi","Bangalore","Hyderabad","Chennai","Kolkata","Pune","Ahmedabad","Jaipur","Lucknow"],
+  "Turkey": ["Istanbul","Ankara","Izmir","Antalya","Bursa","Adana","Gaziantep","Konya"],
+  "Pakistan": ["Karachi","Lahore","Islamabad","Rawalpindi","Faisalabad","Multan","Peshawar","Quetta"],
+  "Morocco": ["Casablanca","Rabat","Marrakech","Fez","Tangier","Agadir","Meknes","Oujda"],
+  "Tunisia": ["Tunis","Sfax","Sousse","Kairouan","Bizerte","Gabes","Monastir"],
+  "Algeria": ["Algiers","Oran","Constantine","Annaba","Blida","Setif","Batna"],
+  "Libya": ["Tripoli","Benghazi","Misrata","Zawiya","Sabratah","Zliten"],
+  "Sudan": ["Khartoum","Omdurman","Port Sudan","Kassala","El Obeid","Nyala"],
+  "Singapore": ["Singapore"],
+  "Malaysia": ["Kuala Lumpur","George Town","Johor Bahru","Ipoh","Shah Alam","Melaka","Kota Kinabalu"],
+  "Australia": ["Sydney","Melbourne","Brisbane","Perth","Adelaide","Canberra","Gold Coast","Hobart"],
+  "Japan": ["Tokyo","Osaka","Yokohama","Nagoya","Kyoto","Sapporo","Fukuoka","Kobe"],
+  "South Korea": ["Seoul","Busan","Incheon","Daegu","Daejeon","Gwangju","Ulsan","Suwon"],
+  "China": ["Beijing","Shanghai","Guangzhou","Shenzhen","Chengdu","Hangzhou","Wuhan","Nanjing","Xian"],
+  "Brazil": ["Sao Paulo","Rio de Janeiro","Brasilia","Salvador","Fortaleza","Belo Horizonte","Recife","Curitiba"],
+  "Mexico": ["Mexico City","Guadalajara","Monterrey","Puebla","Tijuana","Leon","Cancun","Merida"],
+  "South Africa": ["Johannesburg","Cape Town","Durban","Pretoria","Port Elizabeth","Bloemfontein"],
+  "Nigeria": ["Lagos","Abuja","Kano","Ibadan","Port Harcourt","Benin City","Kaduna"],
+  "Kenya": ["Nairobi","Mombasa","Kisumu","Nakuru","Eldoret","Malindi"],
+  "Italy": ["Rome","Milan","Naples","Turin","Palermo","Florence","Venice","Bologna","Genoa"],
+  "Spain": ["Madrid","Barcelona","Valencia","Seville","Malaga","Bilbao","Zaragoza"],
+  "Netherlands": ["Amsterdam","Rotterdam","The Hague","Utrecht","Eindhoven","Groningen"],
+  "Sweden": ["Stockholm","Gothenburg","Malmo","Uppsala","Linkoping"],
+  "Switzerland": ["Zurich","Geneva","Basel","Bern","Lausanne","Lucerne"],
+  "Ireland": ["Dublin","Cork","Galway","Limerick","Waterford"],
+};
+const COUNTRIES = Object.keys(COUNTRY_CITIES).sort();
+
 interface IntakeResult {
   url:string; detected_company_name:string; detected_industry:string;
   industry_confidence:number; detected_country:string; detected_city:string;
@@ -266,409 +311,273 @@ export default function OnboardingCompany() {
   const visibleDepts = showAllDepts ? (orgChart?.departments || []) : (orgChart?.departments || []).slice(0, 6);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-      className="space-y-4">
-      {/* Hero banner */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
+      className="space-y-3">
+      {/* ═══ ROW 1: Compact hero banner ═══ */}
       {intake && totalDetected > 0 && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 px-5 py-4 text-white shadow-lg shadow-aeos-300/30">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3N2Zz4=')] opacity-50" />
-          <div className="relative flex items-center gap-4">
-            <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <Sparkles size={24} className="text-white" />
-              </div>
-            </motion.div>
-            <div>
-              <p className="text-base font-bold">{totalDetected} items detected from your website</p>
-              <p className="text-sm text-white/80">Review your profile and customize your AI team below</p>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-xl bg-gradient-to-r from-aeos-600 via-violet-500 to-emerald-500 px-4 py-3 text-white shadow-lg">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3N2Zz4=')] opacity-40" />
+          <div className="relative flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+              <Sparkles size={20} className="text-white" />
             </div>
-            <div className="ml-auto hidden sm:flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 backdrop-blur-sm">
-              <CheckCircle2 size={14} />
-              <span className="text-xs font-semibold">Analysis complete</span>
+            <div className="flex-1">
+              <p className="text-sm font-bold">{totalDetected} items detected — AI profile ready</p>
+              <p className="text-xs text-white/70">Review and customize below, then deploy your AI team</p>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 backdrop-blur-sm">
+              <CheckCircle2 size={12} /><span className="text-2xs font-bold">Complete</span>
             </div>
           </div>
         </motion.div>
       )}
 
       {error && !intake && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700 border border-amber-200">{error}</motion.div>
+        <div className="rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-700 border border-amber-200">{error}</div>
       )}
 
-      {/* Two-column layout */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Left column */}
-        <div className="space-y-4">
-          {/* Company Identity */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-            className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-600">
-                <Building2 size={15} className="text-white" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-900">Company Identity</h2>
-              {intake && (
-                <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  className="ml-auto rounded-full bg-emerald-50 px-2.5 py-0.5 text-2xs font-semibold text-emerald-600 ring-1 ring-emerald-200">
-                  Auto-detected
-                </motion.span>
-              )}
+      {/* ═══ ROW 2: Company Identity + Contacts SIDE BY SIDE ═══ */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {/* Company Identity — compact */}
+        <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+          className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-md">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-600">
+              <Building2 size={13} className="text-white" />
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Company name</label>
-                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company" className={ic} />
+            <h2 className="text-xs font-bold text-slate-900">Company Identity</h2>
+            {intake && <span className="ml-auto rounded-full bg-emerald-50 px-2 py-px text-2xs font-bold text-emerald-600 ring-1 ring-emerald-200">Auto-detected</span>}
+          </div>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2">
+                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company name" className={ic} />
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
-                  Industry
-                  {intake && intake.industry_confidence > 0 && (
-                    <span className="ml-1.5 rounded-full bg-aeos-50 px-1.5 py-px text-2xs font-bold text-aeos-600">
-                      {Math.round(intake.industry_confidence * 100)}% match
-                    </span>
-                  )}
-                </label>
-                <select value={industry} onChange={e => setIndustry(e.target.value)} className={ic}>
-                  <option value="">Select industry</option>
-                  {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
+              <select value={industry} onChange={e => setIndustry(e.target.value)} className={ic}>
+                <option value="">Industry</option>
+                {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
+              </select>
+              <div className="flex gap-1.5">
+                <select value={country} onChange={e => { setCountry(e.target.value); if (!COUNTRY_CITIES[e.target.value]?.includes(city)) setCity(""); }} className={ic}>
+                  <option value="">Country</option>
+                  {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={city} onChange={e => setCity(e.target.value)} className={ic} disabled={!country}>
+                  <option value="">City</option>
+                  {(COUNTRY_CITIES[country] || []).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-600">
-                    Country {intake?.detected_country && <CheckCircle2 size={10} className="text-emerald-500" />}
-                  </label>
-                  <input type="text" value={country} onChange={e => setCountry(e.target.value)} placeholder="e.g. Jordan" className={ic} />
-                </div>
-                <div>
-                  <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-600">
-                    City {intake?.detected_city && <CheckCircle2 size={10} className="text-emerald-500" />}
-                  </label>
-                  <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="e.g. Amman" className={ic} />
-                </div>
-              </div>
             </div>
-          </motion.div>
+            {intake && intake.industry_confidence > 0 && (
+              <p className="text-2xs text-aeos-600 font-semibold">{Math.round(intake.industry_confidence * 100)}% industry confidence</p>
+            )}
+          </div>
+        </motion.div>
 
-          {/* Contacts & Social */}
-          {intake && (
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }}
-              className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
-                  <Phone size={15} className="text-white" />
-                </div>
-                <h2 className="text-sm font-bold text-slate-900">Contacts & Social</h2>
-              </div>
-
-              {/* Contact grid */}
-              <div className="mb-3 grid grid-cols-2 gap-2">
+        {/* Contacts & Social — compact */}
+        <motion.div initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+          className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-md">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
+              <Phone size={13} className="text-white" />
+            </div>
+            <h2 className="text-xs font-bold text-slate-900">Contacts & Social</h2>
+          </div>
+          {intake ? (
+            <div className="space-y-2">
+              {/* Contact pills row */}
+              <div className="flex flex-wrap gap-1.5">
                 {[
-                  { icon: Phone, label: "Phone", value: intake.detected_phone_numbers[0] || "", found: intake.detected_phone_numbers.length > 0 },
-                  { icon: Mail, label: "Email", value: intake.detected_emails[0] || "", found: intake.detected_emails.length > 0 },
-                  { icon: MessageCircle, label: "WhatsApp", value: intake.detected_whatsapp_links.length ? "Connected" : "", found: intake.detected_whatsapp_links.length > 0 },
-                  { icon: ExternalLink, label: "Contact page", value: intake.detected_contact_pages.length ? "Found" : "", found: intake.detected_contact_pages.length > 0 },
-                ].map(({ icon: Icon, label, value, found }, i) => (
-                  <motion.div key={label} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 + i * 0.05 }}
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-all ${
-                      found ? "bg-emerald-50/70 ring-1 ring-emerald-100" : "bg-slate-50"
-                    }`}>
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${found ? "bg-emerald-500" : "bg-slate-200"}`}>
-                      <Icon size={12} className="text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-2xs text-slate-500">{label}</p>
-                      <p className={`truncate text-xs ${found ? "font-semibold text-slate-900" : "text-slate-400"}`}>
-                        {found ? value : "Not detected"}
-                      </p>
-                    </div>
-                  </motion.div>
+                  { label: "Phone", value: intake.detected_phone_numbers[0], found: intake.detected_phone_numbers.length > 0, icon: Phone },
+                  { label: "Email", value: intake.detected_emails[0], found: intake.detected_emails.length > 0, icon: Mail },
+                  { label: "WhatsApp", value: "Active", found: intake.detected_whatsapp_links.length > 0, icon: MessageCircle },
+                  { label: "Contact", value: "Found", found: intake.detected_contact_pages.length > 0, icon: ExternalLink },
+                ].map(({ label, value, found, icon: Ic }) => (
+                  <div key={label} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${found ? "bg-emerald-50 ring-1 ring-emerald-100" : "bg-slate-50 ring-1 ring-slate-100"}`}>
+                    <Ic size={10} className={found ? "text-emerald-500" : "text-slate-300"} />
+                    <span className={`text-2xs font-semibold ${found ? "text-emerald-700" : "text-slate-400"}`}>{found ? value || label : "—"}</span>
+                  </div>
                 ))}
               </div>
-
-              {/* Social profiles */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-slate-600">Social profiles</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {Object.entries(SOCIAL_LABELS).map(([p, label]) => {
-                    const urls = intake.detected_social_links[p] || [];
-                    const found = urls.length > 0;
-                    if (!found) return null;
-                    const url = urls[0];
-                    const handle = url.replace(/https?:\/\/(www\.)?(linkedin\.com|facebook\.com|instagram\.com|twitter\.com|x\.com|youtube\.com|tiktok\.com|pinterest\.com|snapchat\.com)\/?/i, "").replace(/\/$/, "") || label;
-                    return (
-                      <motion.a key={p} href={url} target="_blank" rel="noopener noreferrer"
-                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                        className="flex items-center gap-2 rounded-xl bg-emerald-50/70 px-3 py-2 ring-1 ring-emerald-100 transition-colors hover:bg-emerald-100">
-                        <CheckCircle2 size={12} className="shrink-0 text-emerald-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-2xs font-bold text-emerald-700">{label}</p>
-                          <p className="truncate text-2xs text-emerald-600/60">{handle.length > 22 ? handle.slice(0, 22) + "..." : handle}</p>
-                        </div>
-                        <ExternalLink size={10} className="shrink-0 text-emerald-400" />
-                      </motion.a>
-                    );
-                  })}
-                </div>
-                {/* Not-found pills */}
-                {Object.entries(SOCIAL_LABELS).some(([p]) => !(intake.detected_social_links[p]?.length > 0)) && (
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {Object.entries(SOCIAL_LABELS).filter(([p]) => !(intake.detected_social_links[p]?.length > 0)).map(([p, label]) => (
-                      <span key={p} className="inline-flex items-center gap-0.5 rounded-full bg-slate-50 px-2 py-0.5 text-2xs text-slate-400 ring-1 ring-slate-100">
-                        <XCircle size={8} />{label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Tech stack */}
-              {intake.detected_tech_stack.length > 0 && (
-                <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
-                  <p className="text-xs font-medium text-slate-600">Technologies</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {intake.detected_tech_stack.slice(0, 8).map((t, i) => (
-                      <motion.span key={t} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.5 + i * 0.03 }}
-                        className="rounded-lg bg-blue-50 px-2 py-0.5 text-2xs font-semibold text-blue-700 ring-1 ring-blue-100">{t}</motion.span>
-                    ))}
-                    {intake.detected_tech_stack.length > 8 && (
-                      <span className="rounded-lg bg-slate-50 px-2 py-0.5 text-2xs text-slate-400">+{intake.detected_tech_stack.length - 8}</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </div>
-
-        {/* Right column: Interactive AI Org Chart Hierarchy */}
-        {orgChart && (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-            className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-lg shadow-slate-100/50">
-            <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
-                <Bot size={15} className="text-white" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-900">AI Organization Chart</h2>
-              <span className="ml-auto rounded-full bg-slate-50 px-2 py-0.5 text-2xs text-slate-500 ring-1 ring-slate-100">
-                Click nodes to toggle
-              </span>
-            </div>
-
-            {/* Stats bar */}
-            <div className="mb-4 flex gap-2">
-              <div className="flex-1 rounded-lg bg-gradient-to-r from-aeos-500 to-aeos-600 px-3 py-2 text-white text-center shadow-sm">
-                <p className="text-lg font-bold">{aiCount}</p>
-                <p className="text-2xs text-white/70">AI Agents</p>
-              </div>
-              <div className="flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 px-3 py-2 text-white text-center shadow-sm">
-                <p className="text-lg font-bold">{humanCount}</p>
-                <p className="text-2xs text-white/70">Humans</p>
-              </div>
-              <div className="flex-1 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-700 px-3 py-2 text-white text-center shadow-sm">
-                <p className="text-lg font-bold">{orgChart.total_departments}</p>
-                <p className="text-2xs text-white/70">Depts</p>
-              </div>
-            </div>
-
-            {/* ── Visual Org Chart Hierarchy ───────────────────── */}
-            <div className="relative pb-2">
-              {/* === CEO Root Node === */}
-              <div className="flex justify-center">
-                <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="relative z-10 flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 px-5 py-3 text-white shadow-xl shadow-slate-400/30 ring-1 ring-white/10">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg shadow-amber-500/30">
-                    <Users size={18} className="text-slate-900" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold tracking-tight">CEO / Owner</p>
-                    <p className="text-2xs text-slate-400">You — overseeing {orgChart.total_departments} departments</p>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* === SVG Tree Connectors === */}
-              <div className="relative flex justify-center">
-                <svg width="100%" height="40" className="overflow-visible">
-                  {/* Vertical line from CEO */}
-                  <line x1="50%" y1="0" x2="50%" y2="20" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
-                  {/* Horizontal distributor line */}
-                  <line x1="8%" y1="20" x2="92%" y2="20" stroke="#cbd5e1" strokeWidth="2" />
-                  {/* Vertical drops to each column */}
-                  {visibleDepts.map((_, i) => {
-                    const cols = Math.min(visibleDepts.length, 3);
-                    const pct = cols === 1 ? 50 : 8 + (i % cols) * (84 / (cols - 1));
-                    return <line key={i} x1={`${pct}%`} y1="20" x2={`${pct}%`} y2="40" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />;
-                  })}
-                </svg>
-              </div>
-
-              {/* === Department Nodes === */}
-              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(visibleDepts.length, 3)}, 1fr)` }}>
-                {visibleDepts.map((dept, idx) => {
-                  const Icon = DEPT_ICONS[dept.icon] || Bot;
-                  const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
-                  const isExpanded = expandedDept === dept.id;
-                  const headIsHuman = humanRoles[`${dept.id}:__head__`];
-                  const deptHumanCount = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
-                  const deptAiCount = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
-
+              {/* Social profiles inline */}
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(SOCIAL_LABELS).map(([p, label]) => {
+                  const found = (intake.detected_social_links[p] || []).length > 0;
                   return (
-                    <motion.div key={dept.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.35 + idx * 0.06 }} className="flex flex-col items-center">
-
-                      {/* Department head card */}
-                      <motion.button whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
-                        className={`group relative w-full overflow-hidden rounded-xl border-2 p-3 text-center transition-all duration-300 ${
-                          isExpanded
-                            ? "border-aeos-400 bg-gradient-to-b from-aeos-50 to-white shadow-lg shadow-aeos-200/30 ring-2 ring-aeos-100"
-                            : "border-slate-200 bg-white shadow-md shadow-slate-100/50 hover:border-slate-300 hover:shadow-lg"
-                        }`}>
-                        {/* Colored top bar */}
-                        <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${grad}`} />
-                        {/* Dept icon */}
-                        <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${grad} text-white shadow-md`}>
-                          <Icon size={18} />
-                        </div>
-                        {/* Dept name */}
-                        <p className="text-xs font-bold text-slate-900 leading-tight">{dept.name}</p>
-                        {/* Head toggle */}
-                        <motion.button whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
-                          className={`mx-auto mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-bold transition-all ${
-                            headIsHuman
-                              ? "bg-blue-100 text-blue-700 ring-1 ring-blue-200 hover:bg-blue-200"
-                              : "bg-aeos-100 text-aeos-700 ring-1 ring-aeos-200 hover:bg-aeos-200"
-                          }`}>
-                          {headIsHuman ? <Users size={9} /> : <Bot size={9} />}
-                          {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
-                        </motion.button>
-                        {/* Counts */}
-                        <div className="mt-2 flex items-center justify-center gap-2">
-                          <span className="flex items-center gap-0.5 text-2xs text-aeos-600 font-semibold">
-                            <Bot size={8} />{deptAiCount}
-                          </span>
-                          <span className="h-2.5 w-px bg-slate-200" />
-                          <span className="flex items-center gap-0.5 text-2xs text-blue-600 font-semibold">
-                            <Users size={8} />{deptHumanCount}
-                          </span>
-                        </div>
-                        {/* Expand arrow */}
-                        <ChevronDown size={12} className={`mx-auto mt-1 text-slate-300 transition-transform duration-300 ${isExpanded ? "rotate-180 text-aeos-400" : ""}`} />
-                      </motion.button>
-
-                      {/* Expanded: Team tree with SVG connectors */}
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }}
-                            className="w-full overflow-hidden">
-                            {/* SVG vertical connector from dept to team */}
-                            <div className="flex justify-center">
-                              <svg width="2" height="16"><line x1="1" y1="0" x2="1" y2="16" stroke="#94a3b8" strokeWidth="2" strokeDasharray="3 2" /></svg>
-                            </div>
-                            <div className="relative rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white p-2.5 shadow-inner">
-                              {/* Left vertical trunk line */}
-                              <div className="absolute left-[18px] top-3 bottom-3 w-px bg-gradient-to-b from-slate-300 via-slate-200 to-transparent" />
-                              <div className="space-y-1.5">
-                                {dept.ai_roles.map((role, ri) => {
-                                  const isHuman = humanRoles[`${dept.id}:${role}`];
-                                  return (
-                                    <motion.button key={role} whileTap={{ scale: 0.97 }}
-                                      initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: ri * 0.05 }}
-                                      onClick={() => toggleRole(dept.id, role)}
-                                      className={`relative flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left transition-all ${
-                                        isHuman
-                                          ? "bg-blue-50 ring-1 ring-blue-200 shadow-sm"
-                                          : "bg-white ring-1 ring-slate-100 hover:ring-slate-200 hover:shadow-sm"
-                                      }`}>
-                                      {/* Branch connector */}
-                                      <div className="absolute -left-[5px] top-1/2 h-px w-[12px] bg-slate-300" />
-                                      {/* Node circle */}
-                                      <div className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full shadow-sm ${
-                                        isHuman ? "bg-gradient-to-br from-blue-400 to-blue-600" : "bg-gradient-to-br from-slate-300 to-slate-400"
-                                      }`}>
-                                        {isHuman ? <Users size={10} className="text-white" /> : <Bot size={10} className="text-white" />}
-                                      </div>
-                                      <span className="flex-1 truncate text-2xs font-medium text-slate-700">{role.replace(" Agent", "")}</span>
-                                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-2xs font-bold ${
-                                        isHuman ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"
-                                      }`}>{isHuman ? "Human" : "AI"}</span>
-                                    </motion.button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
+                    <span key={p} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${
+                      found ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
+                    }`}>
+                      {found ? <Check size={8} /> : <XCircle size={8} />}{label}
+                    </span>
                   );
                 })}
               </div>
-
-              {/* Show more departments */}
-              {orgChart.departments.length > 6 && !showAllDepts && (
-                <div className="mt-4 flex justify-center">
-                  <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                    onClick={() => setShowAllDepts(true)}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-50 to-aeos-50 px-5 py-2.5 text-xs font-bold text-aeos-600 shadow-sm ring-1 ring-aeos-200 transition-all hover:shadow-md hover:ring-aeos-300">
-                    <ChevronDown size={14} />
-                    Show all {orgChart.departments.length} departments
-                  </motion.button>
+              {/* Tech stack */}
+              {intake.detected_tech_stack.length > 0 && (
+                <div className="flex flex-wrap gap-1 border-t border-slate-100 pt-2">
+                  {intake.detected_tech_stack.slice(0, 6).map(t => (
+                    <span key={t} className="rounded bg-blue-50 px-1.5 py-0.5 text-2xs font-bold text-blue-700 ring-1 ring-blue-100">{t}</span>
+                  ))}
+                  {intake.detected_tech_stack.length > 6 && <span className="text-2xs text-slate-400">+{intake.detected_tech_stack.length - 6}</span>}
                 </div>
               )}
             </div>
+          ) : (
+            <p className="text-xs text-slate-400">No website data available</p>
+          )}
+        </motion.div>
+      </div>
 
-            {/* Legend */}
-            <div className="mt-3 flex items-center justify-center gap-4 border-t border-slate-100 pt-3">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-aeos-500">
-                  <Bot size={8} className="text-white" />
+      {/* ═══ ROW 3: Full-width AI Org Chart ═══ */}
+      {orgChart && (
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-md">
+          {/* Header row: title + stats inline */}
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
+              <Bot size={13} className="text-white" />
+            </div>
+            <h2 className="text-xs font-bold text-slate-900">Your AI Organization</h2>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="flex items-center gap-1 rounded-full bg-aeos-50 px-2.5 py-1 text-2xs font-bold text-aeos-700 ring-1 ring-aeos-200">
+                <Bot size={10} />{aiCount} AI
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-2xs font-bold text-blue-700 ring-1 ring-blue-200">
+                <Users size={10} />{humanCount} Human
+              </span>
+              <span className="rounded-full bg-slate-50 px-2.5 py-1 text-2xs font-bold text-slate-600 ring-1 ring-slate-200">
+                {orgChart.total_departments} Depts
+              </span>
+              <span className="text-2xs text-slate-400">Click to toggle AI/Human</span>
+            </div>
+          </div>
+
+          {/* CEO + Tree */}
+          <div className="relative">
+            {/* CEO node centered */}
+            <div className="flex justify-center mb-1">
+              <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2 text-white shadow-lg">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 shadow">
+                  <Users size={14} className="text-slate-900" />
                 </div>
-                <span className="text-2xs text-slate-500">AI Agent</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500">
-                  <Users size={8} className="text-white" />
+                <div>
+                  <p className="text-xs font-bold">CEO / Owner</p>
+                  <p className="text-2xs text-slate-400">You</p>
                 </div>
-                <span className="text-2xs text-slate-500">Human</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400">
-                  <Users size={8} className="text-slate-900" />
-                </div>
-                <span className="text-2xs text-slate-500">You (CEO)</span>
               </div>
             </div>
 
-            {humanCount > 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                className="mt-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-2.5 ring-1 ring-blue-100">
-                <p className="text-xs text-blue-700">
-                  <span className="font-bold">{humanCount}</span> position{humanCount > 1 ? "s" : ""} marked as human —
-                  AEOS will deploy <span className="font-bold">{aiCount}</span> AI agents for the rest.
-                </p>
-              </motion.div>
-            )}
-          </motion.div>
-        )}
-      </div>
+            {/* SVG connectors */}
+            <svg width="100%" height="28" className="overflow-visible">
+              <line x1="50%" y1="0" x2="50%" y2="14" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="3 2" />
+              <line x1="3%" y1="14" x2="97%" y2="14" stroke="#cbd5e1" strokeWidth="1.5" />
+            </svg>
 
-      {/* Confirm button */}
+            {/* Department grid — use more columns for wider layout */}
+            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(orgChart.departments.length, 5)}, 1fr)` }}>
+              {(showAllDepts ? orgChart.departments : orgChart.departments.slice(0, 10)).map((dept, idx) => {
+                const Icon = DEPT_ICONS[dept.icon] || Bot;
+                const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+                const isExpanded = expandedDept === dept.id;
+                const headIsHuman = humanRoles[`${dept.id}:__head__`];
+                const deptAi = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
+                const deptHu = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+
+                return (
+                  <motion.div key={dept.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + idx * 0.04 }} className="flex flex-col items-center">
+                    {/* Vertical drop line */}
+                    <svg width="2" height="8"><line x1="1" y1="0" x2="1" y2="8" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="2 2" /></svg>
+
+                    {/* Dept card */}
+                    <motion.button whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.96 }}
+                      onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                      className={`group relative w-full overflow-hidden rounded-lg border p-2 text-center transition-all ${
+                        isExpanded ? "border-aeos-400 bg-aeos-50/60 shadow-lg ring-1 ring-aeos-200" : "border-slate-200 bg-white shadow hover:shadow-md hover:border-slate-300"
+                      }`}>
+                      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${grad}`} />
+                      <div className={`mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow`}>
+                        <Icon size={14} />
+                      </div>
+                      <p className="text-2xs font-bold text-slate-900 leading-tight mb-1">{dept.name}</p>
+                      <motion.span whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
+                        className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-bold cursor-pointer ${
+                          headIsHuman ? "bg-blue-100 text-blue-700" : "bg-aeos-50 text-aeos-700"
+                        }`}>
+                        {headIsHuman ? <Users size={7} /> : <Bot size={7} />}
+                        {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
+                      </motion.span>
+                      <p className="mt-0.5 text-2xs text-slate-400">{deptAi}AI · {deptHu}H</p>
+                    </motion.button>
+
+                    {/* Expanded team */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }} className="w-full overflow-hidden">
+                          <svg width="2" height="8" className="mx-auto block"><line x1="1" y1="0" x2="1" y2="8" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="2 2" /></svg>
+                          <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-1.5 space-y-1">
+                            {dept.ai_roles.map((role, ri) => {
+                              const isH = humanRoles[`${dept.id}:${role}`];
+                              return (
+                                <motion.button key={role} whileTap={{ scale: 0.97 }}
+                                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: ri * 0.03 }}
+                                  onClick={() => toggleRole(dept.id, role)}
+                                  className={`flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left ${
+                                    isH ? "bg-blue-50 ring-1 ring-blue-200" : "bg-white ring-1 ring-slate-100"
+                                  }`}>
+                                  <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isH ? "bg-blue-500" : "bg-slate-300"}`}>
+                                    {isH ? <Users size={7} className="text-white" /> : <Bot size={7} className="text-white" />}
+                                  </div>
+                                  <span className="flex-1 truncate text-2xs text-slate-700">{role.replace(" Agent", "")}</span>
+                                  <span className={`text-2xs font-bold ${isH ? "text-blue-600" : "text-slate-400"}`}>{isH ? "H" : "AI"}</span>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {orgChart.departments.length > 10 && !showAllDepts && (
+              <div className="mt-2 flex justify-center">
+                <button onClick={() => setShowAllDepts(true)}
+                  className="rounded-lg bg-aeos-50 px-4 py-1.5 text-2xs font-bold text-aeos-600 ring-1 ring-aeos-200 hover:bg-aeos-100">
+                  Show all {orgChart.departments.length} departments
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom legend + human message */}
+          <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-2xs text-slate-500"><div className="h-2.5 w-2.5 rounded-full bg-aeos-500" />AI Agent</span>
+              <span className="flex items-center gap-1 text-2xs text-slate-500"><div className="h-2.5 w-2.5 rounded-full bg-blue-500" />Human</span>
+              <span className="flex items-center gap-1 text-2xs text-slate-500"><div className="h-2.5 w-2.5 rounded-full bg-amber-400" />You (CEO)</span>
+            </div>
+            {humanCount > 0 && (
+              <span className="text-2xs text-blue-600 font-semibold">{humanCount} human · {aiCount} AI agents will be deployed</span>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ═══ ROW 4: Confirm button ═══ */}
       <motion.button onClick={handleConfirm} disabled={saving}
         whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 py-4 text-sm font-bold text-white shadow-xl shadow-aeos-300/30 transition-all hover:shadow-2xl disabled:opacity-50">
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+        className="group flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 py-3.5 text-sm font-bold text-white shadow-xl shadow-aeos-300/30 transition-all hover:shadow-2xl disabled:opacity-50">
         {saving ? (
-          <><Loader2 size={18} className="animate-spin" /> Deploying your AI agents...</>
+          <><Loader2 size={16} className="animate-spin" /> Deploying AI agents...</>
         ) : (
-          <><Rocket size={18} /> Confirm and deploy AI agents <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></>
+          <><Rocket size={16} /> Confirm and deploy AI agents <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" /></>
         )}
       </motion.button>
     </motion.div>

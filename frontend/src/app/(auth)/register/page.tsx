@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Zap, Globe, Check, Loader2, Building2, Phone, Share2, Bot, ArrowRight } from "lucide-react";
+import { Zap, Globe, Check, Loader2, Building2, Phone, Share2, Bot, ArrowRight, Rocket } from "lucide-react";
 
 function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
   if (!pw) return { label: "", color: "bg-gray-200", width: "w-0" };
@@ -152,9 +152,9 @@ export default function RegisterPage() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Create your workspace</h1>
-        <p className="mt-1 text-sm text-slate-500">Get a free AI-powered company intelligence report</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Start your AI-powered company</h1>
+        <p className="mt-1 text-sm text-slate-500">AEOS will analyze your business and deploy AI agents across every department</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -171,8 +171,8 @@ export default function RegisterPage() {
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-slate-700">
             Company website
-            <span className="ml-2 rounded-full bg-gradient-to-r from-aeos-50 to-violet-50 px-2 py-0.5 text-2xs font-bold text-aeos-700">
-              Free report
+            <span className="ml-2 rounded-full bg-gradient-to-r from-emerald-50 to-aeos-50 px-2 py-0.5 text-2xs font-bold text-emerald-700">
+              Auto-setup
             </span>
           </label>
           <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)}
@@ -208,8 +208,8 @@ export default function RegisterPage() {
 
         <button type="submit" disabled={loading || passwordMismatch}
           className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-aeos-500 py-3 text-sm font-bold text-white shadow-lg shadow-aeos-500/20 transition-all hover:shadow-xl disabled:opacity-50">
-          <Zap size={16} />
-          Get free report
+          <Rocket size={16} />
+          Create workspace & deploy AI
           <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </button>
       </form>
