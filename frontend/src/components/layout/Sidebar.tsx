@@ -30,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Market Research", icon: <BarChart3 size={18} />, href: "/app/market-research", section: "intelligence" },
   { label: "Financial Health", icon: <DollarSign size={18} />, href: "/app/financial-health", section: "intelligence" },
   { label: "Competitors", icon: <Swords size={18} />, href: "/app/competitors", section: "intelligence" },
+  { label: "AI Agents", icon: <Bot size={18} />, href: "/app/agents", section: "platform" },
   { label: "Integrations", icon: <Plug size={18} />, href: "/app/integrations", section: "platform" },
   { label: "Reports", icon: <FileBarChart size={18} />, href: "/app/reports", section: "platform" },
   { label: "AI Copilot", icon: <Bot size={18} />, href: "/app/copilot", section: "platform" },
