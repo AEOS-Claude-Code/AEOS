@@ -229,6 +229,7 @@ export default function OnboardingCompany() {
   const [showAllDepts, setShowAllDepts] = useState(false);
   const [expandedDept, setExpandedDept] = useState<string|null>(null);
   const [humanRoles, setHumanRoles] = useState<Record<string, boolean>>({});
+  const [orgBuildStep, setOrgBuildStep] = useState(0); // for animated build-up
 
   function toggleRole(deptId: string, role: string) {
     const key = `${deptId}:${role}`;
@@ -275,7 +276,15 @@ export default function OnboardingCompany() {
 
   useEffect(() => {
     if (industry && industry !== "other") {
-      api.get(`/api/v1/onboarding/org-chart-recommendation?industry=${industry}`).then(r => setOrgChart(r.data)).catch(() => {});
+      api.get(`/api/v1/onboarding/org-chart-recommendation?industry=${industry}`).then(r => {
+        setOrgChart(r.data);
+        setOrgBuildStep(0);
+        // Animate departments appearing one by one
+        const depts = r.data?.departments || [];
+        depts.forEach((_: any, i: number) => {
+          setTimeout(() => setOrgBuildStep(i + 1), 300 + i * 200);
+        });
+      }).catch(() => {});
     }
   }, [industry]); // eslint-disable-line
 
@@ -310,274 +319,329 @@ export default function OnboardingCompany() {
 
   const visibleDepts = showAllDepts ? (orgChart?.departments || []) : (orgChart?.departments || []).slice(0, 6);
 
+  const allDepts = orgChart?.departments || [];
+  const visibleDepts2 = showAllDepts ? allDepts : allDepts.slice(0, 10);
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}
-      className="space-y-3">
-      {/* ═══ ROW 1: Compact hero banner ═══ */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-6xl space-y-5 px-2">
+      {/* ═══ HERO BANNER ═══ */}
       {intake && totalDetected > 0 && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-xl bg-gradient-to-r from-aeos-600 via-violet-500 to-emerald-500 px-4 py-3 text-white shadow-lg">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMSkiLz48L3N2Zz4=')] opacity-40" />
-          <div className="relative flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-              <Sparkles size={20} className="text-white" />
-            </div>
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-aeos-600 via-violet-500 to-emerald-500 px-6 py-4 text-white shadow-xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMS41IiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDgpIi8+PC9zdmc+')] opacity-60" />
+          <div className="relative flex items-center gap-4">
+            <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 3, repeat: Infinity, repeatDelay: 4 }}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm shadow-lg">
+              <Sparkles size={28} className="text-white" />
+            </motion.div>
             <div className="flex-1">
-              <p className="text-sm font-bold">{totalDetected} items detected — AI profile ready</p>
-              <p className="text-xs text-white/70">Review and customize below, then deploy your AI team</p>
+              <h2 className="text-lg font-bold">{totalDetected} items detected from your website</h2>
+              <p className="mt-0.5 text-sm text-white/80">We built your company profile and AI team. Review below, then deploy.</p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 backdrop-blur-sm">
-              <CheckCircle2 size={12} /><span className="text-2xs font-bold">Complete</span>
+            <div className="hidden sm:flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 backdrop-blur-sm">
+              <CheckCircle2 size={16} /><span className="text-sm font-bold">Analysis complete</span>
             </div>
           </div>
         </motion.div>
       )}
 
       {error && !intake && (
-        <div className="rounded-xl bg-amber-50 px-4 py-2.5 text-sm text-amber-700 border border-amber-200">{error}</div>
+        <div className="rounded-2xl bg-amber-50 px-6 py-4 text-sm text-amber-700 border border-amber-200">{error}</div>
       )}
 
-      {/* ═══ ROW 2: Company Identity + Contacts SIDE BY SIDE ═══ */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        {/* Company Identity — compact */}
-        <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
-          className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-md">
-          <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-600">
-              <Building2 size={13} className="text-white" />
+      {/* ═══ ROW 1: Company Identity + Contacts & Social ═══ */}
+      <div className="grid gap-5 lg:grid-cols-5">
+        {/* Company Identity — 3 cols */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}
+          className="lg:col-span-3 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-600 shadow-md shadow-aeos-200/40">
+              <Building2 size={20} className="text-white" />
             </div>
-            <h2 className="text-xs font-bold text-slate-900">Company Identity</h2>
-            {intake && <span className="ml-auto rounded-full bg-emerald-50 px-2 py-px text-2xs font-bold text-emerald-600 ring-1 ring-emerald-200">Auto-detected</span>}
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Company Identity</h2>
+              <p className="text-xs text-slate-500">Auto-detected from your website — edit if needed</p>
+            </div>
+            {intake && (
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                className="ml-auto rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600 ring-1 ring-emerald-200">
+                ✓ Auto-detected
+              </motion.span>
+            )}
           </div>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2">
-                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company name" className={ic} />
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-xs font-semibold text-slate-600">Company name</label>
+              <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className={ic} />
+            </div>
+            <div>
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+                Industry
+                {intake && intake.industry_confidence > 0 && (
+                  <span className="rounded-full bg-aeos-50 px-2 py-0.5 text-2xs font-bold text-aeos-600">{Math.round(intake.industry_confidence * 100)}%</span>
+                )}
+              </label>
               <select value={industry} onChange={e => setIndustry(e.target.value)} className={ic}>
-                <option value="">Industry</option>
+                <option value="">Select industry</option>
                 {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
               </select>
-              <div className="flex gap-1.5">
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-slate-600">
+                  Country {country && <CheckCircle2 size={10} className="text-emerald-500" />}
+                </label>
                 <select value={country} onChange={e => { setCountry(e.target.value); if (!COUNTRY_CITIES[e.target.value]?.includes(city)) setCity(""); }} className={ic}>
-                  <option value="">Country</option>
+                  <option value="">Select</option>
                   {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="mb-1.5 flex items-center gap-1 text-xs font-semibold text-slate-600">
+                  City {city && <CheckCircle2 size={10} className="text-emerald-500" />}
+                </label>
                 <select value={city} onChange={e => setCity(e.target.value)} className={ic} disabled={!country}>
-                  <option value="">City</option>
+                  <option value="">Select</option>
                   {(COUNTRY_CITIES[country] || []).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>
-            {intake && intake.industry_confidence > 0 && (
-              <p className="text-2xs text-aeos-600 font-semibold">{Math.round(intake.industry_confidence * 100)}% industry confidence</p>
-            )}
           </div>
         </motion.div>
 
-        {/* Contacts & Social — compact */}
-        <motion.div initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-          className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-md">
-          <div className="mb-3 flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
-              <Phone size={13} className="text-white" />
+        {/* Contacts & Social — 2 cols */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+          className="lg:col-span-2 rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md shadow-emerald-200/40">
+              <Share2 size={20} className="text-white" />
             </div>
-            <h2 className="text-xs font-bold text-slate-900">Contacts & Social</h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Contacts & Social</h2>
+              <p className="text-xs text-slate-500">Detected from your website</p>
+            </div>
           </div>
           {intake ? (
-            <div className="space-y-2">
-              {/* Contact pills row */}
-              <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-4">
+              {/* Contact cards */}
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: "Phone", value: intake.detected_phone_numbers[0], found: intake.detected_phone_numbers.length > 0, icon: Phone },
-                  { label: "Email", value: intake.detected_emails[0], found: intake.detected_emails.length > 0, icon: Mail },
-                  { label: "WhatsApp", value: "Active", found: intake.detected_whatsapp_links.length > 0, icon: MessageCircle },
-                  { label: "Contact", value: "Found", found: intake.detected_contact_pages.length > 0, icon: ExternalLink },
-                ].map(({ label, value, found, icon: Ic }) => (
-                  <div key={label} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${found ? "bg-emerald-50 ring-1 ring-emerald-100" : "bg-slate-50 ring-1 ring-slate-100"}`}>
-                    <Ic size={10} className={found ? "text-emerald-500" : "text-slate-300"} />
-                    <span className={`text-2xs font-semibold ${found ? "text-emerald-700" : "text-slate-400"}`}>{found ? value || label : "—"}</span>
+                  { icon: Phone, label: "Phone", value: intake.detected_phone_numbers[0], found: intake.detected_phone_numbers.length > 0 },
+                  { icon: Mail, label: "Email", value: intake.detected_emails[0], found: intake.detected_emails.length > 0 },
+                  { icon: MessageCircle, label: "WhatsApp", value: "Connected", found: intake.detected_whatsapp_links.length > 0 },
+                  { icon: ExternalLink, label: "Contact Page", value: "Found", found: intake.detected_contact_pages.length > 0 },
+                ].map(({ icon: Ic, label, value, found }) => (
+                  <div key={label} className={`flex items-center gap-2 rounded-xl p-3 ${found ? "bg-emerald-50 ring-1 ring-emerald-200" : "bg-slate-50 ring-1 ring-slate-100"}`}>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${found ? "bg-emerald-500" : "bg-slate-200"}`}>
+                      <Ic size={14} className="text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-2xs text-slate-500">{label}</p>
+                      <p className={`truncate text-xs font-semibold ${found ? "text-slate-900" : "text-slate-400"}`}>{found ? value || label : "Not found"}</p>
+                    </div>
                   </div>
                 ))}
               </div>
-              {/* Social profiles inline */}
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(SOCIAL_LABELS).map(([p, label]) => {
-                  const found = (intake.detected_social_links[p] || []).length > 0;
-                  return (
-                    <span key={p} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold ${
-                      found ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
-                    }`}>
-                      {found ? <Check size={8} /> : <XCircle size={8} />}{label}
-                    </span>
-                  );
-                })}
+              {/* Social */}
+              <div>
+                <p className="mb-2 text-xs font-semibold text-slate-600">Social Profiles</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(SOCIAL_LABELS).map(([p, label]) => {
+                    const found = (intake.detected_social_links[p] || []).length > 0;
+                    return (
+                      <span key={p} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        found ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" : "bg-slate-50 text-slate-400 ring-1 ring-slate-100"
+                      }`}>
+                        {found ? <CheckCircle2 size={10} /> : <XCircle size={10} />}{label}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
-              {/* Tech stack */}
+              {/* Tech */}
               {intake.detected_tech_stack.length > 0 && (
-                <div className="flex flex-wrap gap-1 border-t border-slate-100 pt-2">
-                  {intake.detected_tech_stack.slice(0, 6).map(t => (
-                    <span key={t} className="rounded bg-blue-50 px-1.5 py-0.5 text-2xs font-bold text-blue-700 ring-1 ring-blue-100">{t}</span>
-                  ))}
-                  {intake.detected_tech_stack.length > 6 && <span className="text-2xs text-slate-400">+{intake.detected_tech_stack.length - 6}</span>}
+                <div className="border-t border-slate-100 pt-3">
+                  <p className="mb-2 text-xs font-semibold text-slate-600">Technologies</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {intake.detected_tech_stack.slice(0, 8).map(t => (
+                      <span key={t} className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-100">{t}</span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-xs text-slate-400">No website data available</p>
+            <p className="text-sm text-slate-400">No website data available</p>
           )}
         </motion.div>
       </div>
 
-      {/* ═══ ROW 3: Full-width AI Org Chart ═══ */}
+      {/* ═══ ROW 2: Full-width AI Org Chart with build-up animation ═══ */}
       {orgChart && (
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="rounded-xl border border-slate-200/60 bg-white p-4 shadow-md">
-          {/* Header row: title + stats inline */}
-          <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600">
-              <Bot size={13} className="text-white" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-lg">
+          {/* Header */}
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-200/40">
+              <Bot size={20} className="text-white" />
             </div>
-            <h2 className="text-xs font-bold text-slate-900">Your AI Organization</h2>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="flex items-center gap-1 rounded-full bg-aeos-50 px-2.5 py-1 text-2xs font-bold text-aeos-700 ring-1 ring-aeos-200">
-                <Bot size={10} />{aiCount} AI
+            <div className="flex-1">
+              <h2 className="text-base font-bold text-slate-900">Your AI Organization</h2>
+              <p className="text-xs text-slate-500">Click any role to toggle between AI agent and human employee</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-aeos-50 to-aeos-100 px-3 py-1.5 text-xs font-bold text-aeos-700 ring-1 ring-aeos-200">
+                <Bot size={12} />{aiCount} AI
               </span>
-              <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-2xs font-bold text-blue-700 ring-1 ring-blue-200">
-                <Users size={10} />{humanCount} Human
+              <span className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+                <Users size={12} />{humanCount} Human
               </span>
-              <span className="rounded-full bg-slate-50 px-2.5 py-1 text-2xs font-bold text-slate-600 ring-1 ring-slate-200">
+              <span className="rounded-xl bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
                 {orgChart.total_departments} Depts
               </span>
-              <span className="text-2xs text-slate-400">Click to toggle AI/Human</span>
             </div>
           </div>
 
-          {/* CEO + Tree */}
-          <div className="relative">
-            {/* CEO node centered */}
-            <div className="flex justify-center mb-1">
-              <div className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-2 text-white shadow-lg">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 shadow">
-                  <Users size={14} className="text-slate-900" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold">CEO / Owner</p>
-                  <p className="text-2xs text-slate-400">You</p>
-                </div>
+          {/* CEO Node */}
+          <div className="flex justify-center mb-2">
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-3 text-white shadow-xl shadow-slate-400/30">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 shadow-lg">
+                <Users size={18} className="text-slate-900" />
               </div>
-            </div>
+              <div>
+                <p className="text-sm font-bold">CEO / Owner</p>
+                <p className="text-xs text-slate-400">You — overseeing {orgChart.total_departments} departments</p>
+              </div>
+            </motion.div>
+          </div>
 
-            {/* SVG connectors */}
-            <svg width="100%" height="28" className="overflow-visible">
-              <line x1="50%" y1="0" x2="50%" y2="14" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="3 2" />
-              <line x1="3%" y1="14" x2="97%" y2="14" stroke="#cbd5e1" strokeWidth="1.5" />
-            </svg>
+          {/* SVG connectors from CEO */}
+          <svg width="100%" height="32" className="overflow-visible">
+            <line x1="50%" y1="0" x2="50%" y2="16" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
+            <line x1="4%" y1="16" x2="96%" y2="16" stroke="#cbd5e1" strokeWidth="2" />
+          </svg>
 
-            {/* Department grid — use more columns for wider layout */}
-            <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(orgChart.departments.length, 5)}, 1fr)` }}>
-              {(showAllDepts ? orgChart.departments : orgChart.departments.slice(0, 10)).map((dept, idx) => {
-                const Icon = DEPT_ICONS[dept.icon] || Bot;
-                const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
-                const isExpanded = expandedDept === dept.id;
-                const headIsHuman = humanRoles[`${dept.id}:__head__`];
-                const deptAi = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
-                const deptHu = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+          {/* Department grid — animated build-up */}
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(allDepts.length, 5)}, 1fr)` }}>
+            {visibleDepts2.map((dept, idx) => {
+              const Icon = DEPT_ICONS[dept.icon] || Bot;
+              const grad = DEPT_COLORS[dept.id] || "from-gray-500 to-gray-600";
+              const isExpanded = expandedDept === dept.id;
+              const headIsHuman = humanRoles[`${dept.id}:__head__`];
+              const deptAi = (headIsHuman ? 0 : 1) + dept.ai_roles.filter(r => !humanRoles[`${dept.id}:${r}`]).length;
+              const deptHu = (headIsHuman ? 1 : 0) + dept.ai_roles.filter(r => humanRoles[`${dept.id}:${r}`]).length;
+              const isBuilt = idx < orgBuildStep;
 
-                return (
-                  <motion.div key={dept.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + idx * 0.04 }} className="flex flex-col items-center">
-                    {/* Vertical drop line */}
-                    <svg width="2" height="8"><line x1="1" y1="0" x2="1" y2="8" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray="2 2" /></svg>
+              return (
+                <motion.div key={dept.id}
+                  initial={{ opacity: 0, y: 30, scale: 0.8 }}
+                  animate={isBuilt ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 30, scale: 0.8 }}
+                  transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                  className="flex flex-col items-center">
+                  {/* Vertical drop */}
+                  <svg width="2" height="12"><line x1="1" y1="0" x2="1" y2="12" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="3 2" /></svg>
 
-                    {/* Dept card */}
-                    <motion.button whileHover={{ scale: 1.05, y: -1 }} whileTap={{ scale: 0.96 }}
-                      onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
-                      className={`group relative w-full overflow-hidden rounded-lg border p-2 text-center transition-all ${
-                        isExpanded ? "border-aeos-400 bg-aeos-50/60 shadow-lg ring-1 ring-aeos-200" : "border-slate-200 bg-white shadow hover:shadow-md hover:border-slate-300"
+                  {/* Dept card */}
+                  <motion.button whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.96 }}
+                    onClick={() => setExpandedDept(isExpanded ? null : dept.id)}
+                    className={`group relative w-full overflow-hidden rounded-xl border-2 p-3 text-center transition-all duration-300 ${
+                      isExpanded ? "border-aeos-400 bg-gradient-to-b from-aeos-50 to-white shadow-xl ring-1 ring-aeos-200" : "border-slate-200 bg-white shadow-md hover:shadow-lg hover:border-slate-300"
+                    }`}>
+                    <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${grad}`} />
+                    <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${grad} text-white shadow-lg`}>
+                      <Icon size={18} />
+                    </div>
+                    <p className="text-xs font-bold text-slate-900 leading-tight mb-1.5">{dept.name}</p>
+                    <motion.span whileTap={{ scale: 0.9 }}
+                      onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-2xs font-bold cursor-pointer transition-colors ${
+                        headIsHuman ? "bg-blue-100 text-blue-700 ring-1 ring-blue-200" : "bg-aeos-50 text-aeos-700 ring-1 ring-aeos-200"
                       }`}>
-                      <div className={`absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r ${grad}`} />
-                      <div className={`mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow`}>
-                        <Icon size={14} />
-                      </div>
-                      <p className="text-2xs font-bold text-slate-900 leading-tight mb-1">{dept.name}</p>
-                      <motion.span whileTap={{ scale: 0.9 }}
-                        onClick={(e) => { e.stopPropagation(); toggleHead(dept.id); }}
-                        className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-bold cursor-pointer ${
-                          headIsHuman ? "bg-blue-100 text-blue-700" : "bg-aeos-50 text-aeos-700"
-                        }`}>
-                        {headIsHuman ? <Users size={7} /> : <Bot size={7} />}
-                        {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
-                      </motion.span>
-                      <p className="mt-0.5 text-2xs text-slate-400">{deptAi}AI · {deptHu}H</p>
-                    </motion.button>
+                      {headIsHuman ? <Users size={8} /> : <Bot size={8} />}
+                      {dept.ai_head.replace(" AI", "").split(" ").slice(0, 2).join(" ")}
+                    </motion.span>
+                    <div className="mt-1.5 flex items-center justify-center gap-2">
+                      <span className="flex items-center gap-0.5 text-2xs font-semibold text-aeos-600"><Bot size={8} />{deptAi}</span>
+                      <span className="h-3 w-px bg-slate-200" />
+                      <span className="flex items-center gap-0.5 text-2xs font-semibold text-blue-600"><Users size={8} />{deptHu}</span>
+                    </div>
+                    <ChevronDown size={12} className={`mx-auto mt-1 text-slate-300 transition-transform duration-300 ${isExpanded ? "rotate-180 text-aeos-500" : ""}`} />
+                  </motion.button>
 
-                    {/* Expanded team */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }} className="w-full overflow-hidden">
-                          <svg width="2" height="8" className="mx-auto block"><line x1="1" y1="0" x2="1" y2="8" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="2 2" /></svg>
-                          <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-1.5 space-y-1">
+                  {/* Expanded team */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="w-full overflow-hidden">
+                        <div className="flex justify-center"><svg width="2" height="12"><line x1="1" y1="0" x2="1" y2="12" stroke="#94a3b8" strokeWidth="2" strokeDasharray="3 2" /></svg></div>
+                        <div className="relative rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-2.5 shadow-inner">
+                          <div className="absolute left-[18px] top-3 bottom-3 w-px bg-gradient-to-b from-slate-300 to-transparent" />
+                          <div className="space-y-1.5">
                             {dept.ai_roles.map((role, ri) => {
                               const isH = humanRoles[`${dept.id}:${role}`];
                               return (
                                 <motion.button key={role} whileTap={{ scale: 0.97 }}
-                                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: ri * 0.03 }}
+                                  initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: ri * 0.05 }}
                                   onClick={() => toggleRole(dept.id, role)}
-                                  className={`flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left ${
-                                    isH ? "bg-blue-50 ring-1 ring-blue-200" : "bg-white ring-1 ring-slate-100"
+                                  className={`relative flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-all ${
+                                    isH ? "bg-blue-50 ring-1 ring-blue-200 shadow-sm" : "bg-white ring-1 ring-slate-100 hover:ring-slate-200"
                                   }`}>
-                                  <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${isH ? "bg-blue-500" : "bg-slate-300"}`}>
-                                    {isH ? <Users size={7} className="text-white" /> : <Bot size={7} className="text-white" />}
+                                  <div className="absolute -left-[5px] top-1/2 h-px w-[12px] bg-slate-300" />
+                                  <div className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full shadow-sm ${
+                                    isH ? "bg-gradient-to-br from-blue-400 to-blue-600" : "bg-gradient-to-br from-slate-300 to-slate-400"
+                                  }`}>
+                                    {isH ? <Users size={10} className="text-white" /> : <Bot size={10} className="text-white" />}
                                   </div>
-                                  <span className="flex-1 truncate text-2xs text-slate-700">{role.replace(" Agent", "")}</span>
-                                  <span className={`text-2xs font-bold ${isH ? "text-blue-600" : "text-slate-400"}`}>{isH ? "H" : "AI"}</span>
+                                  <span className="flex-1 truncate text-xs text-slate-700">{role.replace(" Agent", "")}</span>
+                                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold ${isH ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-400"}`}>
+                                    {isH ? "Human" : "AI"}
+                                  </span>
                                 </motion.button>
                               );
                             })}
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
-            </div>
-
-            {orgChart.departments.length > 10 && !showAllDepts && (
-              <div className="mt-2 flex justify-center">
-                <button onClick={() => setShowAllDepts(true)}
-                  className="rounded-lg bg-aeos-50 px-4 py-1.5 text-2xs font-bold text-aeos-600 ring-1 ring-aeos-200 hover:bg-aeos-100">
-                  Show all {orgChart.departments.length} departments
-                </button>
-              </div>
-            )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
           </div>
 
-          {/* Bottom legend + human message */}
-          <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-2xs text-slate-500"><div className="h-2.5 w-2.5 rounded-full bg-aeos-500" />AI Agent</span>
-              <span className="flex items-center gap-1 text-2xs text-slate-500"><div className="h-2.5 w-2.5 rounded-full bg-blue-500" />Human</span>
-              <span className="flex items-center gap-1 text-2xs text-slate-500"><div className="h-2.5 w-2.5 rounded-full bg-amber-400" />You (CEO)</span>
+          {allDepts.length > 10 && !showAllDepts && (
+            <div className="mt-4 flex justify-center">
+              <motion.button whileHover={{ scale: 1.03 }} onClick={() => setShowAllDepts(true)}
+                className="flex items-center gap-2 rounded-xl bg-aeos-50 px-5 py-2 text-xs font-bold text-aeos-600 ring-1 ring-aeos-200 hover:bg-aeos-100">
+                <ChevronDown size={14} /> Show all {allDepts.length} departments
+              </motion.button>
+            </div>
+          )}
+
+          {/* Legend */}
+          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1.5 text-xs text-slate-500"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-aeos-400 to-aeos-600" />AI Agent</span>
+              <span className="flex items-center gap-1.5 text-xs text-slate-500"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600" />Human</span>
+              <span className="flex items-center gap-1.5 text-xs text-slate-500"><div className="h-3 w-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-500" />CEO (You)</span>
             </div>
             {humanCount > 0 && (
-              <span className="text-2xs text-blue-600 font-semibold">{humanCount} human · {aiCount} AI agents will be deployed</span>
+              <span className="text-xs font-semibold text-blue-600">{humanCount} human positions · {aiCount} AI agents will deploy</span>
             )}
           </div>
         </motion.div>
       )}
 
-      {/* ═══ ROW 4: Confirm button ═══ */}
+      {/* ═══ CONFIRM BUTTON ═══ */}
       <motion.button onClick={handleConfirm} disabled={saving}
         whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-        className="group flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 py-3.5 text-sm font-bold text-white shadow-xl shadow-aeos-300/30 transition-all hover:shadow-2xl disabled:opacity-50">
+        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+        className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-aeos-600 via-aeos-500 to-emerald-500 py-4 text-base font-bold text-white shadow-xl shadow-aeos-300/30 transition-all hover:shadow-2xl disabled:opacity-50">
         {saving ? (
-          <><Loader2 size={16} className="animate-spin" /> Deploying AI agents...</>
+          <><Loader2 size={18} className="animate-spin" /> Deploying your AI agents...</>
         ) : (
-          <><Rocket size={16} /> Confirm and deploy AI agents <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" /></>
+          <><Rocket size={18} /> Confirm and deploy AI agents <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></>
         )}
       </motion.button>
     </motion.div>
