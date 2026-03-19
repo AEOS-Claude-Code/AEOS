@@ -181,3 +181,29 @@ async def admin_update_plan(
 ):
     """Change a workspace's billing plan."""
     return await update_workspace_plan(db, workspace_id, body.plan_tier)
+
+
+# ── Password Reset (uses admin secret, no auth required) ────────────
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    new_password: str
+    admin_secret: str
+
+
+@router.post("/reset-password")
+async def admin_reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """Reset a user's password using admin secret (no login required)."""
+    if body.admin_secret != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid admin secret")
+    if len(body.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    user = await get_user_by_email(db, body.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = hash_password(body.new_password)
+    await db.commit()
+    logger.info("Admin reset password for user %s", user.email)
+    return {"success": True, "email": user.email}
