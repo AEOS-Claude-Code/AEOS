@@ -148,7 +148,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-3">
               <div className="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 sm:flex">
-                <Sparkles size={12} /> FREE COMPANY REPORT
+                <Sparkles size={12} /> FREE INTELLIGENT REPORT
               </div>
               <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-fg-secondary transition hover:bg-surface-secondary">
                 Log in
@@ -169,7 +169,7 @@ export default function LandingPage() {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-400">
                   <Sparkles size={14} />
-                  Free intelligence company reports · No credit card required
+                  Free intelligent company reports · No credit card required
                 </div>
               </motion.div>
 
@@ -576,7 +576,7 @@ export default function LandingPage() {
               </div>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-fg-hint">
                 <span className="rounded-full border border-border px-3 py-1">No credit card required</span>
-                <span className="rounded-full border border-border px-3 py-1">Free intelligence company reports</span>
+                <span className="rounded-full border border-border px-3 py-1">Free intelligent company reports</span>
                 <span className="rounded-full border border-border px-3 py-1">Cancel anytime</span>
               </div>
             </motion.div>
