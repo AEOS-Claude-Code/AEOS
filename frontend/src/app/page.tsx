@@ -127,7 +127,7 @@ export default function LandingPage() {
   if (isAuthenticated) return null;
 
   return (
-      <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white">
         {/* ═══ NAVIGATION ═══ */}
         <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 lg:px-8">
@@ -625,6 +625,6 @@ export default function LandingPage() {
             </div>
           </div>
         </footer>
-      </div>
+    </div>
   );
 }
