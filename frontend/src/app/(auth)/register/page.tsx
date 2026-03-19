@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -115,6 +115,14 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
 }
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-slate-400" /></div>}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const { register } = useAuth();
   const searchParams = useSearchParams();
   const [fullName, setFullName] = useState("");
