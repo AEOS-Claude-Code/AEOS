@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   ShieldCheck, Loader2, Users, Building2, Bot, FileBarChart,
   Activity, Globe, Server, RefreshCw, Mail, Clock, Zap,
@@ -83,7 +84,7 @@ export default function AdminConsolePage() {
 
       {/* Stats row */}
       {stats && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StaggerGrid className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Total Users", value: stats.total_users, icon: Users, color: "from-blue-500 to-indigo-600", sub: `+${stats.recent_signups_7d} this week` },
             { label: "Workspaces", value: stats.total_workspaces, icon: Building2, color: "from-violet-500 to-purple-600", sub: `${stats.active_workspaces} active` },
@@ -100,7 +101,7 @@ export default function AdminConsolePage() {
               <p className="text-2xs text-white/60">{s.sub}</p>
             </motion.div>
           ))}
-        </div>
+        </StaggerGrid>
       )}
 
       {/* Tabs */}

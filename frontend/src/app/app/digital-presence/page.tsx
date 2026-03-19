@@ -3,6 +3,7 @@
 import { useDigitalPresence } from "@/lib/hooks/useDigitalPresence";
 import { useEngineData } from "@/lib/hooks/useEngineData";
 import DashCard from "@/components/dashboard/DashCard";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import { CardEmpty, CardLoading } from "@/components/ui/CardStates";
 import {
   Activity,
@@ -248,7 +249,7 @@ export default function DigitalPresencePage() {
       </div>
 
       {/* Row 1: Score Overview + Trend + History */}
-      <div className="mb-5 grid gap-5 lg:grid-cols-3">
+      <StaggerGrid className="mb-5 grid gap-5 lg:grid-cols-3">
         {/* Overall Score */}
         <DashCard title="Overall digital presence" subtitle="Composite score across all channels" delay={0}>
           <div className="flex items-center gap-5">
@@ -303,17 +304,17 @@ export default function DigitalPresencePage() {
             </div>
           )}
         </DashCard>
-      </div>
+      </StaggerGrid>
 
       {/* Row 2: Category Breakdown Details */}
-      <div className="mb-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="mb-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {breakdown.map((item) => (
           <BreakdownDetail key={item.category} item={item} />
         ))}
-      </div>
+      </StaggerGrid>
 
       {/* Row 3: Social + Tech + Keywords (from scanner) */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-5 lg:grid-cols-3">
         <DashCard title="Social presence" subtitle="Platform coverage" delay={0}>
           {Object.keys(social).length === 0 ? (
             <CardEmpty icon={<Share2 size={20} className="text-fg-hint" />} title="No social data" description="Run a company scan to detect social media presence." />
@@ -358,7 +359,7 @@ export default function DigitalPresencePage() {
             </div>
           )}
         </DashCard>
-      </div>
+      </StaggerGrid>
     </div>
   );
 }

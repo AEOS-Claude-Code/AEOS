@@ -5,6 +5,7 @@ import { resolveCardState } from "@/components/ui/CardStates";
 import OpportunityRadarCard from "@/components/dashboard/OpportunityRadarCard";
 import TopOpportunitiesCard from "@/components/dashboard/TopOpportunitiesCard";
 import DashCard from "@/components/dashboard/DashCard";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import { Sparkles, ArrowUpRight } from "lucide-react";
 
 const IMPACT_COLORS: Record<string, string> = {
@@ -52,7 +53,7 @@ export default function OpportunitiesPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <OpportunityRadarCard
           opportunities={oppCardItems}
           totalDetected={opportunityRadar?.total_detected ?? 0}
@@ -91,7 +92,7 @@ export default function OpportunitiesPage() {
             </div>
           )}
         </DashCard>
-      </div>
+      </StaggerGrid>
 
       {/* Full opportunity list */}
       <DashCard title="All opportunities" subtitle={`${allOpps.length} detected`} delay={0}>

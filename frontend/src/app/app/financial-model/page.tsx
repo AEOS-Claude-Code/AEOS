@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Calculator, Loader2, RefreshCw, AlertTriangle, TrendingUp, ArrowUp,
   DollarSign, Target, BarChart3, Wallet, PieChart, Rocket,
@@ -63,7 +64,7 @@ export default function FinancialModelPage() {
       </div>
 
       {/* Key metrics */}
-      <div className="grid gap-3 sm:grid-cols-4">
+      <StaggerGrid className="grid gap-3 sm:grid-cols-4">
         {[
           { label: "Year 1 Revenue", value: fmt(model.year1_revenue), icon: DollarSign, color: "from-emerald-500 to-green-600" },
           { label: "Year 5 Revenue", value: fmt(model.year5_revenue), icon: TrendingUp, color: "from-blue-500 to-indigo-600" },
@@ -79,7 +80,7 @@ export default function FinancialModelPage() {
             <p className="text-2xs text-fg-muted">{m.label}</p>
           </motion.div>
         ))}
-      </div>
+      </StaggerGrid>
 
       {/* 5-Year P&L Table */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -122,7 +123,7 @@ export default function FinancialModelPage() {
       </motion.div>
 
       {/* Revenue Streams + EBITDA + Scenarios */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Revenue Streams */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
@@ -188,10 +189,10 @@ export default function FinancialModelPage() {
             })}
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* Break-even + Funding */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-2">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
           className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-fg-muted">Break-Even Analysis</p>
@@ -235,7 +236,7 @@ export default function FinancialModelPage() {
             </div>
           )}
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* Assumptions */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}

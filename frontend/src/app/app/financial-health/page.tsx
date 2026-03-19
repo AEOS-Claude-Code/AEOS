@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   DollarSign, Loader2, RefreshCw, AlertTriangle, TrendingUp, TrendingDown,
   Shield, Sparkles, Wallet, BarChart3, Target, Zap, CheckCircle2, ArrowUp,
@@ -83,7 +84,7 @@ export default function FinancialHealthPage() {
       </div>
 
       {/* Top row: Score + Sub-scores + Revenue */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Overall score */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center rounded-2xl border border-border/60 bg-surface p-6 shadow-lg shadow-slate-100/50">
@@ -132,7 +133,7 @@ export default function FinancialHealthPage() {
             </div>
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* 3-Year Projections */}
       {report.projections.length > 0 && (
@@ -167,7 +168,7 @@ export default function FinancialHealthPage() {
       )}
 
       {/* Growth Levers + Risks + Recommendations */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Growth Levers */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-5">
@@ -219,7 +220,7 @@ export default function FinancialHealthPage() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
     </motion.div>
   );
 }

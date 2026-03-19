@@ -6,6 +6,7 @@ import LeadIntelligenceCard from "@/components/dashboard/LeadIntelligenceCard";
 import LeadSourcesCard from "@/components/dashboard/LeadSourcesCard";
 import LeadScoreCard from "@/components/dashboard/LeadScoreCard";
 import DashCard from "@/components/dashboard/DashCard";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import { Users, Filter, Download } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -59,11 +60,11 @@ export default function LeadsPage() {
       </div>
 
       {/* Summary row */}
-      <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <LeadIntelligenceCard data={leadCardData} state={leadState} error={errors.leads} onRetry={refresh} />
         <LeadSourcesCard sources={leadSummary?.by_source ?? []} state={leadState} />
         <LeadScoreCard distribution={leadSummary?.by_classification ?? {}} totalLeads={leadSummary?.total_leads_30d ?? 0} state={leadState} />
-      </div>
+      </StaggerGrid>
 
       {/* Lead table */}
       <DashCard title="Lead pipeline" subtitle={`${leads.length} leads`} delay={0}>

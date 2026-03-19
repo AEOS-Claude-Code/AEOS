@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Swords, Loader2, RefreshCw, Plus, Globe, TrendingUp, TrendingDown,
   Minus, Shield, Cpu, Share2, Search, Sparkles, AlertTriangle,
@@ -174,7 +175,7 @@ export default function CompetitorsPage() {
 
       {/* Report + dimensions */}
       {report && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <StaggerGrid className="grid gap-4 lg:grid-cols-3">
           {/* Positioning score */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center rounded-2xl border border-border/60 bg-surface p-6 shadow-lg shadow-slate-100/50">
@@ -200,12 +201,12 @@ export default function CompetitorsPage() {
               ))}
             </div>
           </motion.div>
-        </div>
+        </StaggerGrid>
       )}
 
       {/* Insights */}
       {report && (report.strengths.length > 0 || report.weaknesses.length > 0 || report.opportunities.length > 0) && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <StaggerGrid className="grid gap-4 lg:grid-cols-3">
           {/* Strengths */}
           <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-5">
             <p className="mb-3 flex items-center gap-2 text-xs font-bold text-emerald-700">
@@ -253,18 +254,18 @@ export default function CompetitorsPage() {
               {report.opportunities.length === 0 && <p className="text-2xs text-blue-600 italic">Scan competitors to discover opportunities</p>}
             </div>
           </div>
-        </div>
+        </StaggerGrid>
       )}
 
       {/* Competitor cards */}
       {competitors.length > 0 && (
         <div>
           <h2 className="mb-3 text-sm font-bold text-fg">Tracked Competitors</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <StaggerGrid className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {competitors.map(comp => (
               <CompetitorCard key={comp.id} comp={comp} />
             ))}
-          </div>
+          </StaggerGrid>
         </div>
       )}
 

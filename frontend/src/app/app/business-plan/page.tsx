@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Brain, Loader2, Sparkles, FileText, CheckCircle2, Clock, AlertTriangle,
   RefreshCw, ChevronRight, Rocket, ArrowRight, Bot, Target, TrendingUp,
@@ -55,7 +56,7 @@ function EmptyState({ onGenerate, generating }: { onGenerate: () => void; genera
         digital presence, gap analysis, market positioning, and organizational structure.
       </p>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <StaggerGrid className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
         {["Market Analysis", "Org Structure", "Financial Model", "Risk Assessment", "KPI Framework"].map((label, i) => (
           <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + i * 0.1 }}
@@ -66,7 +67,7 @@ function EmptyState({ onGenerate, generating }: { onGenerate: () => void; genera
             <span className="text-2xs font-medium text-fg-secondary">{label}</span>
           </motion.div>
         ))}
-      </div>
+      </StaggerGrid>
 
       <motion.button onClick={onGenerate} disabled={generating}
         whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}

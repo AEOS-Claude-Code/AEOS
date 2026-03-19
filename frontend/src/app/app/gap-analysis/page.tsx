@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Bot, Users, Building2, AlertTriangle, CheckCircle2, XCircle,
   RefreshCw, Loader2, ArrowRight, Shield, TrendingUp, Brain,
@@ -188,7 +189,7 @@ export default function GapAnalysisPage() {
       </div>
 
       {/* Top row: Score + Sub-scores */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Overall score */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center rounded-2xl border border-border/60 bg-surface p-6 shadow-lg shadow-slate-100/50">
@@ -216,7 +217,7 @@ export default function GapAnalysisPage() {
             <SubScoreBar label="Operational Maturity" score={report.operational_maturity_score} weight="15%" />
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* Department breakdown + Recommendations */}
       <div className="grid gap-4 lg:grid-cols-2">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Activity, Loader2, RefreshCw, AlertTriangle, CheckCircle2, Clock,
   XCircle, Target, Globe, DollarSign, Building2, ChevronDown,
@@ -125,7 +126,7 @@ export default function KPIFrameworkPage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <StaggerGrid className="grid gap-4 sm:grid-cols-3">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
           <div className="text-center">
@@ -156,7 +157,7 @@ export default function KPIFrameworkPage() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* KPI Sections */}
       <div className="space-y-4">

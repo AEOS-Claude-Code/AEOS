@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Bot, Loader2, Rocket, Users, ChevronDown, Play, CheckCircle2,
   Brain, Target, Megaphone, Wallet, Shield, Settings, Cpu, Package,
@@ -153,7 +154,7 @@ export default function AgentsPage() {
 
       {/* Stats */}
       {hasAgents && (
-        <div className="grid gap-3 sm:grid-cols-3">
+        <StaggerGrid className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-gradient-to-br from-aeos-500 to-aeos-700 px-5 py-4 text-white shadow-lg shadow-aeos-200/40">
             <p className="text-3xl font-bold">{data.total_agents}</p>
             <p className="text-xs text-white/70">AI Agents</p>
@@ -166,7 +167,7 @@ export default function AgentsPage() {
             <p className="text-3xl font-bold">{data.active_agents}</p>
             <p className="text-xs text-white/70">Active</p>
           </div>
-        </div>
+        </StaggerGrid>
       )}
 
       {/* Empty state */}

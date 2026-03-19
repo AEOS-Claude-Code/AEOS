@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Monitor, Loader2, RefreshCw, Bot, Zap, Globe, Target, Shield,
   BarChart3, DollarSign, Activity, Brain, CheckCircle2, Clock,
@@ -79,7 +80,7 @@ export default function CommandDashboardPage() {
       </div>
 
       {/* Top stats */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {/* Overall Health */}
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 rounded-2xl border border-border/60 bg-surface p-4 shadow-lg shadow-slate-100/50">
@@ -122,10 +123,10 @@ export default function CommandDashboardPage() {
           </div>
           <p className="text-xs text-white/70">Engines Active</p>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* Engine status grid + Activity feed */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Engine Status */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="col-span-2 rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
@@ -177,7 +178,7 @@ export default function CommandDashboardPage() {
             )}
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* Score breakdown */}
       {Object.keys(data.scores).length > 0 && (

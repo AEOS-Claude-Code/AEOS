@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   TrendingUp, TrendingDown, Loader2, RefreshCw, AlertTriangle,
   Target, Sparkles, Shield, Globe, BarChart3, Zap, ArrowUp, ArrowDown, Minus,
@@ -112,7 +113,7 @@ export default function MarketResearchPage() {
       </div>
 
       {/* Top row: TAM/SAM/SOM + Positioning + Growth Rate */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Market Sizing Funnel */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl border border-border/60 bg-surface p-5 shadow-lg shadow-slate-100/50">
@@ -161,10 +162,10 @@ export default function MarketResearchPage() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
 
       {/* Growth Drivers + Threats + Opportunities */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <StaggerGrid className="grid gap-4 lg:grid-cols-3">
         {/* Growth Drivers */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-5">
@@ -228,7 +229,7 @@ export default function MarketResearchPage() {
             ))}
           </div>
         </motion.div>
-      </div>
+      </StaggerGrid>
     </motion.div>
   );
 }

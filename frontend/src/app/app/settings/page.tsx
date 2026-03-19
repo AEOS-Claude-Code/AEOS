@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/auth/AuthProvider";
 import DashCard from "@/components/dashboard/DashCard";
 import BillingCard from "@/components/dashboard/BillingCard";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import { Settings as SettingsIcon, User, Building2, CreditCard, Bell, Shield, Key } from "lucide-react";
 
 export default function SettingsPage() {
@@ -17,7 +18,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {/* Profile */}
         <DashCard title="Account" subtitle="Your personal information" delay={0}>
           <div className="space-y-3">
@@ -99,7 +100,7 @@ export default function SettingsPage() {
             <p className="text-xs text-fg-muted">API keys and webhook configuration will be available for Business and Enterprise plans.</p>
           </div>
         </DashCard>
-      </div>
+      </StaggerGrid>
     </div>
   );
 }

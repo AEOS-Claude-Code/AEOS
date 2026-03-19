@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   FileBarChart, Loader2, Download, ExternalLink, Share2, Eye,
   Shield, TrendingUp, Users, Brain, BarChart3, Target, Activity,
@@ -83,7 +84,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Report type cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StaggerGrid className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {types.map((t, i) => {
           const config = REPORT_TYPE_CONFIG[t.type] || { icon: FileBarChart, color: "from-slate-500 to-gray-600", description: "" };
           const Icon = config.icon;
@@ -112,7 +113,7 @@ export default function ReportsPage() {
             </motion.div>
           );
         })}
-      </div>
+      </StaggerGrid>
 
       {/* Generated reports list */}
       {reports.length > 0 && (

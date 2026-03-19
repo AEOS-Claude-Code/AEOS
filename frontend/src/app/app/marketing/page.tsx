@@ -4,6 +4,7 @@ import { useEngineData } from "@/lib/hooks/useEngineData";
 import { Megaphone, Target, BarChart3, Mail, Globe2, TrendingUp } from "lucide-react";
 import DashCard from "@/components/dashboard/DashCard";
 import { CardEmpty } from "@/components/ui/CardStates";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 
 const CHANNELS = [
   { name: "SEO / Organic", icon: <Globe2 size={14} />, status: "active", leads: 12 },
@@ -27,7 +28,7 @@ export default function MarketingPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <DashCard title="Campaign overview" subtitle="Active marketing channels" delay={0}>
           <div className="space-y-3">
             {CHANNELS.map((ch) => (
@@ -78,7 +79,7 @@ export default function MarketingPage() {
         <DashCard title="Social media" subtitle="Engagement across platforms" delay={600}>
           <CardEmpty icon={<Megaphone size={20} className="text-fg-hint" />} title="Connect social accounts" description="Link your social media accounts to monitor engagement, follower growth, and content performance." />
         </DashCard>
-      </div>
+      </StaggerGrid>
     </div>
   );
 }
