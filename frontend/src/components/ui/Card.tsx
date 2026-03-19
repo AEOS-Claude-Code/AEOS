@@ -1,6 +1,8 @@
 "use client";
 
 import { clsx } from "clsx";
+import { motion } from "framer-motion";
+import { staggerItem, hoverLift } from "@/lib/motion";
 
 /* ── Card ─────────────────────────────────────────────────────── */
 
@@ -16,16 +18,18 @@ export interface CardProps {
 
 export function Card({ children, delay = 0, noPadding, className }: CardProps) {
   return (
-    <div
+    <motion.div
+      variants={staggerItem}
+      whileHover={hoverLift}
+      transition={{ delay: delay / 1000 }}
       className={clsx(
-        "animate-card-in rounded-card border border-border bg-surface shadow-card",
+        "rounded-card border border-border bg-surface shadow-card transition-shadow hover:shadow-card-hover",
         !noPadding && "p-5",
         className,
       )}
-      style={{ animationDelay: `${delay}ms` }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -49,12 +53,14 @@ export function CardWithHeader({
   className,
 }: CardWithHeaderProps) {
   return (
-    <div
+    <motion.div
+      variants={staggerItem}
+      whileHover={hoverLift}
+      transition={{ delay: delay / 1000 }}
       className={clsx(
-        "animate-card-in rounded-card border border-border bg-surface shadow-card",
+        "rounded-card border border-border bg-surface shadow-card transition-shadow hover:shadow-card-hover",
         className,
       )}
-      style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between border-b border-border-light px-5 py-4">
         <div>
@@ -66,6 +72,6 @@ export function CardWithHeader({
         {badge && <div>{badge}</div>}
       </div>
       <div className="px-5 py-4">{children}</div>
-    </div>
+    </motion.div>
   );
 }

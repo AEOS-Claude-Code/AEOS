@@ -1,6 +1,9 @@
 "use client";
 
 import { clsx } from "clsx";
+import { motion } from "framer-motion";
+import { staggerItem, hoverLift } from "@/lib/motion";
+import { useAnimatedNumber } from "@/lib/hooks/useAnimatedNumber";
 import { scoreColor } from "./tokens";
 
 /* ── Single metric ───────────────────────────────────────────── */
@@ -31,6 +34,15 @@ export function Metric({
   aside,
   size = "md",
 }: MetricProps) {
+  // Attempt to animate if value is a pure number
+  const numericValue = Number(value);
+  const isNumeric = !isNaN(numericValue) && value.trim() !== "";
+  const animatedValue = useAnimatedNumber(
+    isNumeric ? numericValue : 0,
+    800,
+    isNumeric,
+  );
+
   return (
     <div className="flex flex-col">
       <span className="text-2xs font-medium uppercase tracking-wider text-fg-hint">
@@ -43,7 +55,7 @@ export function Metric({
             VALUE_SIZE[size],
           )}
         >
-          {value}
+          {isNumeric ? animatedValue : value}
         </span>
         {aside}
       </div>
@@ -77,12 +89,14 @@ export function MetricCard({
   className,
 }: MetricCardProps) {
   return (
-    <div
+    <motion.div
+      variants={staggerItem}
+      whileHover={hoverLift}
+      transition={{ delay: delay / 1000 }}
       className={clsx(
-        "animate-card-in flex items-start gap-3 rounded-card border border-border bg-surface p-4 shadow-card",
+        "flex items-start gap-3 rounded-card border border-border bg-surface p-4 shadow-card",
         className,
       )}
-      style={{ animationDelay: `${delay}ms` }}
     >
       {icon && (
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-widget bg-surface-secondary text-fg-muted">
@@ -104,7 +118,7 @@ export function MetricCard({
           <span className="mt-0.5 text-2xs text-fg-hint">{sub}</span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -123,6 +137,8 @@ export function ScoreMetric({
   sub?: string;
   size?: "sm" | "md" | "lg";
 }) {
+  const animatedScore = useAnimatedNumber(score);
+
   return (
     <div className="flex flex-col">
       <span className="text-2xs font-medium uppercase tracking-wider text-fg-hint">
@@ -136,7 +152,7 @@ export function ScoreMetric({
             VALUE_SIZE[size],
           )}
         >
-          {score.toFixed(0)}
+          {animatedScore}
         </span>
         <span className="text-2xs text-fg-hint">/ {maxScore}</span>
       </div>
@@ -172,9 +188,11 @@ export function ProgressMetric({
         {label}
       </span>
       <div className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-inset">
-        <div
+        <motion.div
           className={clsx("h-full rounded-pill", barColorClass ?? defaultBar)}
-          style={{ width: `${pct}%` }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         />
       </div>
       <span className="w-10 text-right text-xs-tight font-semibold tabular-nums text-fg-secondary">

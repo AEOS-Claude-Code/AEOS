@@ -1,5 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { staggerItem, hoverLift, tapScale } from "@/lib/motion";
+
 interface DashCardProps {
   title: string;
   subtitle?: string;
@@ -16,9 +19,11 @@ export default function DashCard({
   delay = 0,
 }: DashCardProps) {
   return (
-    <div
-      className="card-animate rounded-2xl border border-border bg-surface shadow-lg shadow-slate-100/50 transition-all hover:shadow-xl"
-      style={{ animationDelay: `${delay}ms` }}
+    <motion.div
+      variants={staggerItem}
+      whileHover={hoverLift}
+      whileTap={tapScale}
+      className="rounded-2xl border border-border bg-surface shadow-lg shadow-slate-100/50 transition-shadow hover:shadow-xl"
     >
       {/* Header */}
       <div className="flex items-start justify-between border-b border-border-light px-5 py-3.5">
@@ -33,6 +38,6 @@ export default function DashCard({
 
       {/* Content */}
       <div className="px-5 py-4">{children}</div>
-    </div>
+    </motion.div>
   );
 }

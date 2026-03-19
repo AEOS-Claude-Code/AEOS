@@ -1,6 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
+import { motion } from "framer-motion";
 import {
   Loader2,
   Inbox,
@@ -80,7 +81,12 @@ export function CardEmpty({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center justify-center gap-3 py-8 text-center"
+    >
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface-secondary">
         {icon ?? <Inbox size={20} className="text-fg-hint" />}
       </div>
@@ -93,7 +99,7 @@ export function CardEmpty({
         )}
       </div>
       {action}
-    </div>
+    </motion.div>
   );
 }
 
@@ -109,7 +115,12 @@ export function CardError({
   onRetry?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center justify-center gap-3 py-8 text-center"
+    >
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-status-danger-light">
         <AlertCircle size={20} className="text-status-danger" />
       </div>
@@ -132,7 +143,7 @@ export function CardError({
           Retry
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -144,7 +155,12 @@ export function CardOffline({
   onRetry?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col items-center justify-center gap-3 py-8 text-center"
+    >
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-status-warning-light">
         <WifiOff size={20} className="text-status-warning" />
       </div>
@@ -165,7 +181,7 @@ export function CardOffline({
           Reconnect
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -177,12 +193,17 @@ export function CardSuccess({
   message?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-widget bg-status-success-light px-3 py-2">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="flex items-center gap-2 rounded-widget bg-status-success-light px-3 py-2"
+    >
       <CheckCircle2 size={14} className="shrink-0 text-status-success" />
       <span className="text-xs-tight font-medium text-status-success-text">
         {message}
       </span>
-    </div>
+    </motion.div>
   );
 }
 
