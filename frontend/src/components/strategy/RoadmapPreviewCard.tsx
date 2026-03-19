@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { Roadmap } from "@/lib/hooks/useStrategyData";
+import { staggerContainer, staggerItem } from "@/lib/motion";
 
 const DEPT_COLORS: Record<string, string> = {
   Marketing: "bg-blue-100 text-blue-700",
@@ -64,15 +66,20 @@ export default function RoadmapPreviewCard({
       )}
 
       {/* Timeline */}
-      <div className="relative space-y-3">
+      <motion.div
+        className="relative space-y-3"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         {/* Vertical line */}
         <div className="absolute left-[13px] top-2 bottom-2 w-px bg-border" />
 
         {previewActions.map((action, i) => (
-          <div key={i} className="relative flex items-start gap-3 pl-0">
+          <motion.div key={i} variants={staggerItem} className="relative flex items-start gap-3 pl-0">
             <WeekBadge week={action.week} />
 
-            <div className="min-w-0 flex-1 rounded-xl border border-border-light bg-surface-secondary px-3 py-2.5">
+            <div className="min-w-0 flex-1 rounded-xl border border-border-light bg-surface-secondary px-3 py-2.5 hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-2">
                 <span className="truncate text-sm font-medium text-fg">
                   {action.action}
@@ -89,7 +96,7 @@ export default function RoadmapPreviewCard({
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
 
         {roadmap.actions.length > 4 && (
@@ -98,7 +105,7 @@ export default function RoadmapPreviewCard({
             {roadmap.actions.length - 4 > 1 ? "s" : ""}
           </p>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

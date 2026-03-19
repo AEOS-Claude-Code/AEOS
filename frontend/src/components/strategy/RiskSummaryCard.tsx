@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { HealthScore } from "@/lib/hooks/useStrategyData";
+import { staggerContainer, staggerItem, springTransition } from "@/lib/motion";
 
 const SEVERITY_CONFIG: Record<
   string,
@@ -70,12 +72,14 @@ function DimensionRow({ dim }: { dim: RiskDimension }) {
   const cfg = severity ? SEVERITY_CONFIG[severity] : null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 rounded-lg px-1 py-0.5 hover:bg-slate-50 transition-colors">
       <span className="w-28 shrink-0 text-xs text-fg-muted">{dim.label}</span>
       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-inset">
-        <div
-          className={`h-full rounded-full transition-all ${barColor}`}
-          style={{ width: `${Math.min(100, dim.score)}%` }}
+        <motion.div
+          className={`h-full rounded-full ${barColor}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, dim.score)}%` }}
+          transition={springTransition}
         />
       </div>
       <span className="w-8 text-right text-xs tabular-nums text-fg-muted">
@@ -145,11 +149,18 @@ export default function RiskSummaryCard({
         </p>
       </div>
 
-      <div className="space-y-2.5">
+      <motion.div
+        className="space-y-2.5"
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
+      >
         {dimensions.map((dim) => (
-          <DimensionRow key={dim.label} dim={dim} />
+          <motion.div key={dim.label} variants={staggerItem}>
+            <DimensionRow dim={dim} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

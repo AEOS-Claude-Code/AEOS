@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { Priority } from "@/lib/hooks/useStrategyData";
+import { staggerContainer, staggerItem } from "@/lib/motion";
 
 const CATEGORY_COLORS: Record<string, string> = {
   marketing: "bg-blue-100 text-blue-800",
@@ -57,11 +59,17 @@ export default function PrioritiesCard({
           insights.
         </p>
       ) : (
-        <div className="space-y-3">
+        <motion.div
+          className="space-y-3"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
           {top3.map((p) => (
-            <div
+            <motion.div
               key={p.rank}
-              className="flex items-start gap-3 rounded-xl border border-border-light bg-surface-secondary px-4 py-3"
+              variants={staggerItem}
+              className="flex items-start gap-3 rounded-xl border border-border-light bg-surface-secondary px-4 py-3 hover:bg-slate-50 transition-colors"
             >
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-aeos-600 text-xs font-bold text-white">
                 {p.rank}
@@ -101,9 +109,9 @@ export default function PrioritiesCard({
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );
