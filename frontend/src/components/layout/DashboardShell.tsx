@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { fadeUp } from "@/lib/motion";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 import Link from "next/link";
@@ -66,7 +68,13 @@ export default function DashboardShell({
         />
 
         <main className="flex-1 overflow-y-auto p-4 pb-20 sm:p-6 lg:p-8 lg:pb-8">
-          {children}
+          <motion.div
+            initial="initial"
+            animate="animate"
+            variants={fadeUp}
+          >
+            {children}
+          </motion.div>
         </main>
       </div>
 

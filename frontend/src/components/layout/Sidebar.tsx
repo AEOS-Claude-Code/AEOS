@@ -5,6 +5,7 @@ import {
   FileBarChart, Settings, ChevronLeft, Zap, LogOut, Globe, Bot,
   GitCompareArrows, Brain, BarChart3, DollarSign, Activity, Monitor, ShieldCheck,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -96,7 +97,11 @@ export default function Sidebar() {
                           : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
                       }`}>
                       {isActive && (
-                        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-aeos-400" />
+                        <motion.span
+                          layoutId="sidebar-active"
+                          className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-aeos-400"
+                          transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                        />
                       )}
                       <span className={`transition-colors ${isActive ? "text-aeos-400" : "text-slate-500 group-hover:text-slate-300"}`}>
                         {item.icon}

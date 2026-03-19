@@ -1,5 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
+import { fadeUp } from "@/lib/motion";
+import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import { useStrategyData } from "@/lib/hooks/useStrategyData";
 import { useEngineData } from "@/lib/hooks/useEngineData";
 import { resolveCardState, type CardState } from "@/components/ui/CardStates";
@@ -169,7 +172,12 @@ export default function DashboardPage() {
   return (
     <>
       {/* Premium header */}
-      <div className="mb-4 flex items-center justify-between">
+      <motion.div
+        initial="initial"
+        animate="animate"
+        variants={fadeUp}
+        className="mb-4 flex items-center justify-between"
+      >
         <div>
           <h1 className="text-lg font-bold text-fg">Dashboard</h1>
           <p className="text-xs text-fg-muted">
@@ -180,7 +188,7 @@ export default function DashboardPage() {
           className="flex items-center gap-1.5 rounded-xl bg-surface-inset px-3 py-1.5 text-2xs font-medium text-fg-secondary transition hover:bg-surface-secondary">
           Refresh all
         </button>
-      </div>
+      </motion.div>
 
       <ConnectionBar
         stratConnected={stratConnected}
@@ -207,7 +215,7 @@ export default function DashboardPage() {
 
       {/* Row 1: Core metrics */}
       <ErrorBoundary>
-      <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <CompanyIntelligenceCard
           report={companyScan}
           state={scanState}
@@ -230,12 +238,12 @@ export default function DashboardPage() {
           error={engineErrors.opportunities}
           onRetry={engineRefresh}
         />
-      </div>
+      </StaggerGrid>
       </ErrorBoundary>
 
       {/* Row 2: Deep intelligence */}
       <ErrorBoundary>
-      <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <LeadSourcesCard
           sources={leadSummary?.by_source ?? []}
           state={leadState}
@@ -251,13 +259,13 @@ export default function DashboardPage() {
           opportunities={opportunityRadar?.opportunities?.slice(0, 5) ?? []}
           state={oppState}
         />
-      </div>
+      </StaggerGrid>
       </ErrorBoundary>
 
       {/* Row 3: Platform */}
       {/* Row 3: Platform + AI */}
       <ErrorBoundary>
-      <div className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
+      <StaggerGrid className="mb-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
         <DigitalPresenceCard health={summary.health_score} state={strategyState} error={stratError} onRetry={stratRefresh} />
 
         <IntegrationStatusCard />
@@ -265,14 +273,14 @@ export default function DashboardPage() {
         <AskAeosCard />
 
         <StrategicPrioritiesCard priorities={priorities.priorities} state={strategyState} />
-      </div>
+      </StaggerGrid>
       </ErrorBoundary>
 
       {/* Row 4: Billing */}
       <ErrorBoundary>
-      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <StaggerGrid className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <BillingCard />
-      </div>
+      </StaggerGrid>
       </ErrorBoundary>
     </>
   );
