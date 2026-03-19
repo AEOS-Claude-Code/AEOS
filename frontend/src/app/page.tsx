@@ -220,7 +220,7 @@ export default function LandingPage() {
               ].map((phase) => (
                 <motion.div key={phase.step} variants={fadeUp}
                   className={`relative overflow-hidden rounded-2xl border ${phase.tint} p-6 transition-all hover:shadow-lg`}>
-                  <div className="absolute -right-4 -top-4 text-[80px] font-black text-white/[0.03]">{phase.step}</div>
+                  <div className="absolute right-3 top-1 select-none text-[72px] font-black leading-none text-white/[0.04]">{phase.step}</div>
                   <div className="relative">
                     <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${phase.color}`}>
                       <phase.icon size={18} className="text-white" />
