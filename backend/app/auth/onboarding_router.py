@@ -30,6 +30,8 @@ from app.auth.schemas import (
     OnboardingIntegrationsPayload,
     OnboardingStepResponse,
     ReadinessResponse,
+    CompetitorDiscoveryResponse,
+    DiscoveredCompetitor,
 )
 
 router = APIRouter(prefix="/v1/onboarding", tags=["Onboarding Wizard"])
@@ -127,6 +129,138 @@ async def step_presence(
         next_step=3,
         readiness_pct=ob.readiness_pct,
     )
+
+
+@router.get(
+    "/discover-competitors",
+    response_model=CompetitorDiscoveryResponse,
+    summary="AI-discover competitors based on industry & country",
+)
+async def discover_competitors(
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Use Claude AI to discover competitors in the same industry and country.
+    Reads industry, country, and website_url from the workspace profile.
+    """
+    profile = workspace.profile
+    if not profile:
+        raise HTTPException(status_code=404, detail="No workspace profile found")
+
+    industry = profile.industry or "general"
+    country = profile.country or ""
+    city = profile.city or ""
+    company_name = workspace.name or ""
+    website_url = profile.website_url or ""
+
+    if industry == "general" and not website_url:
+        return CompetitorDiscoveryResponse(competitors=[], source="fallback")
+
+    competitors = await _ai_discover_competitors(
+        company_name=company_name,
+        website_url=website_url,
+        industry=industry,
+        country=country,
+        city=city,
+    )
+    source = "ai" if competitors else "fallback"
+    return CompetitorDiscoveryResponse(competitors=competitors, source=source)
+
+
+async def _ai_discover_competitors(
+    company_name: str,
+    website_url: str,
+    industry: str,
+    country: str,
+    city: str,
+) -> list[DiscoveredCompetitor]:
+    """Call Claude to discover competitor websites."""
+    import json as _json
+
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    api_key = settings.ANTHROPIC_API_KEY
+
+    if not api_key:
+        logger.info("No ANTHROPIC_API_KEY — skipping competitor discovery")
+        return []
+
+    location = f"{city}, {country}" if city else country
+    prompt = (
+        f"Find 5 real competitor companies for this business:\n"
+        f"- Company: {company_name}\n"
+        f"- Website: {website_url}\n"
+        f"- Industry: {industry}\n"
+        f"- Location: {location}\n\n"
+        f"Return ONLY competitors that:\n"
+        f"1. Operate in the same industry ({industry})\n"
+        f"2. Serve the same geographic market ({location})\n"
+        f"3. Are real, existing companies with working websites\n"
+        f"4. Are direct competitors (similar size/market, not global giants unless relevant)\n\n"
+        f"Return a JSON array of objects with keys: name, url, description.\n"
+        f"The url must be a real website URL (https://...).\n"
+        f"The description should be one short sentence about what they do.\n"
+        f"Return ONLY the JSON array, no other text."
+    )
+
+    try:
+        import httpx
+
+        model = settings.AI_DEFAULT_MODEL or "claude-sonnet-4-20250514"
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "max_tokens": 600,
+                    "system": "You are a business research assistant. Return only valid JSON.",
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+            )
+
+            if resp.status_code != 200:
+                logger.warning("Claude API returned %d for competitor discovery", resp.status_code)
+                return []
+
+            data = resp.json()
+            text = ""
+            for block in data.get("content", []):
+                if block.get("type") == "text":
+                    text += block["text"]
+
+            # Parse JSON from response (handle markdown code blocks)
+            text = text.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+                text = text.rsplit("```", 1)[0]
+            text = text.strip()
+
+            items = _json.loads(text)
+            result = []
+            for item in items[:5]:
+                url = item.get("url", "").strip()
+                if url and not url.startswith("http"):
+                    url = "https://" + url
+                if url:
+                    result.append(DiscoveredCompetitor(
+                        name=item.get("name", ""),
+                        url=url,
+                        description=item.get("description", ""),
+                    ))
+            logger.info("Discovered %d competitors via AI", len(result))
+            return result
+
+    except Exception as e:
+        logger.warning("Competitor discovery failed: %s", str(e)[:200])
+        return []
 
 
 @router.post(

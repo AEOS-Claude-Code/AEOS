@@ -138,6 +138,17 @@ class OnboardingCompetitorsPayload(BaseModel):
     competitor_urls: list[str] = Field(default_factory=list, max_length=10)
 
 
+class DiscoveredCompetitor(BaseModel):
+    name: str
+    url: str
+    description: str = ""
+
+
+class CompetitorDiscoveryResponse(BaseModel):
+    competitors: list[DiscoveredCompetitor] = Field(default_factory=list)
+    source: str = "ai"  # "ai" or "fallback"
+
+
 class OnboardingIntegrationsPayload(BaseModel):
     """Step 4 just marks acknowledgement – real connections in Phase 6."""
     acknowledged: bool = True
