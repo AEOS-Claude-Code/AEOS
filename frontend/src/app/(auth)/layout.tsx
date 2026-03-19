@@ -14,7 +14,6 @@ const FEATURES = [
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="dark">
       <div className="flex min-h-screen">
         {/* Left panel — visual showcase (hidden on mobile) */}
         <div className="relative hidden w-[480px] shrink-0 overflow-hidden bg-gradient-to-br from-slate-900 via-aeos-950 to-slate-900 lg:block">
@@ -47,7 +46,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     AI-powered organization
                   </span>
                 </h2>
-                <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+                <p className="mt-3 text-sm leading-relaxed text-slate-400">
                   Enter your website URL and AEOS deploys 22+ AI agents across 9 departments — in minutes.
                 </p>
               </motion.div>
@@ -65,7 +64,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
                       <f.icon size={14} className="text-aeos-400" />
                     </div>
-                    <span className="text-sm text-fg-secondary">{f.label}</span>
+                    <span className="text-sm text-slate-400">{f.label}</span>
                   </motion.div>
                 ))}
               </div>
@@ -73,26 +72,25 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
             {/* Bottom quote */}
             <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
-              <p className="text-sm italic text-fg-muted">
+              <p className="text-sm italic text-slate-500">
                 &ldquo;Every company — regardless of size — deserves a complete organization.&rdquo;
               </p>
-              <p className="mt-2 text-xs text-fg-hint">AEOS Vision</p>
+              <p className="mt-2 text-xs text-slate-500">AEOS Vision</p>
             </div>
           </div>
         </div>
 
         {/* Right panel — form */}
-        <div className="flex flex-1 flex-col items-center justify-center bg-surface px-6 py-10">
+        <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-10">
           {/* Mobile logo */}
           <Link href="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-700">
               <Zap size={20} className="text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-fg">AEOS</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">AEOS</span>
           </Link>
           {children}
         </div>
       </div>
-    </div>
   );
 }

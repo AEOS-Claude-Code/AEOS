@@ -26,26 +26,26 @@ export default function LoginPage() {
     }
   }
 
-  const ic = "w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:bg-surface focus:ring-2 focus:ring-aeos-500/20";
+  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-500/20";
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-fg">Welcome back</h1>
-        <p className="mt-1 text-sm text-fg-muted">Sign in to your AEOS workspace</p>
+        <h1 className="text-2xl font-bold text-slate-900">Welcome back</h1>
+        <p className="mt-1 text-sm text-slate-500">Sign in to your AEOS workspace</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-fg-secondary">Email</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com" className={ic} required />
         </div>
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-xs font-semibold text-fg-secondary">Password</label>
-            <button type="button" className="text-2xs font-medium text-aeos-400 hover:text-aeos-300 transition">
+            <label className="text-xs font-semibold text-slate-700">Password</label>
+            <button type="button" className="text-2xs font-medium text-aeos-400 hover:text-aeos-500 transition">
               Forgot password?
             </button>
           </div>
@@ -74,14 +74,14 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-2xs text-fg-hint">or</span>
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-slate-200" />
+        <span className="text-2xs text-slate-400">or</span>
+        <div className="h-px flex-1 bg-slate-200" />
       </div>
 
-      <p className="mt-6 text-center text-sm text-fg-muted">
+      <p className="mt-6 text-center text-sm text-slate-500">
         Don&apos;t have an account?{" "}
-        <Link href="/register" className="font-semibold text-aeos-400 hover:text-aeos-300 transition">
+        <Link href="/register" className="font-semibold text-aeos-400 hover:text-aeos-500 transition">
           Get started free
         </Link>
       </p>

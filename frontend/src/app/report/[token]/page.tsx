@@ -164,30 +164,26 @@ export default function PublicReportPage() {
 
   if (loading) {
     return (
-      <div className="dark">
-      <div className="flex min-h-screen items-center justify-center bg-surface-base">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
-          <span className="text-sm text-fg-hint">Analyzing website{"\u2026"}</span>
+          <span className="text-sm text-slate-400">Analyzing website{"\u2026"}</span>
         </div>
-      </div>
       </div>
     );
   }
 
   if (error || !report) {
     return (
-      <div className="dark">
-      <div className="flex min-h-screen items-center justify-center bg-surface-base">
-        <div className="max-w-sm rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <XCircle size={40} className="mx-auto mb-4 text-red-400" />
-          <h1 className="text-lg font-bold text-fg">Report not found</h1>
-          <p className="mt-2 text-sm text-fg-muted">{error}</p>
+          <h1 className="text-lg font-bold text-slate-900">Report not found</h1>
+          <p className="mt-2 text-sm text-slate-500">{error}</p>
           <Link href="/" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
             Go to AEOS <ArrowRight size={14} />
           </Link>
         </div>
-      </div>
       </div>
     );
   }
@@ -203,8 +199,7 @@ export default function PublicReportPage() {
   const hasOverall = (report.overall_score ?? 0) > 0;
 
   return (
-    <div className="dark">
-    <div className="min-h-screen bg-surface-base">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
@@ -558,7 +553,6 @@ export default function PublicReportPage() {
           Powered by AEOS — Autonomous Enterprise Operating System
         </div>
       </main>
-    </div>
     </div>
   );
 }

@@ -19,12 +19,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_BG: Record<string, string> = {
-  marketing: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  growth: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-  operations: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  technology: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
-  hr: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
-  finance: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
+  marketing: "bg-blue-100 text-blue-700",
+  growth: "bg-emerald-100 text-emerald-700",
+  operations: "bg-amber-100 text-amber-700",
+  technology: "bg-violet-100 text-violet-700",
+  hr: "bg-pink-100 text-pink-700",
+  finance: "bg-cyan-100 text-cyan-700",
 };
 
 export default function StrategicPrioritiesCard({
@@ -41,7 +41,7 @@ export default function StrategicPrioritiesCard({
       title="Strategic priorities"
       subtitle="Ranked by impact score"
       badge={
-        <span className="flex items-center gap-1 rounded-full bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 text-[10px] font-semibold text-orange-700 dark:text-orange-300">
+        <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
           <Flag size={10} />
           {priorities.length}
         </span>

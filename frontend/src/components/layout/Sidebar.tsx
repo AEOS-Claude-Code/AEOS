@@ -9,7 +9,6 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface NavItem {
   label: string;
@@ -114,7 +113,6 @@ export default function Sidebar() {
 
       {/* Bottom */}
       <div className="space-y-1 border-t border-white/[0.06] p-3">
-        {!collapsed && <ThemeToggle />}
         {/* User info */}
         {!collapsed && user && (
           <div className="mb-2 flex items-center gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">

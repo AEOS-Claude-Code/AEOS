@@ -38,10 +38,10 @@ function AnimateWhenVisible({ children, className = "" }: { children: React.Reac
 function GridBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(46,121,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(46,121,255,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" />
-      <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full bg-aeos-400/[0.15] blur-[150px]" />
-      <div className="absolute right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-violet-400/[0.10] blur-[130px]" />
-      <div className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/[0.07] blur-[120px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(46,121,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(46,121,255,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full bg-aeos-400/[0.05] blur-[150px]" />
+      <div className="absolute right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-violet-400/[0.04] blur-[130px]" />
+      <div className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/[0.03] blur-[120px]" />
     </div>
   );
 }
@@ -51,18 +51,18 @@ function GridBackground() {
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl border border-border bg-surface transition-all">
+    <div className="rounded-xl border border-slate-200 bg-white transition-all">
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         className="flex w-full items-center justify-between p-5 text-left"
       >
-        <span className="pr-4 text-sm font-semibold text-fg">{question}</span>
-        <ChevronDown size={16} className={`shrink-0 text-fg-hint transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <span className="pr-4 text-sm font-semibold text-slate-900">{question}</span>
+        <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div role="region" className="border-t border-border-light px-5 pb-5 pt-3">
-          <p className="text-sm leading-relaxed text-fg-muted">{answer}</p>
+        <div role="region" className="border-t border-slate-200 px-5 pb-5 pt-3">
+          <p className="text-sm leading-relaxed text-slate-500">{answer}</p>
         </div>
       )}
     </div>
@@ -118,10 +118,8 @@ export default function LandingPage() {
 
   if (isLoading) {
     return (
-      <div className="dark">
-        <div className="flex min-h-screen items-center justify-center bg-[#0d1424]">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-aeos-200 border-t-aeos-600" />
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-aeos-200 border-t-aeos-600" />
       </div>
     );
   }
@@ -129,28 +127,27 @@ export default function LandingPage() {
   if (isAuthenticated) return null;
 
   return (
-    <div className="dark">
-      <div className="min-h-screen bg-[#0d1424]">
+      <div className="min-h-screen bg-white">
         {/* ═══ NAVIGATION ═══ */}
-        <nav className="sticky top-0 z-50 border-b border-border bg-[#0d1424]/80 backdrop-blur-xl">
+        <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 lg:px-8">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-700 shadow-md shadow-aeos-500/20">
                 <Zap size={18} className="text-white" />
               </div>
-              <span className="text-lg font-bold tracking-tight text-fg">AEOS</span>
-              <span className="hidden text-xs font-semibold uppercase tracking-widest text-fg-hint lg:block">Autonomous Enterprise OS</span>
+              <span className="text-lg font-bold tracking-tight text-slate-900">AEOS</span>
+              <span className="hidden text-xs font-semibold uppercase tracking-widest text-slate-400 lg:block">Autonomous Enterprise OS</span>
             </div>
             <div className="hidden items-center gap-6 md:flex">
-              <a href="#features" className="text-sm text-fg-secondary transition hover:text-fg">Features</a>
-              <a href="#how-it-works" className="text-sm text-fg-secondary transition hover:text-fg">How it works</a>
-              <a href="#pricing" className="text-sm text-fg-secondary transition hover:text-fg">Pricing</a>
+              <a href="#features" className="text-sm text-slate-600 transition hover:text-slate-900">Features</a>
+              <a href="#how-it-works" className="text-sm text-slate-600 transition hover:text-slate-900">How it works</a>
+              <a href="#pricing" className="text-sm text-slate-600 transition hover:text-slate-900">Pricing</a>
             </div>
             <div className="flex items-center gap-3">
-              <div className="hidden items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 sm:flex">
+              <div className="hidden items-center gap-1.5 rounded-full border border-aeos-200 bg-aeos-50 px-3 py-1 text-xs font-semibold text-aeos-600 sm:flex">
                 <Sparkles size={12} /> FREE INTELLIGENT REPORT
               </div>
-              <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-fg-secondary transition hover:bg-surface-secondary">
+              <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50">
                 Log in
               </Link>
               <Link href="/register" className="rounded-lg bg-gradient-to-r from-aeos-500 to-aeos-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-aeos-600/20 transition hover:shadow-lg">
@@ -167,22 +164,22 @@ export default function LandingPage() {
             {/* Left — Text + URL Input */}
             <div className="flex-1 lg:max-w-xl">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-400">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-aeos-200 bg-aeos-50 px-4 py-1.5 text-xs font-semibold text-aeos-600">
                   <Sparkles size={14} />
                   Free intelligent company reports · No credit card required
                 </div>
               </motion.div>
 
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-3xl font-extrabold leading-[1.1] tracking-tight text-fg sm:text-4xl lg:text-5xl">
+                className="text-3xl font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
                 Turn your company into a{" "}
-                <span className="bg-gradient-to-r from-aeos-400 to-emerald-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-aeos-500 to-aeos-600 bg-clip-text text-transparent">
                   fully staffed AI company
                 </span>
               </motion.h1>
 
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-                className="mt-5 max-w-lg text-base leading-relaxed text-fg-muted">
+                className="mt-5 max-w-lg text-base leading-relaxed text-slate-600">
                 AEOS scans your website, builds your company profile, and deploys 27 AI agents
                 across 9 departments — in under 2 minutes. One scan. Real results.
               </motion.p>
@@ -190,9 +187,9 @@ export default function LandingPage() {
               {/* URL Input */}
               <motion.form onSubmit={handleSubmitUrl} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                 className="mt-8">
-                <div className={`flex items-center gap-2 rounded-xl border ${urlError ? "border-red-500/50" : "border-border"} bg-surface p-1.5 transition-all focus-within:border-aeos-500/40 focus-within:shadow-lg focus-within:shadow-aeos-500/10`}>
+                <div className={`flex items-center gap-2 rounded-xl border ${urlError ? "border-red-500/50" : "border-slate-200"} bg-white p-1.5 transition-all focus-within:border-aeos-500/40 focus-within:shadow-lg focus-within:shadow-aeos-500/10`}>
                   <div className="flex items-center gap-2 pl-3">
-                    <Globe size={16} className="shrink-0 text-fg-hint" />
+                    <Globe size={16} className="shrink-0 text-slate-400" />
                   </div>
                   <label htmlFor="hero-url" className="sr-only">Website URL</label>
                   <input
@@ -201,7 +198,7 @@ export default function LandingPage() {
                     value={url}
                     onChange={(e) => { setUrl(e.target.value); setUrlError(""); }}
                     placeholder="Enter your website URL or domain"
-                    className="flex-1 bg-transparent py-2.5 text-sm text-fg placeholder:text-fg-hint focus:outline-none"
+                    className="flex-1 bg-transparent py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
                     aria-describedby={urlError ? "url-error" : undefined}
                   />
                   <button type="submit"
@@ -213,7 +210,7 @@ export default function LandingPage() {
               </motion.form>
 
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }}
-                className="mt-4 flex items-center gap-4 text-xs text-fg-hint">
+                className="mt-4 flex items-center gap-4 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><Zap size={12} className="text-amber-400" /> Takes under 2 minutes</span>
                 <span className="flex items-center gap-1"><Check size={12} className="text-emerald-500" /> No setup complexity</span>
               </motion.div>
@@ -222,13 +219,13 @@ export default function LandingPage() {
             {/* Right — Live Preview Card */}
             <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
               className="mt-12 flex-1 lg:mt-0 hidden lg:block">
-              <div className="rounded-2xl border border-border bg-surface p-6 shadow-2xl shadow-aeos-500/5">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-2xl shadow-aeos-500/5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wider text-fg-hint">Live Preview</span>
-                    <h3 className="text-base font-bold text-fg">How AEOS thinks</h3>
+                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wider text-slate-400">Live Preview</span>
+                    <h3 className="text-base font-bold text-slate-900">How AEOS thinks</h3>
                   </div>
-                  <span className="rounded-full border border-border bg-surface-secondary px-3 py-1 text-2xs font-medium text-fg-secondary">
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-2xs font-medium text-slate-700">
                     Scan → Evaluate → Deploy
                   </span>
                 </div>
@@ -236,12 +233,12 @@ export default function LandingPage() {
                 {/* Stat boxes */}
                 <div className="mb-4 grid grid-cols-3 gap-3">
                   {[
-                    { label: "SCAN SPEED", value: "~2m", color: "text-fg" },
-                    { label: "CONFIDENCE", value: "94%+", color: "text-emerald-400" },
-                    { label: "DEPLOYMENT", value: "Ready", color: "text-fg" },
+                    { label: "SCAN SPEED", value: "~2m", color: "text-slate-900" },
+                    { label: "CONFIDENCE", value: "94%+", color: "text-emerald-600" },
+                    { label: "DEPLOYMENT", value: "Ready", color: "text-slate-900" },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-lg border border-border bg-surface-secondary px-3 py-2.5">
-                      <p className="text-2xs font-semibold uppercase tracking-wider text-fg-hint">{s.label}</p>
+                    <div key={s.label} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+                      <p className="text-2xs font-semibold uppercase tracking-wider text-slate-400">{s.label}</p>
                       <p className={`mt-1 text-lg font-bold ${s.color}`}>{s.value}</p>
                     </div>
                   ))}
@@ -250,19 +247,19 @@ export default function LandingPage() {
                 {/* Result cards */}
                 <div className="space-y-2.5">
                   {[
-                    { icon: Search, tag: "Gap Analysis", tagColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20", match: "92% match", title: "Missing Finance department", desc: "Critical organizational gap detected in financial oversight." },
-                    { icon: BarChart3, tag: "Strategic Priority", tagColor: "text-violet-400 bg-violet-500/10 border-violet-500/20", match: "88% match", title: "Market expansion into GCC region", desc: "High-growth opportunity with strong competitive fit." },
-                    { icon: Bot, tag: "AI Agent", tagColor: "text-aeos-400 bg-aeos-500/10 border-aeos-500/20", match: "85% match", title: "Deploy Marketing Director AI", desc: "Recommended agent to fill identified department gap." },
+                    { icon: Search, tag: "Gap Analysis", tagColor: "text-emerald-700 bg-emerald-50 border-emerald-200", match: "92% match", title: "Missing Finance department", desc: "Critical organizational gap detected in financial oversight." },
+                    { icon: BarChart3, tag: "Strategic Priority", tagColor: "text-violet-700 bg-violet-50 border-violet-200", match: "88% match", title: "Market expansion into GCC region", desc: "High-growth opportunity with strong competitive fit." },
+                    { icon: Bot, tag: "AI Agent", tagColor: "text-aeos-700 bg-aeos-50 border-aeos-200", match: "85% match", title: "Deploy Marketing Director AI", desc: "Recommended agent to fill identified department gap." },
                   ].map((card) => (
-                    <div key={card.title} className="rounded-xl border border-border bg-surface-secondary p-3.5">
+                    <div key={card.title} className="rounded-xl border border-slate-200 bg-white p-3.5">
                       <div className="mb-2 flex items-center justify-between">
                         <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-2xs font-semibold ${card.tagColor}`}>
                           <card.icon size={11} /> {card.tag}
                         </span>
-                        <span className="text-2xs font-semibold text-emerald-400">{card.match}</span>
+                        <span className="text-2xs font-semibold text-emerald-600">{card.match}</span>
                       </div>
-                      <p className="text-sm font-semibold text-fg">{card.title}</p>
-                      <p className="mt-0.5 text-xs text-fg-muted">{card.desc}</p>
+                      <p className="text-sm font-semibold text-slate-900">{card.title}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{card.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -272,13 +269,13 @@ export default function LandingPage() {
         </section>
 
         {/* ═══ SOCIAL PROOF BAR ═══ */}
-        <section className="border-y border-border bg-surface-secondary/30 py-6">
+        <section className="border-y border-slate-200 bg-slate-50 py-6">
           <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-4 px-6 sm:flex-row sm:gap-8">
             {/* Overlapping avatars */}
             <div className="flex -space-x-2">
               {["SK", "AR", "DL", "MC", "JW"].map((initials, i) => (
                 <div key={initials} aria-hidden="true"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#070b18] bg-gradient-to-br from-aeos-400 to-violet-500 text-[9px] font-bold text-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-aeos-400 to-violet-500 text-[9px] font-bold text-white"
                   style={{ zIndex: 5 - i }}>
                   {initials}
                 </div>
@@ -287,13 +284,13 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} size={14} className="fill-emerald-400 text-emerald-400" />
+                  <Star key={i} size={14} className="fill-emerald-400 text-emerald-500" />
                 ))}
               </div>
-              <span className="text-sm font-semibold text-fg-secondary">5.0 rating</span>
+              <span className="text-sm font-semibold text-slate-700">5.0 rating</span>
             </div>
             {/* PLACEHOLDER: update with real metrics */}
-            <span className="text-sm text-fg-muted">Trusted by <span className="font-semibold text-fg-secondary">500+ companies</span></span>
+            <span className="text-sm text-slate-500">Trusted by <span className="font-semibold text-slate-700">500+ companies</span></span>
           </div>
         </section>
 
@@ -314,20 +311,20 @@ export default function LandingPage() {
           <div className="testimonial-track flex w-max gap-4">
             {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
               <div key={i} aria-roledescription="slide"
-                className="w-[340px] shrink-0 rounded-xl border border-border bg-surface p-5">
+                className="w-[340px] shrink-0 rounded-xl border border-slate-200 bg-white p-5">
                 <div className="mb-3 flex items-center gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} size={13} className="fill-emerald-400 text-emerald-400" />
+                    <Star key={s} size={13} className="fill-emerald-400 text-emerald-500" />
                   ))}
                 </div>
-                <p className="mb-4 text-sm leading-relaxed text-fg-secondary">&ldquo;{t.quote}&rdquo;</p>
+                <p className="mb-4 text-sm leading-relaxed text-slate-700">&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-2.5">
                   <div aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-aeos-400 to-violet-500 text-[10px] font-bold text-white">
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-fg">{t.name}</p>
-                    <p className="text-xs text-fg-muted">{t.role}</p>
+                    <p className="text-sm font-semibold text-slate-900">{t.name}</p>
+                    <p className="text-xs text-slate-500">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -336,17 +333,17 @@ export default function LandingPage() {
         </section>
 
         {/* ═══ FEATURES ═══ */}
-        <section id="features" className="px-6 py-24">
+        <section id="features" className="bg-slate-50 px-6 py-24">
           <AnimateWhenVisible className="mx-auto max-w-6xl">
             <motion.div variants={fadeUp} className="mb-12 text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface-secondary px-4 py-1.5 text-xs font-semibold text-fg-secondary">
-                <Sparkles size={12} className="text-emerald-400" /> BUILT FOR GROWING COMPANIES
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-semibold text-slate-700">
+                <Sparkles size={12} className="text-emerald-500" /> BUILT FOR GROWING COMPANIES
               </div>
               <h2 className="text-3xl font-bold tracking-tight text-fg lg:text-4xl">
                 Everything you need.{" "}
                 <span className="bg-gradient-to-r from-aeos-400 to-emerald-400 bg-clip-text text-transparent">Nothing you don&apos;t.</span>
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-base text-fg-muted">
+              <p className="mx-auto mt-4 max-w-2xl text-base text-slate-500">
                 Enterprise-grade AI infrastructure with zero setup. Move fast without sacrificing intelligence.
               </p>
             </motion.div>
@@ -358,9 +355,9 @@ export default function LandingPage() {
                 { label: "AI DEPARTMENTS", value: "9" },
                 { label: "INTELLIGENCE ENGINES", value: "15" },
               ].map((s) => (
-                <div key={s.label} className="rounded-xl border border-border bg-surface-secondary px-5 py-4 text-center">
-                  <p className="text-2xs font-semibold uppercase tracking-wider text-fg-hint">{s.label}</p>
-                  <p className="mt-1 text-2xl font-bold text-fg">{s.value}</p>
+                <div key={s.label} className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-center">
+                  <p className="text-2xs font-semibold uppercase tracking-wider text-slate-400">{s.label}</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{s.value}</p>
                 </div>
               ))}
             </motion.div>
@@ -377,11 +374,11 @@ export default function LandingPage() {
               ].map((f) => (
                 <motion.div key={f.title} variants={fadeUp}
                   className={`rounded-xl border ${f.tint} p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg`}>
-                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
                     <f.icon size={20} />
                   </div>
-                  <h3 className="mb-1.5 text-base font-bold text-fg">{f.title}</h3>
-                  <p className="text-sm leading-relaxed text-fg-muted">{f.desc}</p>
+                  <h3 className="mb-1.5 text-base font-bold text-slate-900">{f.title}</h3>
+                  <p className="text-sm leading-relaxed text-slate-500">{f.desc}</p>
                 </motion.div>
               ))}
             </div>
@@ -396,7 +393,7 @@ export default function LandingPage() {
                 One scan.{" "}
                 <span className="bg-gradient-to-r from-aeos-400 to-emerald-400 bg-clip-text text-transparent">Full deployment.</span>
               </h2>
-              <p className="mx-auto mt-4 max-w-xl text-base text-fg-muted">
+              <p className="mx-auto mt-4 max-w-xl text-base text-slate-500">
                 No complexity. No decision fatigue. Just a guided flow that builds your AI organization.
               </p>
             </motion.div>
@@ -409,19 +406,19 @@ export default function LandingPage() {
                 { step: "04", title: "Deploy", desc: "AI agents activate across every department. Director AI + specialists work alongside your human team.", checks: ["27 AI agents", "9 departments", "24/7 operations"], icon: Bot },
               ].map((s) => (
                 <motion.div key={s.step} variants={fadeUp}
-                  className="rounded-xl border border-border bg-surface p-5 transition-all hover:shadow-lg">
+                  className="rounded-xl border border-slate-200 bg-white p-5 transition-all hover:shadow-lg">
                   <div className="mb-4 flex items-center justify-between">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
                       <s.icon size={18} />
                     </div>
-                    <span className="text-2xl font-bold text-fg-hint/50">{s.step}</span>
+                    <span className="text-2xl font-bold text-slate-400/50">{s.step}</span>
                   </div>
-                  <h3 className="mb-2 text-lg font-bold text-fg">{s.title}</h3>
-                  <p className="mb-4 text-sm leading-relaxed text-fg-muted">{s.desc}</p>
+                  <h3 className="mb-2 text-lg font-bold text-slate-900">{s.title}</h3>
+                  <p className="mb-4 text-sm leading-relaxed text-slate-500">{s.desc}</p>
                   <ul className="space-y-1.5">
                     {s.checks.map((c) => (
-                      <li key={c} className="flex items-center gap-2 text-sm text-fg-secondary">
-                        <Check size={14} className="shrink-0 text-emerald-400" /> {c}
+                      <li key={c} className="flex items-center gap-2 text-sm text-slate-700">
+                        <Check size={14} className="shrink-0 text-emerald-500" /> {c}
                       </li>
                     ))}
                   </ul>
@@ -435,12 +432,12 @@ export default function LandingPage() {
         <section className="px-6 py-24">
           <AnimateWhenVisible className="mx-auto max-w-6xl">
             <motion.div variants={fadeUp} className="mb-12 text-center">
-              <p className="mb-3 text-sm font-semibold text-emerald-400">AI-POWERED DEPARTMENTS</p>
+              <p className="mb-3 text-sm font-semibold text-emerald-500">AI-POWERED DEPARTMENTS</p>
               <h2 className="text-3xl font-bold tracking-tight text-fg lg:text-4xl">
                 Every department staffed,{" "}
                 <span className="bg-gradient-to-r from-aeos-400 to-emerald-400 bg-clip-text text-transparent">every gap filled</span>
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-base text-fg-muted">
+              <p className="mx-auto mt-4 max-w-2xl text-base text-slate-500">
                 AEOS deploys industry-specific AI teams tailored to your business type.
               </p>
             </motion.div>
@@ -464,10 +461,10 @@ export default function LandingPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-fg">{dept.name}</p>
-                      <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-2xs font-semibold text-fg-secondary">{dept.agents}</span>
+                      <p className="text-sm font-bold text-slate-900">{dept.name}</p>
+                      <span className="rounded-full bg-slate-50 px-2 py-0.5 text-2xs font-semibold text-slate-700">{dept.agents}</span>
                     </div>
-                    <p className="text-xs text-fg-muted">{dept.desc}</p>
+                    <p className="text-xs text-slate-500">{dept.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -482,7 +479,7 @@ export default function LandingPage() {
               <h2 className="text-3xl font-bold tracking-tight text-fg lg:text-4xl">
                 Get started with AEOS
               </h2>
-              <p className="mx-auto mt-4 max-w-lg text-base text-fg-muted">
+              <p className="mx-auto mt-4 max-w-lg text-base text-slate-500">
                 Fair pricing and fair access for startups, growing companies, and enterprises.
               </p>
             </motion.div>
@@ -495,31 +492,31 @@ export default function LandingPage() {
               ].map((plan) => (
                 <motion.div key={plan.name} variants={fadeUp}
                   className={`relative rounded-2xl border p-6 transition-all hover:shadow-lg ${
-                    plan.popular ? "border-emerald-500/30 bg-emerald-500/5 shadow-xl shadow-emerald-500/10" : "border-border bg-surface"
+                    plan.popular ? "border-aeos-500 bg-aeos-50/50 shadow-xl shadow-aeos-500/10" : "border-slate-200 bg-white"
                   }`}>
                   {plan.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-3 py-0.5 text-2xs font-bold text-white shadow-md">
                       <Sparkles size={10} /> MOST POPULAR
                     </div>
                   )}
-                  <h3 className="text-lg font-bold text-fg">{plan.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
                   <div className="mt-2 flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-fg">{plan.price}</span>
-                    <span className="text-sm text-fg-muted">{plan.period}</span>
+                    <span className="text-3xl font-extrabold text-slate-900">{plan.price}</span>
+                    <span className="text-sm text-slate-500">{plan.period}</span>
                   </div>
-                  <p className="mt-2 text-sm text-fg-muted">{plan.desc}</p>
+                  <p className="mt-2 text-sm text-slate-500">{plan.desc}</p>
                   <Link href="/register"
                     className={`mt-6 block w-full rounded-lg py-2.5 text-center text-sm font-semibold transition ${
                       plan.popular
                         ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20 hover:shadow-lg"
-                        : "bg-surface-secondary text-fg-secondary hover:bg-surface-secondary/80"
+                        : "bg-slate-50 text-slate-700 hover:bg-slate-50/80"
                     }`}>
                     Get {plan.name}
                   </Link>
                   <ul className="mt-6 space-y-2.5">
                     {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-sm text-fg-muted">
-                        <Check size={14} className="shrink-0 text-emerald-400" />
+                      <li key={f} className="flex items-center gap-2 text-sm text-slate-500">
+                        <Check size={14} className="shrink-0 text-emerald-500" />
                         {f}
                       </li>
                     ))}
@@ -534,8 +531,8 @@ export default function LandingPage() {
         <section id="faq" className="px-6 py-24">
           <AnimateWhenVisible className="mx-auto max-w-4xl">
             <motion.div variants={fadeUp} className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-fg">Got questions?</h2>
-              <p className="mt-3 text-base text-fg-muted">Here are the answers.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900">Got questions?</h2>
+              <p className="mt-3 text-base text-slate-500">Here are the answers.</p>
             </motion.div>
             <div className="grid gap-3 md:grid-cols-2">
               {FAQS.map((faq) => (
@@ -551,8 +548,8 @@ export default function LandingPage() {
         <section className="px-6 py-16">
           <AnimateWhenVisible>
             <motion.div variants={fadeUp}
-              className="mx-auto max-w-4xl rounded-2xl border border-border bg-surface p-10 text-center shadow-2xl sm:p-14">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-400">
+              className="mx-auto max-w-4xl rounded-2xl border border-slate-200 bg-gradient-to-br from-aeos-50 to-slate-50 p-10 text-center shadow-2xl sm:p-14">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-aeos-200 bg-aeos-50 px-4 py-1.5 text-xs font-semibold text-aeos-600">
                 <Sparkles size={12} /> READY WHEN YOU ARE
               </div>
               <h2 className="text-3xl font-bold text-fg lg:text-4xl">
@@ -560,7 +557,7 @@ export default function LandingPage() {
                 <span className="bg-gradient-to-r from-aeos-400 to-emerald-400 bg-clip-text text-transparent">AI organization?</span>
               </h2>
               {/* PLACEHOLDER: update with real metrics */}
-              <p className="mx-auto mt-4 max-w-lg text-base text-fg-muted">
+              <p className="mx-auto mt-4 max-w-lg text-base text-slate-500">
                 Join 500+ companies using AEOS to deploy a full AI workforce in under 2 minutes.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -570,21 +567,21 @@ export default function LandingPage() {
                 </Link>
                 <button
                   onClick={() => alert("Demo video coming soon!")}
-                  className="flex items-center gap-2 rounded-xl border border-border bg-surface-secondary px-6 py-3.5 text-sm font-semibold text-fg-secondary transition hover:bg-surface-secondary/80">
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50/80">
                   <Play size={14} /> Watch demo
                 </button>
               </div>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-fg-hint">
-                <span className="rounded-full border border-border px-3 py-1">No credit card required</span>
-                <span className="rounded-full border border-border px-3 py-1">Free intelligent company reports</span>
-                <span className="rounded-full border border-border px-3 py-1">Cancel anytime</span>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+                <span className="rounded-full border border-slate-200 px-3 py-1">No credit card required</span>
+                <span className="rounded-full border border-slate-200 px-3 py-1">Free intelligent company reports</span>
+                <span className="rounded-full border border-slate-200 px-3 py-1">Cancel anytime</span>
               </div>
             </motion.div>
           </AnimateWhenVisible>
         </section>
 
         {/* ═══ FOOTER ═══ */}
-        <footer className="border-t border-border px-6 py-12">
+        <footer className="border-t border-slate-200 bg-slate-50 px-6 py-12">
           <div className="mx-auto max-w-6xl">
             <div className="grid gap-8 md:grid-cols-4">
               <div>
@@ -592,43 +589,42 @@ export default function LandingPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-500 to-aeos-700">
                     <Zap size={14} className="text-white" />
                   </div>
-                  <span className="text-base font-bold text-fg-secondary">AEOS</span>
+                  <span className="text-base font-bold text-slate-700">AEOS</span>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+                <p className="mt-3 text-sm leading-relaxed text-slate-500">
                   AI-powered content generation that ranks. Built for SEO teams, agencies, and creators who care about outcomes.
                 </p>
               </div>
               <div>
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-hint">Product</h4>
-                <ul className="space-y-2 text-sm text-fg-muted">
-                  <li><a href="#features" className="transition hover:text-fg">Features</a></li>
-                  <li><a href="#pricing" className="transition hover:text-fg">Pricing</a></li>
-                  <li><a href="#how-it-works" className="transition hover:text-fg">How it works</a></li>
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Product</h4>
+                <ul className="space-y-2 text-sm text-slate-500">
+                  <li><a href="#features" className="transition hover:text-slate-900">Features</a></li>
+                  <li><a href="#pricing" className="transition hover:text-slate-900">Pricing</a></li>
+                  <li><a href="#how-it-works" className="transition hover:text-slate-900">How it works</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-hint">Company</h4>
-                <ul className="space-y-2 text-sm text-fg-muted">
-                  <li><span className="cursor-default transition hover:text-fg">About</span></li>
-                  <li><span className="cursor-default transition hover:text-fg">Blog</span></li>
-                  <li><span className="cursor-default transition hover:text-fg">Careers</span></li>
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Company</h4>
+                <ul className="space-y-2 text-sm text-slate-500">
+                  <li><span className="cursor-default transition hover:text-slate-900">About</span></li>
+                  <li><span className="cursor-default transition hover:text-slate-900">Blog</span></li>
+                  <li><span className="cursor-default transition hover:text-slate-900">Careers</span></li>
                 </ul>
               </div>
               <div>
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-fg-hint">Legal</h4>
-                <ul className="space-y-2 text-sm text-fg-muted">
-                  <li><span className="cursor-default transition hover:text-fg">Privacy</span></li>
-                  <li><span className="cursor-default transition hover:text-fg">Terms</span></li>
-                  <li><span className="cursor-default transition hover:text-fg">Security</span></li>
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Legal</h4>
+                <ul className="space-y-2 text-sm text-slate-500">
+                  <li><span className="cursor-default transition hover:text-slate-900">Privacy</span></li>
+                  <li><span className="cursor-default transition hover:text-slate-900">Terms</span></li>
+                  <li><span className="cursor-default transition hover:text-slate-900">Security</span></li>
                 </ul>
               </div>
             </div>
-            <div className="mt-10 border-t border-border pt-6 text-center text-xs text-fg-hint">
+            <div className="mt-10 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
               © 2026 AEOS. All rights reserved. Powered by AI.
             </div>
           </div>
         </footer>
       </div>
-    </div>
   );
 }

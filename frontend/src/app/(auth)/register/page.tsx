@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { Zap, Globe, Check, Loader2, Building2, Phone, Share2, Bot, ArrowRight, Rocket } from "lucide-react";
 
 function getPasswordStrength(pw: string): { label: string; color: string; width: string } {
-  if (!pw) return { label: "", color: "bg-surface-secondary", width: "w-0" };
+  if (!pw) return { label: "", color: "bg-slate-50", width: "w-0" };
   let score = 0;
   if (pw.length >= 8) score++;
   if (/[A-Z]/.test(pw)) score++;
@@ -48,20 +48,20 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md">
-      <div className="rounded-2xl border border-border bg-surface p-8 shadow-xl">
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
         <div className="mb-6 flex items-center gap-4">
           <div className="relative shrink-0">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-400 to-aeos-700 shadow-lg shadow-aeos-500/20">
               <Globe size={28} className="text-white" />
             </div>
-            <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface shadow">
+            <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow">
               <Loader2 size={12} className="animate-spin text-aeos-500" />
             </div>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-fg">Setting up your AEOS workspace</h2>
+            <h2 className="text-lg font-bold text-slate-900">Setting up your AEOS workspace</h2>
             {websiteUrl && (
-              <p className="text-sm text-fg-muted">
+              <p className="text-sm text-slate-500">
                 Analyzing <span className="font-semibold text-aeos-400">{websiteUrl.replace(/https?:\/\/(www\.)?/, "")}</span>
               </p>
             )}
@@ -69,7 +69,7 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
         </div>
 
         <div className="mb-5">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-50">
             <motion.div className="h-full rounded-full bg-gradient-to-r from-aeos-500 to-emerald-500"
               initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.8 }} />
           </div>
@@ -92,12 +92,12 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
                     <Loader2 size={16} className="animate-spin text-aeos-400" />
                   </div>
                 ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary">
-                    <Icon size={16} className="text-fg-hint" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-50">
+                    <Icon size={16} className="text-slate-400" />
                   </div>
                 )}
                 <span className={`text-center text-2xs leading-tight ${
-                  done ? "font-medium text-emerald-400" : active ? "font-bold text-aeos-400" : "text-fg-hint"
+                  done ? "font-medium text-emerald-400" : active ? "font-bold text-aeos-400" : "text-slate-400"
                 }`}>{step.label}</span>
               </motion.div>
             );
@@ -146,30 +146,30 @@ export default function RegisterPage() {
     } finally { setLoading(false); }
   }
 
-  const ic = "w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-aeos-400 focus:bg-surface focus:ring-2 focus:ring-aeos-500/20";
+  const ic = "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-aeos-400 focus:bg-white focus:ring-2 focus:ring-aeos-500/20";
 
   if (loading) return <ProgressOverlay websiteUrl={websiteUrl} />;
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-fg">Start your AI-powered company</h1>
-        <p className="mt-1 text-sm text-fg-muted">AEOS will analyze your business and deploy AI agents across every department</p>
+        <h1 className="text-2xl font-bold text-slate-900">Start your AI-powered company</h1>
+        <p className="mt-1 text-sm text-slate-500">AEOS will analyze your business and deploy AI agents across every department</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-fg-secondary">Full name</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Full name</label>
           <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
             placeholder="Your full name" className={ic} required />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-fg-secondary">Work email</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Work email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com" className={ic} required />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-fg-secondary">
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">
             Company website
             <span className="ml-2 rounded-full bg-gradient-to-r from-emerald-500/10 to-aeos-500/10 px-2 py-0.5 text-2xs font-bold text-emerald-400">
               Auto-setup
@@ -177,25 +177,25 @@ export default function RegisterPage() {
           </label>
           <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)}
             placeholder="https://yourcompany.com" className={ic} />
-          <p className="mt-1 text-2xs text-fg-hint">
+          <p className="mt-1 text-2xs text-slate-400">
             AEOS will scan your website and deploy AI agents for your company.
           </p>
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-fg-secondary">Password</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Password</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
             placeholder={"\u2022".repeat(8)} minLength={8} className={ic} required />
           {password && (
             <div className="mt-2">
-              <div className="h-1 w-full rounded-full bg-surface-secondary">
+              <div className="h-1 w-full rounded-full bg-slate-50">
                 <div className={`h-1 rounded-full transition-all ${strength.color} ${strength.width}`} />
               </div>
-              <p className="mt-0.5 text-2xs text-fg-hint">{strength.label}</p>
+              <p className="mt-0.5 text-2xs text-slate-400">{strength.label}</p>
             </div>
           )}
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-fg-secondary">Confirm password</label>
+          <label className="mb-1.5 block text-xs font-semibold text-slate-700">Confirm password</label>
           <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder={"\u2022".repeat(8)} minLength={8}
             className={`${ic} ${passwordMismatch ? "border-status-danger focus:border-status-danger focus:ring-status-danger/20" : ""}`} required />
@@ -214,9 +214,9 @@ export default function RegisterPage() {
         </button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-fg-muted">
+      <p className="mt-8 text-center text-sm text-slate-500">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-aeos-400 hover:text-aeos-300 transition">Sign in</Link>
+        <Link href="/login" className="font-semibold text-aeos-400 hover:text-aeos-500 transition">Sign in</Link>
       </p>
     </motion.div>
   );

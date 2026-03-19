@@ -24,7 +24,7 @@ export default function TopBar({ workspaceName, plan, tokensUsed, tokensTotal, i
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-bold text-fg">{workspaceName}</h2>
-            <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-aeos-50 to-violet-50 dark:from-aeos-500/10 dark:to-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-aeos-700 dark:text-aeos-400 ring-1 ring-aeos-200/50">
+            <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-aeos-50 to-violet-50 px-2 py-0.5 text-[10px] font-bold text-aeos-700 ring-1 ring-aeos-200/50">
               <Crown size={9} />
               {plan}
             </span>
