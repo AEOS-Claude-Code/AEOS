@@ -28,5 +28,4 @@ COPY . .
 
 EXPOSE 10000
 
-CMD python -c "print('==> Container starting, PORT=' + __import__('os').environ.get('PORT','unset')); import sys; sys.stdout.flush()" && \
-    uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}
+CMD ["sh", "-c", "echo '==> Container starting on port ${PORT:-10000}' && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000} --timeout-keep-alive 65"]
