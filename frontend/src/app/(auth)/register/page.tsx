@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Zap, Globe, Check, Loader2, Building2, Phone, Share2, Bot, ArrowRight, Rocket } from "lucide-react";
 
@@ -115,6 +116,7 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
 
 export default function RegisterPage() {
   const { register } = useAuth();
+  const searchParams = useSearchParams();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -122,6 +124,12 @@ export default function RegisterPage() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill website URL from landing page query param
+  useEffect(() => {
+    const urlParam = searchParams.get("url");
+    if (urlParam) setWebsiteUrl(urlParam);
+  }, [searchParams]);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
