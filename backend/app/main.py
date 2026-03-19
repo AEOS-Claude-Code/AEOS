@@ -83,6 +83,17 @@ async def lifespan(app: FastAPI):
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables verified")
+        # Add missing columns (safe migrations)
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(
+                    __import__('sqlalchemy').text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user' NOT NULL"
+                    )
+                )
+            logger.info("Schema migrations applied")
+        except Exception as mig_exc:
+            logger.warning("Migration skipped: %s", mig_exc)
     except (TimeoutError, Exception) as exc:
         logger.error("Database startup failed (%s): %s — app will start anyway", type(exc).__name__, exc)
 
