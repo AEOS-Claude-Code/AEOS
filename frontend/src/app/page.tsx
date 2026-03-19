@@ -39,9 +39,9 @@ function GridBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(rgba(46,121,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(46,121,255,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" />
-      <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full bg-aeos-400/[0.12] blur-[150px]" />
-      <div className="absolute right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-violet-400/[0.08] blur-[130px]" />
-      <div className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/[0.05] blur-[120px]" />
+      <div className="absolute left-1/4 top-0 h-[600px] w-[600px] rounded-full bg-aeos-400/[0.15] blur-[150px]" />
+      <div className="absolute right-1/4 top-1/3 h-[500px] w-[500px] rounded-full bg-violet-400/[0.10] blur-[130px]" />
+      <div className="absolute left-1/2 top-1/2 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400/[0.07] blur-[120px]" />
     </div>
   );
 }
@@ -119,7 +119,7 @@ export default function LandingPage() {
   if (isLoading) {
     return (
       <div className="dark">
-        <div className="flex min-h-screen items-center justify-center bg-[#070b18]">
+        <div className="flex min-h-screen items-center justify-center bg-[#0d1424]">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-aeos-200 border-t-aeos-600" />
         </div>
       </div>
@@ -130,9 +130,9 @@ export default function LandingPage() {
 
   return (
     <div className="dark">
-      <div className="min-h-screen bg-[#070b18]">
+      <div className="min-h-screen bg-[#0d1424]">
         {/* ═══ NAVIGATION ═══ */}
-        <nav className="sticky top-0 z-50 border-b border-border bg-[#070b18]/80 backdrop-blur-xl">
+        <nav className="sticky top-0 z-50 border-b border-border bg-[#0d1424]/80 backdrop-blur-xl">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 lg:px-8">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-aeos-500 to-aeos-700 shadow-md shadow-aeos-500/20">
@@ -175,7 +175,7 @@ export default function LandingPage() {
 
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
                 className="text-3xl font-extrabold leading-[1.1] tracking-tight text-fg sm:text-4xl lg:text-5xl">
-                Turn your website into a{" "}
+                Turn your company into a{" "}
                 <span className="bg-gradient-to-r from-aeos-400 to-emerald-400 bg-clip-text text-transparent">
                   fully staffed AI company
                 </span>
