@@ -4,12 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
   Zap, ArrowRight, BarChart3, Brain, Shield, Globe, Bot,
   Users, Target, Sparkles, Building2, Check, ChevronDown,
   Cpu, TrendingUp, Lock, Star, ScanLine, ArrowLeftRight,
   Search, FileText, Link2, ImageIcon, FolderOpen, Play,
+  DollarSign, LineChart, Radar,
 } from "lucide-react";
 
 /* ── Animation variants ───────────────────────────────────────── */
@@ -30,6 +31,179 @@ function AnimateWhenVisible({ children, className = "" }: { children: React.Reac
     <motion.div ref={ref} initial="hidden" animate={isInView ? "visible" : "hidden"} variants={stagger} className={className}>
       {children}
     </motion.div>
+  );
+}
+
+/* ── Live Preview Card (animated) ────────────────────────────── */
+
+const analysisSets = [
+  {
+    stats: { speed: "~2m", confidence: "94%+", deployment: "Ready" },
+    cards: [
+      { icon: Search, tag: "Gap Analysis", tagColor: "text-emerald-700 bg-emerald-50 border-emerald-200", match: "92%", title: "Missing Finance department", desc: "Critical organizational gap detected in financial oversight." },
+      { icon: BarChart3, tag: "Strategic Priority", tagColor: "text-violet-700 bg-violet-50 border-violet-200", match: "88%", title: "Market expansion into GCC region", desc: "High-growth opportunity with strong competitive fit." },
+      { icon: Bot, tag: "AI Agent", tagColor: "text-aeos-700 bg-aeos-50 border-aeos-200", match: "85%", title: "Deploy Marketing Director AI", desc: "Recommended agent to fill identified department gap." },
+    ],
+  },
+  {
+    stats: { speed: "~1.5m", confidence: "91%+", deployment: "Active" },
+    cards: [
+      { icon: Globe, tag: "Digital Presence", tagColor: "text-sky-700 bg-sky-50 border-sky-200", match: "96%", title: "SEO authority score below threshold", desc: "Domain ranking 34th in sector — immediate optimization needed." },
+      { icon: Radar, tag: "Competitor Intel", tagColor: "text-orange-700 bg-orange-50 border-orange-200", match: "90%", title: "3 competitors launched AI features", desc: "Market shift detected — product roadmap adjustment recommended." },
+      { icon: Target, tag: "Lead Generation", tagColor: "text-rose-700 bg-rose-50 border-rose-200", match: "87%", title: "142 high-intent prospects found", desc: "ICP-matched leads from LinkedIn and industry directories." },
+    ],
+  },
+  {
+    stats: { speed: "~1.8m", confidence: "96%+", deployment: "Scaling" },
+    cards: [
+      { icon: DollarSign, tag: "Financial Health", tagColor: "text-emerald-700 bg-emerald-50 border-emerald-200", match: "94%", title: "Cash runway: 18 months projected", desc: "Burn rate optimized — reinvestment capacity identified." },
+      { icon: LineChart, tag: "KPI Framework", tagColor: "text-indigo-700 bg-indigo-50 border-indigo-200", match: "91%", title: "7 missing KPIs across departments", desc: "Revenue-per-employee and CAC untracked — blind spots detected." },
+      { icon: Brain, tag: "Market Research", tagColor: "text-purple-700 bg-purple-50 border-purple-200", match: "89%", title: "$2.4B addressable market in region", desc: "TAM analysis reveals untapped verticals in fintech and logistics." },
+    ],
+  },
+];
+
+const phases = ["Scan", "Evaluate", "Deploy"] as const;
+
+function LivePreviewCard() {
+  const [activeSet, setActiveSet] = useState(0);
+  const [phase, setPhase] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const elapsedRef = useRef(0);
+
+  useEffect(() => {
+    const CYCLE_MS = 6000;
+    const PHASE_MS = CYCLE_MS / 3;
+    const TICK = 100;
+    elapsedRef.current = 0;
+
+    const tick = setInterval(() => {
+      elapsedRef.current += TICK;
+      const e = elapsedRef.current;
+      setProgress(Math.min((e / CYCLE_MS) * 100, 100));
+      setPhase(Math.min(2, Math.floor(e / PHASE_MS)));
+      if (e >= CYCLE_MS) {
+        elapsedRef.current = 0;
+        setActiveSet((s) => (s + 1) % analysisSets.length);
+      }
+    }, TICK);
+    return () => clearInterval(tick);
+  }, []);
+
+  const current = analysisSets[activeSet];
+
+  return (
+    <div className="relative rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6 shadow-2xl shadow-aeos-500/10">
+      {/* Progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden rounded-t-2xl bg-slate-200 dark:bg-slate-700">
+        <div
+          className="h-full bg-gradient-to-r from-aeos-400 via-aeos-500 to-violet-500 transition-[width] duration-100 ease-linear"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          <div>
+            <span className="mb-0.5 block text-2xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Live Preview</span>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">How AEOS thinks</h3>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2.5 py-1">
+          {phases.map((p, i) => (
+            <span key={p} className="flex items-center gap-1">
+              {i > 0 && <ArrowRight size={8} className="text-slate-300 dark:text-slate-500" />}
+              <span className={`text-2xs font-semibold transition-colors duration-300 ${
+                i === phase
+                  ? "text-aeos-600 dark:text-aeos-400"
+                  : i < phase
+                    ? "text-emerald-500"
+                    : "text-slate-400 dark:text-slate-500"
+              }`}>
+                {i < phase && <Check size={8} className="inline mr-0.5 -mt-px" />}
+                {p}
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Stat boxes */}
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        {[
+          { label: "SCAN SPEED", value: current.stats.speed, color: "text-slate-900 dark:text-white" },
+          { label: "CONFIDENCE", value: current.stats.confidence, color: "text-emerald-600 dark:text-emerald-400" },
+          { label: "DEPLOYMENT", value: current.stats.deployment, color: "text-slate-900 dark:text-white" },
+        ].map((s) => (
+          <div key={s.label} className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 px-3 py-2.5">
+            <p className="text-2xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">{s.label}</p>
+            <motion.p
+              key={`${activeSet}-${s.label}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className={`mt-1 text-lg font-bold ${s.color}`}
+            >
+              {s.value}
+            </motion.p>
+          </div>
+        ))}
+      </div>
+
+      {/* Animated result cards */}
+      <div className="relative">
+        {analysisSets.map((set, setIdx) => {
+          const isActive = setIdx === activeSet;
+          return (
+            <div
+              key={setIdx}
+              className={`space-y-2.5 transition-opacity duration-500 ${
+                isActive ? "relative opacity-100" : "pointer-events-none absolute inset-0 opacity-0"
+              }`}
+            >
+              {set.cards.map((card, cardIdx) => (
+                <div
+                  key={card.title}
+                  className="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 p-3.5 transition-all duration-400"
+                  style={{
+                    transform: isActive ? "translateY(0)" : "translateY(12px)",
+                    opacity: isActive ? 1 : 0,
+                    transitionDelay: isActive ? `${cardIdx * 120}ms` : "0ms",
+                  }}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-2xs font-semibold ${card.tagColor}`}>
+                      <card.icon size={11} /> {card.tag}
+                    </span>
+                    <span className="text-2xs font-semibold text-emerald-600 dark:text-emerald-400">{card.match} match</span>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{card.title}</p>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{card.desc}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Cycle indicator dots */}
+      <div className="mt-4 flex items-center justify-center gap-1.5">
+        {analysisSets.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setActiveSet(i); setPhase(0); setProgress(0); }}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === activeSet ? "w-6 bg-aeos-500" : "w-1.5 bg-slate-300 dark:bg-slate-600 hover:bg-slate-400"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -216,54 +390,10 @@ export default function LandingPage() {
               </motion.div>
             </div>
 
-            {/* Right — Live Preview Card */}
+            {/* Right — Animated Live Preview Card */}
             <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
               className="mt-12 flex-1 lg:mt-0 hidden lg:block">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-2xl shadow-aeos-500/5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <span className="mb-1 block text-2xs font-semibold uppercase tracking-wider text-slate-400">Live Preview</span>
-                    <h3 className="text-base font-bold text-slate-900">How AEOS thinks</h3>
-                  </div>
-                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-2xs font-medium text-slate-700">
-                    Scan → Evaluate → Deploy
-                  </span>
-                </div>
-
-                {/* Stat boxes */}
-                <div className="mb-4 grid grid-cols-3 gap-3">
-                  {[
-                    { label: "SCAN SPEED", value: "~2m", color: "text-slate-900" },
-                    { label: "CONFIDENCE", value: "94%+", color: "text-emerald-600" },
-                    { label: "DEPLOYMENT", value: "Ready", color: "text-slate-900" },
-                  ].map((s) => (
-                    <div key={s.label} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5">
-                      <p className="text-2xs font-semibold uppercase tracking-wider text-slate-400">{s.label}</p>
-                      <p className={`mt-1 text-lg font-bold ${s.color}`}>{s.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Result cards */}
-                <div className="space-y-2.5">
-                  {[
-                    { icon: Search, tag: "Gap Analysis", tagColor: "text-emerald-700 bg-emerald-50 border-emerald-200", match: "92% match", title: "Missing Finance department", desc: "Critical organizational gap detected in financial oversight." },
-                    { icon: BarChart3, tag: "Strategic Priority", tagColor: "text-violet-700 bg-violet-50 border-violet-200", match: "88% match", title: "Market expansion into GCC region", desc: "High-growth opportunity with strong competitive fit." },
-                    { icon: Bot, tag: "AI Agent", tagColor: "text-aeos-700 bg-aeos-50 border-aeos-200", match: "85% match", title: "Deploy Marketing Director AI", desc: "Recommended agent to fill identified department gap." },
-                  ].map((card) => (
-                    <div key={card.title} className="rounded-xl border border-slate-200 bg-white p-3.5">
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-2xs font-semibold ${card.tagColor}`}>
-                          <card.icon size={11} /> {card.tag}
-                        </span>
-                        <span className="text-2xs font-semibold text-emerald-600">{card.match}</span>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">{card.title}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{card.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <LivePreviewCard />
             </motion.div>
           </div>
         </section>
