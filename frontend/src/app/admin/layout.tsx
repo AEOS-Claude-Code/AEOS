@@ -20,7 +20,7 @@ export const useAdmin = () => useContext(AdminContext);
 
 const NAV = [
   { href: "/admin", icon: LayoutDashboard, label: "Overview" },
-  { href: "/admin/finance", icon: DollarSign, label: "Finance" },
+  { href: "/admin/finance", icon: DollarSign, label: "Finance & Billing" },
   { href: "/admin/workspaces", icon: Building2, label: "Workspaces" },
   { href: "/admin/users", icon: Users, label: "Users" },
   { href: "/admin/engines", icon: Cpu, label: "Engines" },
