@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   DollarSign, TrendingUp, TrendingDown, Zap, Building2, Crown,
   Loader2, RefreshCw, ArrowUpRight, ArrowDownRight, PieChart,
-  BarChart3, Wallet, CreditCard, AlertTriangle, Users,
+  BarChart3, Wallet, CreditCard, AlertTriangle, Users, Brain,
 } from "lucide-react";
 import axios from "axios";
 
