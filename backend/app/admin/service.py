@@ -321,13 +321,11 @@ async def update_user_role(db: AsyncSession, user_id: str, role: str) -> dict:
 
 async def update_workspace_plan(db: AsyncSession, workspace_id: str, plan_tier: str) -> dict:
     """Change workspace billing plan."""
-    from app.modules.billing.models import Subscription, BillingPlan
+    from app.modules.billing.models import Subscription, BILLING_PLANS, TokenWallet
 
-    plan = (await db.execute(
-        select(BillingPlan).where(BillingPlan.tier == plan_tier, BillingPlan.is_active == True)
-    )).scalar_one_or_none()
-    if not plan:
-        raise HTTPException(status_code=404, detail=f"Plan '{plan_tier}' not found")
+    valid_tiers = list(BILLING_PLANS.keys())
+    if plan_tier not in valid_tiers:
+        raise HTTPException(status_code=400, detail=f"Invalid plan. Must be one of: {', '.join(valid_tiers)}")
 
     sub = (await db.execute(
         select(Subscription).where(Subscription.workspace_id == workspace_id)
@@ -335,10 +333,21 @@ async def update_workspace_plan(db: AsyncSession, workspace_id: str, plan_tier: 
     if not sub:
         raise HTTPException(status_code=404, detail="Workspace subscription not found")
 
-    sub.plan_id = plan.id
+    old_tier = sub.plan_tier
+    sub.plan_tier = plan_tier
+
+    # Update token wallet included tokens to match new plan
+    plan_info = BILLING_PLANS[plan_tier]
+    wallet = (await db.execute(
+        select(TokenWallet).where(TokenWallet.workspace_id == workspace_id)
+    )).scalar_one_or_none()
+    if wallet:
+        wallet.included_tokens = plan_info["included_tokens"]
+
     await db.commit()
 
-    return {"workspace_id": workspace_id, "new_plan": plan_tier, "plan_name": plan.name}
+    logger.info("Admin changed workspace %s plan: %s -> %s", workspace_id, old_tier, plan_tier)
+    return {"workspace_id": workspace_id, "old_plan": old_tier, "new_plan": plan_tier, "plan_name": plan_info["name"]}
 
 
 async def delete_workspace_full(db: AsyncSession, workspace_id: str) -> dict:

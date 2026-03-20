@@ -20,11 +20,11 @@ interface WorkspaceItem {
 const PLAN_COLORS: Record<string, string> = {
   starter: "bg-slate-500/10 text-slate-400",
   growth: "bg-blue-500/10 text-blue-400",
-  professional: "bg-violet-500/10 text-violet-400",
+  business: "bg-violet-500/10 text-violet-400",
   enterprise: "bg-amber-500/10 text-amber-400",
 };
 
-const PLANS = ["starter", "growth", "professional", "enterprise"];
+const PLANS = ["starter", "growth", "business", "enterprise"];
 
 export default function AdminWorkspacesPage() {
   const { token } = useAdmin();

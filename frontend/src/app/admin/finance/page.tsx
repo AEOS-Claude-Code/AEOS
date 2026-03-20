@@ -14,9 +14,9 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const PLAN_INFO: Record<string, { price: number; tokens: number; color: string }> = {
   starter: { price: 0, tokens: 5000, color: "from-slate-400 to-slate-500" },
-  growth: { price: 49, tokens: 25000, color: "from-blue-500 to-blue-600" },
-  professional: { price: 149, tokens: 100000, color: "from-violet-500 to-violet-600" },
-  enterprise: { price: 499, tokens: 500000, color: "from-amber-500 to-amber-600" },
+  growth: { price: 49, tokens: 50000, color: "from-blue-500 to-blue-600" },
+  business: { price: 149, tokens: 200000, color: "from-violet-500 to-violet-600" },
+  enterprise: { price: 499, tokens: 1000000, color: "from-amber-500 to-amber-600" },
 };
 
 interface WorkspaceFinance {
@@ -272,7 +272,7 @@ export default function AdminFinancePage() {
                       <td className="px-4 py-3 text-right">
                         <span className={`rounded-full px-2.5 py-1 text-2xs font-bold capitalize ${
                           plan === "enterprise" ? "bg-amber-500/10 text-amber-400" :
-                          plan === "professional" ? "bg-violet-500/10 text-violet-400" :
+                          plan === "business" ? "bg-violet-500/10 text-violet-400" :
                           plan === "growth" ? "bg-blue-500/10 text-blue-400" :
                           "bg-slate-700/50 text-slate-400"
                         }`}>{plan}</span>
