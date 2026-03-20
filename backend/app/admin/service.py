@@ -102,17 +102,14 @@ async def list_workspaces(db: AsyncSession, limit: int = 50, offset: int = 0) ->
         tokens_used = 0
         tokens_included = 0
         try:
-            from app.modules.billing.models import Subscription, BillingPlan, TokenWallet
+            from app.modules.billing.models import Subscription, PLANS as ALL_PLANS, TokenWallet
             sub = (await db.execute(
                 select(Subscription).where(Subscription.workspace_id == ws.id)
             )).scalar_one_or_none()
             if sub:
-                plan = (await db.execute(
-                    select(BillingPlan).where(BillingPlan.id == sub.plan_id)
-                )).scalar_one_or_none()
-                if plan:
-                    plan_tier = plan.tier
-                    tokens_included = plan.included_tokens
+                plan_tier = sub.plan_tier or "starter"
+                plan_info = ALL_PLANS.get(plan_tier, {})
+                tokens_included = plan_info.get("included_tokens", 5000)
 
             wallet = (await db.execute(
                 select(TokenWallet).where(TokenWallet.workspace_id == ws.id)
