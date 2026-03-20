@@ -22,10 +22,11 @@ const PLAN_INFO: Record<string, { price: number; tokens: number; color: string }
 interface WorkspaceFinance {
   workspace_id: string; workspace_name: string;
   tokens_used: number; tokens_included: number; tokens_purchased: number;
+  ai_tokens_used: number;
 }
 
 interface OpUsage {
-  operation: string; tokens: number;
+  operation: string; tokens: number; ai_powered: boolean;
 }
 
 export default function AdminFinancePage() {
@@ -58,6 +59,10 @@ export default function AdminFinancePage() {
   const totalUsed = tokens.total_used_platform || 0;
   const totalIncluded = tokens.total_included_platform || 0;
   const estimatedCost = tokens.estimated_cost_usd || 0;
+  const aiTokensUsed = tokens.ai_tokens_used || 0;
+  const nonAiTokensUsed = tokens.non_ai_tokens_used || 0;
+  const aiOperations = operations.filter(op => op.ai_powered);
+  const nonAiOperations = operations.filter(op => !op.ai_powered);
 
   // Revenue calculation from workspace plans
   const planCounts: Record<string, number> = {};
@@ -104,10 +109,10 @@ export default function AdminFinancePage() {
           className="rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/10 to-red-600/5 p-5">
           <div className="mb-2 flex items-center gap-2">
             <TrendingDown size={16} className="text-red-400" />
-            <span className="text-xs font-medium text-red-400/70">AI API Cost</span>
+            <span className="text-xs font-medium text-red-400/70">AI API Cost (Claude)</span>
           </div>
           <p className="text-3xl font-bold text-red-400">${estimatedCost.toFixed(2)}</p>
-          <p className="mt-1 text-2xs text-slate-500">Anthropic Claude usage to date</p>
+          <p className="mt-1 text-2xs text-slate-500">{aiTokensUsed.toLocaleString()} AI tokens • Non-AI: {nonAiTokensUsed.toLocaleString()} (free)</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -166,27 +171,62 @@ export default function AdminFinancePage() {
         </div>
       </motion.div>
 
-      {/* ── Usage by Operation ── */}
-      {operations.length > 0 && (
+      {/* ── AI-Powered Operations (Cost) ── */}
+      {aiOperations.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-          className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6">
+          className="rounded-2xl border border-red-500/20 bg-slate-800/50 p-6">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
-            <BarChart3 size={18} className="text-cyan-400" /> Cost by Operation
+            <Brain size={18} className="text-red-400" /> AI-Powered Operations
+            <span className="ml-auto text-sm font-bold text-red-400">${estimatedCost.toFixed(2)} total</span>
           </h2>
           <div className="space-y-3">
-            {operations.map((op, i) => {
-              const maxTokens = Math.max(...operations.map(o => o.tokens));
+            {aiOperations.map((op, i) => {
+              const maxTokens = Math.max(...aiOperations.map(o => o.tokens));
               const pct = maxTokens > 0 ? (op.tokens / maxTokens) * 100 : 0;
               const opCost = ((op.tokens * 100 * 9) / 1_000_000).toFixed(2);
               return (
                 <div key={op.operation} className="flex items-center gap-4">
-                  <span className="w-44 truncate text-sm text-slate-400">{op.operation.replace(/_/g, " ")}</span>
+                  <span className="flex items-center gap-2 w-48">
+                    <span className="h-2 w-2 rounded-full bg-red-400" />
+                    <span className="truncate text-sm text-slate-300">{op.operation.replace(/_/g, " ")}</span>
+                  </span>
                   <div className="flex-1 h-3 rounded-full bg-slate-700/50 overflow-hidden">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ delay: 0.3 + i * 0.05, duration: 0.6 }}
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" />
+                      className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-400" />
                   </div>
                   <span className="w-20 text-right text-xs font-mono text-slate-500">{op.tokens.toLocaleString()}</span>
-                  <span className="w-16 text-right text-xs font-bold text-emerald-400">${opCost}</span>
+                  <span className="w-16 text-right text-xs font-bold text-red-400">${opCost}</span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Non-AI Operations (Free) ── */}
+      {nonAiOperations.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
+          className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+            <BarChart3 size={18} className="text-emerald-400" /> Non-AI Operations
+            <span className="ml-auto rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">Free — No API Cost</span>
+          </h2>
+          <div className="space-y-3">
+            {nonAiOperations.map((op, i) => {
+              const maxTokens = Math.max(...nonAiOperations.map(o => o.tokens));
+              const pct = maxTokens > 0 ? (op.tokens / maxTokens) * 100 : 0;
+              return (
+                <div key={op.operation} className="flex items-center gap-4">
+                  <span className="flex items-center gap-2 w-48">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <span className="truncate text-sm text-slate-300">{op.operation.replace(/_/g, " ")}</span>
+                  </span>
+                  <div className="flex-1 h-3 rounded-full bg-slate-700/50 overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ delay: 0.3 + i * 0.05, duration: 0.6 }}
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400" />
+                  </div>
+                  <span className="w-20 text-right text-xs font-mono text-slate-500">{op.tokens.toLocaleString()}</span>
+                  <span className="w-16 text-right text-xs font-bold text-emerald-400">$0.00</span>
                 </div>
               );
             })}
@@ -221,7 +261,7 @@ export default function AdminFinancePage() {
                   const wsData = workspaces.find(w => w.id === ws.workspace_id);
                   const plan = wsData?.plan_tier || "starter";
                   const planPrice = PLAN_INFO[plan]?.price || 0;
-                  const aiCost = parseFloat(((ws.tokens_used * 100 * 9) / 1_000_000).toFixed(2));
+                  const aiCost = parseFloat((((ws as any).ai_tokens_used || 0) * 100 * 9 / 1_000_000).toFixed(2));
                   const net = planPrice - aiCost;
                   const usage = ws.tokens_included > 0 ? Math.round((ws.tokens_used / ws.tokens_included) * 100) : 0;
                   return (

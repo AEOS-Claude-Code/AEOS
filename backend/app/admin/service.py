@@ -484,15 +484,38 @@ async def get_system_health(db: AsyncSession) -> dict:
         total_purchased = (await db.execute(sel(fn.sum(TokenWallet.purchased_tokens)))).scalar() or 0
         total_included = (await db.execute(sel(fn.sum(TokenWallet.included_tokens)))).scalar() or 0
 
+        # AI-powered operations that actually call Claude API
+        AI_OPERATIONS = {
+            "copilot_query", "business_plan_generate", "business_plan_generation",
+            "competitor_discover", "competitor_discovery", "strategy_generation",
+            "agent_execute_task", "agent_task_execution", "ask_aeos",
+        }
+
         # Per-operation token usage
         op_usage = (await db.execute(
             sel(TokenUsage.operation, fn.sum(TokenUsage.tokens_consumed).label("total"))
             .group_by(TokenUsage.operation)
             .order_by(fn.sum(TokenUsage.tokens_consumed).desc())
         )).all()
-        operations = [{"operation": row[0], "tokens": row[1]} for row in op_usage]
 
-        # Per-workspace token usage
+        operations = []
+        ai_tokens_total = 0
+        non_ai_tokens_total = 0
+        for row in op_usage:
+            op_name = row[0]
+            op_tokens = row[1] or 0
+            is_ai = op_name in AI_OPERATIONS
+            operations.append({
+                "operation": op_name,
+                "tokens": op_tokens,
+                "ai_powered": is_ai,
+            })
+            if is_ai:
+                ai_tokens_total += op_tokens
+            else:
+                non_ai_tokens_total += op_tokens
+
+        # Per-workspace token usage with AI breakdown
         ws_usage = (await db.execute(
             sel(
                 TokenWallet.workspace_id,
@@ -504,28 +527,40 @@ async def get_system_health(db: AsyncSession) -> dict:
 
         workspace_costs = []
         for row in ws_usage:
-            ws = (await db.execute(sel(Workspace).where(Workspace.id == row[0]))).scalar_one_or_none()
+            ws_id = row[0]
+            ws = (await db.execute(sel(Workspace).where(Workspace.id == ws_id))).scalar_one_or_none()
+
+            # Get AI-only token usage for this workspace
+            ws_ai_tokens = (await db.execute(
+                sel(fn.sum(TokenUsage.tokens_consumed))
+                .where(TokenUsage.workspace_id == ws_id)
+                .where(TokenUsage.operation.in_(AI_OPERATIONS))
+            )).scalar() or 0
+
             workspace_costs.append({
-                "workspace_id": row[0],
+                "workspace_id": ws_id,
                 "workspace_name": ws.name if ws else "Unknown",
                 "tokens_used": row[1] or 0,
                 "tokens_included": row[2] or 0,
                 "tokens_purchased": row[3] or 0,
+                "ai_tokens_used": ws_ai_tokens,
             })
 
-        # Estimate USD cost based on Claude Sonnet pricing
+        # Estimate USD cost ONLY for AI-powered operations
         # ~$3/million input + ~$15/million output, average ~$9/million tokens
         # Our internal tokens map roughly 1:100 to API tokens
-        estimated_api_tokens = total_used * 100
-        estimated_cost_usd = round(estimated_api_tokens * 9 / 1_000_000, 2)
+        ai_api_tokens = ai_tokens_total * 100
+        estimated_cost_usd = round(ai_api_tokens * 9 / 1_000_000, 2)
 
         health["token_stats"] = {
             "total_used_platform": total_used,
             "total_purchased_platform": total_purchased,
             "total_included_platform": total_included,
-            "estimated_api_tokens": estimated_api_tokens,
+            "ai_tokens_used": ai_tokens_total,
+            "non_ai_tokens_used": non_ai_tokens_total,
+            "estimated_api_tokens": ai_api_tokens,
             "estimated_cost_usd": estimated_cost_usd,
-            "cost_per_1k_tokens": 0.9,  # $0.9 per 1000 internal tokens
+            "cost_per_1k_tokens": 0.9,
             "operations": operations,
             "workspace_breakdown": workspace_costs,
         }
