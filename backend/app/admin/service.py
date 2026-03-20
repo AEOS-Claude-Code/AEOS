@@ -321,7 +321,7 @@ async def update_user_role(db: AsyncSession, user_id: str, role: str) -> dict:
 
 async def update_workspace_plan(db: AsyncSession, workspace_id: str, plan_tier: str) -> dict:
     """Change workspace billing plan."""
-    from app.modules.billing.models import Subscription, BILLING_PLANS, TokenWallet
+    from app.modules.billing.models import Subscription, PLANS as BILLING_PLANS, TokenWallet
 
     valid_tiers = list(BILLING_PLANS.keys())
     if plan_tier not in valid_tiers:
