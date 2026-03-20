@@ -367,6 +367,59 @@ export default function AdminFinancePage() {
         </motion.div>
       )}
 
+      {/* ── Overage Charges ── */}
+      {workspaces.filter(ws => (ws as any).allow_overage || wsBreakdown.find(b => b.workspace_id === ws.id && (b as any).overage_tokens > 0)).length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }}
+          className="rounded-2xl border border-amber-500/20 bg-slate-800/50 p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
+            <Wallet size={18} className="text-amber-400" /> Overage Billing
+          </h2>
+          <div className="overflow-hidden rounded-xl border border-slate-700/50">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700/50 bg-slate-800/80">
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500">Workspace</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Plan</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Overage Enabled</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Overage Tokens</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Overage Cost</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {workspaces
+                  .filter(ws => (ws as any).allow_overage || wsBreakdown.find(b => b.workspace_id === ws.id && (b as any).overage_tokens > 0))
+                  .map(ws => {
+                    const overageTokens = (ws as any).overage_tokens || 0;
+                    const overageRate = (ws as any).overage_rate || 0.002;
+                    const overageCost = overageTokens * overageRate;
+                    return (
+                      <tr key={ws.id} className="bg-slate-800/30">
+                        <td className="px-4 py-2 text-sm text-white">{ws.name}</td>
+                        <td className="px-4 py-2 text-right">
+                          <span className="rounded-full px-2 py-0.5 text-2xs font-bold capitalize bg-slate-700/50 text-slate-400">
+                            {(ws as any).plan_tier || "starter"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <span className={`text-xs font-bold ${(ws as any).allow_overage ? "text-amber-400" : "text-slate-600"}`}>
+                            {(ws as any).allow_overage ? "Yes" : "No"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-right text-sm font-mono text-amber-400">
+                          {overageTokens > 0 ? overageTokens.toLocaleString() : "—"}
+                        </td>
+                        <td className="px-4 py-2 text-right text-sm font-bold text-amber-400">
+                          {overageCost > 0 ? `$${overageCost.toFixed(2)}` : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
       {/* ── Alerts ── */}
       {wsBreakdown.filter(ws => ws.tokens_included > 0 && (ws.tokens_used / ws.tokens_included) > 0.8).length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}

@@ -5,7 +5,7 @@ import { useAdmin } from "../layout";
 import { motion } from "framer-motion";
 import {
   Building2, Globe, Users, Zap, Crown, Loader2, Search, RefreshCw,
-  ArrowUpCircle, ChevronDown, Trash2,
+  ArrowUpCircle, ChevronDown, Trash2, ToggleLeft, ToggleRight, AlertTriangle,
 } from "lucide-react";
 import axios from "axios";
 
@@ -14,7 +14,9 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 interface WorkspaceItem {
   id: string; name: string; slug: string; industry: string; country: string;
   team_size: number; website: string; members: number; owner_email: string;
-  plan_tier: string; tokens_used: number; tokens_included: number; created_at: string;
+  plan_tier: string; tokens_used: number; tokens_included: number;
+  allow_overage: boolean; overage_rate: number; overage_tokens: number;
+  created_at: string;
 }
 
 const PLAN_COLORS: Record<string, string> = {
@@ -52,6 +54,13 @@ export default function AdminWorkspacesPage() {
       await api.put(`/api/v1/admin/workspaces/${wsId}/plan`, { plan_tier: plan });
       setWorkspaces(prev => prev.map(w => w.id === wsId ? { ...w, plan_tier: plan } : w));
     } catch {} finally { setUpgradingId(null); }
+  }
+
+  async function toggleOverage(wsId: string, allow: boolean) {
+    try {
+      await api.put(`/api/v1/admin/workspaces/${wsId}/overage`, { allow_overage: allow });
+      setWorkspaces(prev => prev.map(w => w.id === wsId ? { ...w, allow_overage: allow } : w));
+    } catch {}
   }
 
   async function deleteWorkspace(wsId: string) {
@@ -133,6 +142,18 @@ export default function AdminWorkspacesPage() {
                   )}
                 </div>
 
+                {/* Overage toggle */}
+                <button onClick={() => toggleOverage(w.id, !w.allow_overage)}
+                  title={w.allow_overage ? "Disable overage billing" : "Enable overage billing"}
+                  className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
+                    w.allow_overage
+                      ? "bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20"
+                      : "text-slate-500 hover:bg-slate-700/50 hover:text-slate-300"
+                  }`}>
+                  {w.allow_overage ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                  Overage
+                </button>
+
                 {/* Delete button */}
                 {confirmDeleteId === w.id ? (
                   <div className="flex items-center gap-1">
@@ -167,6 +188,11 @@ export default function AdminWorkspacesPage() {
               <div className="flex items-center gap-1.5 text-xs text-slate-500">
                 <Zap size={12} /> {w.tokens_used.toLocaleString()} / {w.tokens_included.toLocaleString()} tokens
               </div>
+              {w.overage_tokens > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-400">
+                  <AlertTriangle size={12} /> {w.overage_tokens.toLocaleString()} overage
+                </div>
+              )}
               <div className="ml-auto text-xs text-slate-600">
                 Joined {new Date(w.created_at).toLocaleDateString()}
               </div>

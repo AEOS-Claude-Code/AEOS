@@ -138,6 +138,19 @@ async def list_workspaces(db: AsyncSession, limit: int = 50, offset: int = 0) ->
         except Exception:
             pass
 
+        # Overage info
+        allow_overage = False
+        overage_rate = 0.002
+        overage_tokens = 0
+        try:
+            if sub:
+                allow_overage = getattr(sub, 'allow_overage', False) or False
+                overage_rate = getattr(sub, 'overage_rate', 0.002) or 0.002
+            if wallet:
+                overage_tokens = getattr(wallet, 'overage_tokens', 0) or 0
+        except Exception:
+            pass
+
         results.append({
             "id": ws.id,
             "name": ws.name,
@@ -151,6 +164,9 @@ async def list_workspaces(db: AsyncSession, limit: int = 50, offset: int = 0) ->
             "plan_tier": plan_tier,
             "tokens_used": tokens_used,
             "tokens_included": tokens_included,
+            "allow_overage": allow_overage,
+            "overage_rate": overage_rate,
+            "overage_tokens": overage_tokens,
             "created_at": ws.created_at.isoformat() if ws.created_at else "",
         })
 
