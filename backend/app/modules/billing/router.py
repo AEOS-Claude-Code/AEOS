@@ -185,3 +185,48 @@ async def purchase(
         payment_status=tx.payment_status,
         message=f"Successfully added {body.amount:,} tokens to your wallet.",
     )
+
+
+# ── Usage Alerts ────────────────────────────────────────────────────
+
+from sqlalchemy import select, update
+from .models import UsageAlert
+
+
+@router.get("/alerts", summary="Get active usage alerts")
+async def get_alerts(
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(UsageAlert)
+        .where(UsageAlert.workspace_id == workspace.id, UsageAlert.acknowledged == False)
+        .order_by(UsageAlert.threshold_pct.desc())
+    )
+    alerts = result.scalars().all()
+    return [
+        {
+            "id": a.id,
+            "alert_type": a.alert_type,
+            "threshold_pct": a.threshold_pct,
+            "current_usage_pct": a.current_usage_pct,
+            "message": a.message,
+            "created_at": a.created_at.isoformat(),
+        }
+        for a in alerts
+    ]
+
+
+@router.put("/alerts/{alert_id}/acknowledge", summary="Acknowledge/dismiss an alert")
+async def acknowledge_alert(
+    alert_id: str,
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
+    await db.execute(
+        update(UsageAlert)
+        .where(UsageAlert.id == alert_id, UsageAlert.workspace_id == workspace.id)
+        .values(acknowledged=True)
+    )
+    await db.commit()
+    return {"acknowledged": True}

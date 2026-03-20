@@ -89,6 +89,8 @@ class Subscription(Base):
 
     plan_tier = Column(String(50), nullable=False, default="starter")
     status = Column(String(50), nullable=False, default="trialing")  # trialing | active | past_due | canceled
+    allow_overage = Column(Boolean, default=False, nullable=False)
+    overage_rate = Column(Float, default=0.002, nullable=False)  # $ per overage token
 
     trial_start = Column(DateTime, nullable=True)
     trial_end = Column(DateTime, nullable=True)
@@ -111,6 +113,7 @@ class TokenWallet(Base):
     included_tokens = Column(Integer, nullable=False, default=5000)  # from plan
     purchased_tokens = Column(Integer, nullable=False, default=0)
     used_tokens = Column(Integer, nullable=False, default=0)
+    overage_tokens = Column(Integer, nullable=False, default=0)  # tokens used beyond limit
 
     reset_at = Column(DateTime, nullable=False)  # when included tokens reset (period end)
     purchased_expires_at = Column(DateTime, nullable=True)
@@ -159,5 +162,22 @@ class TokenTransaction(Base):
     # Payment simulation fields (Stripe-ready for later)
     payment_status = Column(String(50), default="simulated")  # simulated | pending | completed | failed
     payment_reference = Column(String(255), default="")
+
+    created_at = Column(DateTime, default=_now, nullable=False)
+
+
+# ── Usage Alerts ────────────────────────────────────────────────────
+
+class UsageAlert(Base):
+    __tablename__ = "usage_alerts"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    workspace_id = Column(String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    alert_type = Column(String(20), nullable=False)  # info | warning | critical | exhausted
+    threshold_pct = Column(Integer, nullable=False)   # 50, 80, 95, 100
+    current_usage_pct = Column(Integer, nullable=False)
+    message = Column(String(500), nullable=False)
+    acknowledged = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(DateTime, default=_now, nullable=False)

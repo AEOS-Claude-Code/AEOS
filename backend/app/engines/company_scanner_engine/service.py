@@ -65,6 +65,8 @@ async def run_scan(
     social_links: dict | None = None,
 ) -> CompanyScanReport:
     """Execute the full scan pipeline and persist to DB."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "company_scan")
 
     # ── Dedup guard: skip if a scan is already in progress ────────
     in_progress = await db.execute(

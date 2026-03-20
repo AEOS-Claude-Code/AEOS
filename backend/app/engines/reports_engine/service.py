@@ -21,6 +21,9 @@ async def generate_report(
     db: AsyncSession, workspace_id: str, report_type: str, user_id: str = "",
 ) -> GeneratedReport:
     """Generate an executive report."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "report_generation")
+
     if report_type not in REPORT_TYPES:
         raise ValueError(f"Invalid report type: {report_type}")
 

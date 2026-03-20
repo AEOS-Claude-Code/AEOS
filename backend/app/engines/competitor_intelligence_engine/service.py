@@ -53,6 +53,9 @@ async def add_competitor(db: AsyncSession, workspace_id: str, url: str) -> Compe
 
 async def scan_all_competitors(db: AsyncSession, workspace_id: str) -> int:
     """Scan all competitors for a workspace. Returns count scanned."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "competitor_scan")
+
     # Load competitor URLs from workspace profile
     from app.auth.models import WorkspaceProfile
     prof_result = await db.execute(

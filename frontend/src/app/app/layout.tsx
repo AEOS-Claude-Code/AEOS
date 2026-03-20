@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { RequireAuth, useAuth } from "@/lib/auth/AuthProvider";
 import DashboardShell from "@/components/layout/DashboardShell";
+import api from "@/lib/api";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,44 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AppShell>{children}</AppShell>
       </div>
     </RequireAuth>
+  );
+}
+
+function UsageAlertBanner() {
+  const [alerts, setAlerts] = useState<any[]>([]);
+  useEffect(() => {
+    api.get("/api/v1/billing/alerts").then(r => setAlerts(r.data || [])).catch(() => {});
+  }, []);
+
+  if (alerts.length === 0) return null;
+  const top = alerts[0]; // Highest severity
+
+  const colors: Record<string, string> = {
+    exhausted: "bg-red-500/10 border-red-500/30 text-red-400",
+    critical: "bg-red-500/10 border-red-500/30 text-red-400",
+    warning: "bg-amber-500/10 border-amber-500/30 text-amber-400",
+    info: "bg-blue-500/10 border-blue-500/30 text-blue-400",
+  };
+
+  async function dismiss(id: string) {
+    await api.put(`/api/v1/billing/alerts/${id}/acknowledge`).catch(() => {});
+    setAlerts(prev => prev.filter(a => a.id !== id));
+  }
+
+  return (
+    <div className={`mx-4 mb-4 flex items-center justify-between rounded-xl border px-4 py-3 ${colors[top.alert_type] || colors.info}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold">{top.message}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <a href="/app/settings" className="rounded-lg bg-white/10 px-3 py-1 text-xs font-bold hover:bg-white/20 transition">
+          Upgrade Plan
+        </a>
+        <button onClick={() => dismiss(top.id)} className="text-xs opacity-60 hover:opacity-100 transition">
+          Dismiss
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -51,6 +90,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
       tokensTotal={(workspace?.token_usage?.included ?? 0) + (workspace?.token_usage?.purchased ?? 0)}
       isLive={!!workspace}
     >
+      <UsageAlertBanner />
       {children}
     </DashboardShell>
   );

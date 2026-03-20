@@ -193,6 +193,28 @@ async def admin_delete_workspace(
     return await delete_workspace_full(db, workspace_id)
 
 
+class ToggleOverageRequest(BaseModel):
+    allow_overage: bool
+    overage_rate: float = 0.002
+
+
+@router.put("/workspaces/{workspace_id}/overage")
+async def admin_toggle_overage(
+    workspace_id: str, body: ToggleOverageRequest,
+    user: User = Depends(_require_admin), db: AsyncSession = Depends(get_db),
+):
+    """Toggle overage billing for a workspace."""
+    from app.modules.billing.models import Subscription
+    from sqlalchemy import select as sel
+    sub = (await db.execute(sel(Subscription).where(Subscription.workspace_id == workspace_id))).scalar_one_or_none()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    sub.allow_overage = body.allow_overage
+    sub.overage_rate = body.overage_rate
+    await db.commit()
+    return {"workspace_id": workspace_id, "allow_overage": sub.allow_overage, "overage_rate": sub.overage_rate}
+
+
 # ── Password Reset (uses admin secret, no auth required) ────────────
 
 class ResetPasswordRequest(BaseModel):

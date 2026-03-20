@@ -27,6 +27,8 @@ async def compute_digital_presence(
     workspace_id: str,
 ) -> DigitalPresenceReport:
     """Main pipeline: collect data, score, persist, snapshot."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "digital_presence_compute")
 
     logger.info("Computing digital presence workspace=%s", workspace_id)
 

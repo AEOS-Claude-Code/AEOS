@@ -368,6 +368,9 @@ async def ask_copilot(
     question: str,
 ) -> CopilotResponse:
     """Process a question and return an AI-powered answer."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace.id, "copilot_query")
+
     # Record token usage (best-effort)
     try:
         from app.modules.billing.service import consume_tokens, get_operation_cost

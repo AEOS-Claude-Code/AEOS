@@ -23,6 +23,9 @@ logger = logging.getLogger("aeos.engine.financial_model")
 
 async def generate_financial_model(db: AsyncSession, workspace_id: str) -> FinancialModel:
     """Generate a complete 5-year financial model."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "financial_model_compute")
+
     from app.auth.models import WorkspaceProfile
 
     prof_result = await db.execute(

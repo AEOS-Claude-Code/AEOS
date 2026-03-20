@@ -31,6 +31,9 @@ async def generate_business_plan(
     Generate a complete AI-powered business plan.
     Sections are generated sequentially and stored progressively.
     """
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "business_plan_generation")
+
     # Check for existing generating plan
     existing = await db.execute(
         select(BusinessPlan).where(

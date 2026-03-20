@@ -124,6 +124,9 @@ async def assign_task(
     input_data: dict = None, priority: str = "normal",
 ) -> AgentTask:
     """Create and execute a task for an agent."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "agent_task_execution")
+
     agent = await get_agent(db, agent_id)
     if not agent or agent.workspace_id != workspace_id:
         raise ValueError("Agent not found")

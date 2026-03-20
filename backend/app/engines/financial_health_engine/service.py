@@ -26,6 +26,9 @@ async def compute_financial_health(
     db: AsyncSession, workspace_id: str
 ) -> FinancialHealthReport:
     """Generate a full financial health assessment."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "financial_health_compute")
+
     from app.auth.models import WorkspaceProfile
 
     prof_result = await db.execute(

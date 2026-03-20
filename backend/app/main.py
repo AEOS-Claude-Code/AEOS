@@ -85,12 +85,16 @@ async def lifespan(app: FastAPI):
         logger.info("Database tables verified")
         # Add missing columns (safe migrations)
         try:
+            from sqlalchemy import text as sa_text
             async with engine.begin() as conn:
-                await conn.execute(
-                    __import__('sqlalchemy').text(
-                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user' NOT NULL"
-                    )
-                )
+                migrations = [
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user' NOT NULL",
+                    "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS allow_overage BOOLEAN DEFAULT FALSE NOT NULL",
+                    "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS overage_rate FLOAT DEFAULT 0.002 NOT NULL",
+                    "ALTER TABLE token_wallets ADD COLUMN IF NOT EXISTS overage_tokens INTEGER DEFAULT 0 NOT NULL",
+                ]
+                for sql in migrations:
+                    await conn.execute(sa_text(sql))
             logger.info("Schema migrations applied")
         except Exception as mig_exc:
             logger.warning("Migration skipped: %s", mig_exc)

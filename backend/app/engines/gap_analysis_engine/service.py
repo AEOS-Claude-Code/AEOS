@@ -65,6 +65,9 @@ async def compute_gap_analysis(
     db: AsyncSession, workspace_id: str
 ) -> OrgGapAnalysisReport:
     """Run full gap analysis for a workspace."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "gap_analysis_compute")
+
     from app.auth.models import WorkspaceProfile
 
     # 1. Create report

@@ -13,6 +13,8 @@ from typing import Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi import HTTPException
+
 from .models import (
     PLANS,
     TRIAL_DAYS,
@@ -20,6 +22,7 @@ from .models import (
     TokenWallet,
     TokenUsage,
     TokenTransaction,
+    UsageAlert,
 )
 
 logger = logging.getLogger("aeos.billing")
@@ -136,6 +139,85 @@ async def check_token_budget(db: AsyncSession, workspace_id: str, required: int)
     return wallet.available >= required
 
 
+async def enforce_token_budget(db: AsyncSession, workspace_id: str, operation: str) -> int:
+    """
+    Pre-operation check: ensure workspace has enough tokens.
+    Returns token cost if OK.
+    Raises HTTP 402 if insufficient and overage not allowed.
+    If overage allowed, tracks overage tokens.
+    """
+    cost = get_operation_cost(operation)
+    wallet = await get_or_create_wallet(db, workspace_id)
+
+    if wallet.available >= cost:
+        return cost
+
+    # Insufficient tokens — check overage
+    sub = await get_or_create_subscription(db, workspace_id)
+    if getattr(sub, 'allow_overage', False):
+        # Allow operation but track overage
+        overage_amount = cost - max(0, wallet.available)
+        logger.warning(
+            "Overage: workspace=%s op=%s overage=%d tokens",
+            workspace_id, operation, overage_amount,
+        )
+        return cost
+
+    # Block operation
+    plan_tier = sub.plan_tier
+    plan_name = PLANS.get(plan_tier, {}).get("name", plan_tier)
+    raise HTTPException(
+        status_code=402,
+        detail={
+            "error": "token_limit_reached",
+            "message": f"Your {plan_name} plan token limit has been reached. Upgrade your plan or purchase additional tokens.",
+            "tokens_available": wallet.available,
+            "tokens_required": cost,
+            "plan_tier": plan_tier,
+            "upgrade_url": "/app/settings",
+        },
+    )
+
+
+async def check_and_create_alerts(db: AsyncSession, workspace_id: str) -> None:
+    """Check token usage and create alerts at threshold crossings."""
+    wallet = await get_or_create_wallet(db, workspace_id)
+    if wallet.total <= 0:
+        return
+
+    usage_pct = round((wallet.used_tokens / wallet.total) * 100)
+
+    THRESHOLDS = [
+        (100, "exhausted", "Token limit reached. Operations will be blocked until you upgrade or purchase more tokens."),
+        (95, "critical", "You've used 95% of your tokens. Running out soon — upgrade or purchase more."),
+        (80, "warning", "You've used 80% of your token allocation. Consider upgrading your plan."),
+        (50, "info", "You've used half of your token allocation for this billing period."),
+    ]
+
+    for threshold, alert_type, message in THRESHOLDS:
+        if usage_pct >= threshold:
+            # Check if this threshold alert already exists (unacknowledged)
+            existing = (await db.execute(
+                select(UsageAlert).where(
+                    UsageAlert.workspace_id == workspace_id,
+                    UsageAlert.threshold_pct == threshold,
+                    UsageAlert.acknowledged == False,
+                )
+            )).scalar_one_or_none()
+
+            if not existing:
+                alert = UsageAlert(
+                    workspace_id=workspace_id,
+                    alert_type=alert_type,
+                    threshold_pct=threshold,
+                    current_usage_pct=usage_pct,
+                    message=message,
+                )
+                db.add(alert)
+                logger.info("Usage alert: workspace=%s type=%s pct=%d", workspace_id, alert_type, usage_pct)
+            break  # Only create the highest threshold alert
+
+
 async def consume_tokens(
     db: AsyncSession,
     workspace_id: str,
@@ -173,6 +255,22 @@ async def consume_tokens(
         detail=detail,
     )
     db.add(usage)
+
+    # Track overage if over limit
+    if wallet.used_tokens > wallet.total:
+        overage = wallet.used_tokens - wallet.total
+        from sqlalchemy import update
+        await db.execute(
+            update(TokenWallet)
+            .where(TokenWallet.workspace_id == workspace_id)
+            .values(overage_tokens=overage)
+        )
+
+    # Check for usage alerts
+    try:
+        await check_and_create_alerts(db, workspace_id)
+    except Exception:
+        pass  # Non-critical
 
     logger.info(
         "Tokens consumed workspace=%s op=%s tokens=%d used=%d/%d",

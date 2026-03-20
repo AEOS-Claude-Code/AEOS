@@ -27,6 +27,9 @@ async def compute_market_research(
     db: AsyncSession, workspace_id: str
 ) -> MarketResearchReport:
     """Generate a full market research report."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "market_research_compute")
+
     from app.auth.models import WorkspaceProfile
 
     # Get workspace data

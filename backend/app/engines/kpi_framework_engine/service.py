@@ -22,6 +22,9 @@ logger = logging.getLogger("aeos.engine.kpi_framework")
 
 async def compute_kpi_framework(db: AsyncSession, workspace_id: str) -> KPIFramework:
     """Generate a complete KPI framework."""
+    from app.modules.billing.service import enforce_token_budget
+    await enforce_token_budget(db, workspace_id, "kpi_framework_compute")
+
     from app.auth.models import WorkspaceProfile
 
     prof_result = await db.execute(
