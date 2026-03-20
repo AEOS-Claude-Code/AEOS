@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ShieldCheck, LayoutDashboard, Users, Building2, Activity,
-  LogOut, ChevronLeft, Settings, Zap, DollarSign,
+  LogOut, ChevronLeft, Settings, Zap, DollarSign, Cpu,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -23,7 +23,8 @@ const NAV = [
   { href: "/admin/finance", icon: DollarSign, label: "Finance" },
   { href: "/admin/workspaces", icon: Building2, label: "Workspaces" },
   { href: "/admin/users", icon: Users, label: "Users" },
-  { href: "/admin/system", icon: Activity, label: "System" },
+  { href: "/admin/engines", icon: Cpu, label: "Engines" },
+  { href: "/admin/system", icon: Activity, label: "System Health" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

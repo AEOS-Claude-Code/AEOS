@@ -304,31 +304,6 @@ export default function AdminSystemPage() {
         </div>
       </motion.div>
 
-      {/* ── Engines ── */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-        className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
-          <Zap size={18} className="text-amber-400" /> Registered Engines ({health?.engines_registered || 0})
-        </h2>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            "Company Scanner", "Digital Presence", "Smart Intake",
-            "Org Chart", "Gap Analysis", "Competitor Intelligence",
-            "Market Research", "Financial Health", "Financial Model",
-            "KPI Framework", "Business Plan (AI)", "Reports & PDF",
-            "Agent Framework", "Command Dashboard", "Executive Copilot (AI)",
-          ].map(e => (
-            <div key={e} className="flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2.5">
-              <CheckCircle2 size={12} className="text-emerald-400" />
-              <span className="text-sm text-slate-300">{e}</span>
-              {e.includes("AI") && (
-                <span className="ml-auto rounded-full bg-amber-500/10 px-2 py-0.5 text-2xs font-bold text-amber-400">Requires API Key</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
       {/* ── API Info ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="rounded-2xl border border-slate-700/50 bg-slate-800/50 p-6">
