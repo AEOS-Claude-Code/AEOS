@@ -196,8 +196,14 @@ async def list_users(db: AsyncSession, limit: int = 50, offset: int = 0) -> list
             "workspace_id": workspace_id,
             "workspace_role": workspace_role,
             "created_at": u.created_at.isoformat() if u.created_at else "",
-            "last_login_at": u.last_login_at.isoformat() if u.last_login_at else None,
+            "last_login_at": None,
         })
+        # Safely try to get last_login_at
+        try:
+            if hasattr(u, 'last_login_at') and u.last_login_at:
+                results[-1]["last_login_at"] = u.last_login_at.isoformat()
+        except Exception:
+            pass
 
     return results
 
