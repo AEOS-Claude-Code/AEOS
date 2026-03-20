@@ -6,10 +6,12 @@ import { StaggerGrid } from "@/components/ui/StaggerGrid";
 import {
   Bot, Loader2, Rocket, Users, ChevronDown, Play, CheckCircle2,
   Brain, Target, Megaphone, Wallet, Shield, Settings, Cpu, Package,
-  Heart, Sparkles, Zap, Clock, Send,
+  Heart, Sparkles, Zap, Clock, Send, Crown, Lock,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAgents, type Agent, type DepartmentGroup, type TaskResult } from "@/lib/hooks/useAgents";
+import { usePlanGate } from "@/lib/hooks/usePlanGate";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 
 const DEPT_ICONS: Record<string, any> = {
   strategy: Brain, sales: Target, marketing: Megaphone, hr: Users,
@@ -87,6 +89,8 @@ function DeptSection({ group, onRunAgent }: { group: DepartmentGroup; onRunAgent
 
 export default function AgentsPage() {
   const { data, departments, loading, deploying, error, deploy, runTask } = useAgents();
+  const { isStarter } = usePlanGate();
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const [taskModal, setTaskModal] = useState<Agent | null>(null);
   const [taskInput, setTaskInput] = useState("");
   const [taskRunning, setTaskRunning] = useState(false);
@@ -143,14 +147,31 @@ export default function AgentsPage() {
             </p>
           </div>
         </div>
-        <button onClick={deploy} disabled={deploying}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-violet-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-aeos-200/30 transition hover:shadow-xl disabled:opacity-50">
-          {deploying ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
-          {hasAgents ? "Redeploy" : "Deploy Agents"}
-        </button>
+        {isStarter ? (
+          <button onClick={() => setShowUpgrade(true)}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-amber-200/30 transition hover:shadow-xl">
+            <Crown size={14} /> Upgrade to Deploy
+          </button>
+        ) : (
+          <button onClick={deploy} disabled={deploying}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-aeos-600 to-violet-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-aeos-200/30 transition hover:shadow-xl disabled:opacity-50">
+            {deploying ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
+            {hasAgents ? "Redeploy" : "Deploy Agents"}
+          </button>
+        )}
       </div>
 
-      {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 ring-1 ring-red-100">{error}</div>}
+      {error && (
+        error.includes("plan_upgrade_required") || error.includes("403") ? (
+          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 ring-1 ring-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:ring-amber-500/20">
+            <Crown size={16} className="shrink-0 text-amber-500" />
+            <span className="flex-1 text-sm text-amber-700 dark:text-amber-300">This feature requires a Growth plan or higher.</span>
+            <button onClick={() => setShowUpgrade(true)} className="shrink-0 text-xs font-bold text-amber-600 underline hover:text-amber-700 dark:text-amber-400">Upgrade</button>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 ring-1 ring-red-100">{error}</div>
+        )
+      )}
 
       {/* Stats */}
       {hasAgents && (
@@ -174,8 +195,23 @@ export default function AgentsPage() {
       {!hasAgents && (
         <div className="rounded-2xl border border-border bg-surface p-12 text-center">
           <Bot size={48} className="mx-auto mb-4 text-fg-hint" />
-          <h2 className="mb-2 text-lg font-bold text-fg">No agents deployed yet</h2>
-          <p className="mb-6 text-sm text-fg-muted">Click "Deploy Agents" to create your AI organization based on your company profile.</p>
+          {isStarter ? (
+            <>
+              <h2 className="mb-2 text-lg font-bold text-fg">AI agents require a paid plan</h2>
+              <p className="mb-6 text-sm text-fg-muted">
+                Upgrade to Growth or higher to deploy 22+ AI agents across 9 departments and automate your operations.
+              </p>
+              <button onClick={() => setShowUpgrade(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-amber-200/30 transition hover:shadow-xl">
+                <Crown size={16} /> Upgrade to Deploy Agents
+              </button>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-2 text-lg font-bold text-fg">No agents deployed yet</h2>
+              <p className="mb-6 text-sm text-fg-muted">Click &ldquo;Deploy Agents&rdquo; to create your AI organization based on your company profile.</p>
+            </>
+          )}
         </div>
       )}
 
@@ -255,6 +291,8 @@ export default function AgentsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="AI Agent Deployment" />
     </motion.div>
   );
 }

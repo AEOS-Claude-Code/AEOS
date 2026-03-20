@@ -3,16 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowRight, Plug, LayoutDashboard, ExternalLink, Sparkles, Bot, Zap } from "lucide-react";
+import { CheckCircle2, ArrowRight, Plug, LayoutDashboard, ExternalLink, Sparkles, Bot, Zap, Crown, Lock } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { usePlanGate } from "@/lib/hooks/usePlanGate";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 
 export default function OnboardingComplete() {
   const router = useRouter();
   const { refreshSession } = useAuth();
+  const { isStarter } = usePlanGate();
   const [readiness, setReadiness] = useState(0);
   const [marked, setMarked] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => {
     async function complete() {
@@ -44,11 +48,13 @@ export default function OnboardingComplete() {
 
         <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="text-2xl font-bold text-fg">
-          Your AI organization is ready!
+          {isStarter ? "Your free intelligence report is ready!" : "Your AI organization is ready!"}
         </motion.h2>
         <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
           className="mt-2 text-sm text-fg-hint">
-          AEOS has deployed your AI agents and is ready to start working for you.
+          {isStarter
+            ? "Upgrade to deploy 22+ AI agents across 9 departments."
+            : "AEOS has deployed your AI agents and is ready to start working for you."}
         </motion.p>
 
         {/* Readiness gauge */}
@@ -76,7 +82,12 @@ export default function OnboardingComplete() {
             { icon: Sparkles, value: "9", label: "Departments", color: "from-violet-500 to-purple-600" },
             { icon: Zap, value: "24/7", label: "Active", color: "from-cyan-500 to-blue-600" },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-border bg-surface-secondary p-3">
+            <div key={stat.label} className={`relative rounded-xl border border-border bg-surface-secondary p-3 ${isStarter ? "opacity-50" : ""}`}>
+              {isStarter && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-surface-secondary/60">
+                  <Lock size={16} className="text-fg-hint" />
+                </div>
+              )}
               <div className={`mx-auto mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${stat.color} shadow-sm`}>
                 <stat.icon size={14} className="text-white" />
               </div>
@@ -85,6 +96,23 @@ export default function OnboardingComplete() {
             </div>
           ))}
         </motion.div>
+
+        {/* Upgrade CTA for starter users */}
+        {isStarter && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+            className="mx-auto mt-6 max-w-sm rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+            <div className="flex items-center justify-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-300">
+              <Crown size={16} /> Unlock your full AI organization
+            </div>
+            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+              Deploy AI agents, customize your org chart, and automate across 9 departments.
+            </p>
+            <button onClick={() => setShowUpgrade(true)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-amber-500/20 transition hover:shadow-md">
+              <Crown size={12} /> Upgrade to Growth — $49/mo
+            </button>
+          </motion.div>
+        )}
 
         {/* Free report */}
         {shareToken && (
@@ -115,6 +143,8 @@ export default function OnboardingComplete() {
           </button>
         </motion.div>
       </div>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="AI Agent Deployment" />
     </motion.div>
   );
 }

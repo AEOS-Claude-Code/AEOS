@@ -4,12 +4,14 @@ import {
   LayoutDashboard, Megaphone, Users, Sparkles, Swords, Plug,
   FileBarChart, Settings, ChevronLeft, Zap, LogOut, Globe, Bot,
   GitCompareArrows, Brain, BarChart3, DollarSign, Activity, Monitor, ShieldCheck,
+  Crown,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { usePlanGate } from "@/lib/hooks/usePlanGate";
 
 interface NavItem {
   label: string;
@@ -43,6 +45,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const { isStarter } = usePlanGate();
 
   const sections = [
     { key: "main", label: "" },
@@ -117,6 +120,27 @@ export default function Sidebar() {
 
       {/* Bottom */}
       <div className="space-y-1 border-t border-white/[0.06] p-3">
+        {/* Upgrade indicator for starter users */}
+        {isStarter && !collapsed && (
+          <Link href="/app/settings"
+            className="mb-2 flex items-center gap-2.5 rounded-lg bg-amber-500/10 px-3 py-2.5 transition hover:bg-amber-500/15">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500">
+              <Crown size={12} className="text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-amber-300">Free Plan</p>
+              <p className="text-[10px] text-amber-400/70">Upgrade for AI agents</p>
+            </div>
+          </Link>
+        )}
+        {isStarter && collapsed && (
+          <Link href="/app/settings"
+            className="mb-2 flex items-center justify-center rounded-lg bg-amber-500/10 py-2 transition hover:bg-amber-500/15"
+            title="Upgrade Plan">
+            <Crown size={16} className="text-amber-400" />
+          </Link>
+        )}
+
         {/* User info */}
         {!collapsed && user && (
           <div className="mb-2 flex items-center gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">

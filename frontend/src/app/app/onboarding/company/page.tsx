@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { usePlanGate } from "@/lib/hooks/usePlanGate";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,6 +12,7 @@ import {
   Sparkles, MessageCircle, ExternalLink, Calendar, ChevronRight, ChevronDown,
   Building2, Bot, Users, Brain, Target, Megaphone, Wallet, Shield,
   Settings, Package, Heart, CalendarDays, Zap, ArrowRight, Check, Rocket,
+  Crown, Lock,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -216,6 +219,8 @@ function LoadingScreen() {
 export default function OnboardingCompany() {
   const router = useRouter();
   const { workspace } = useAuth();
+  const { isStarter } = usePlanGate();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [intake, setIntake] = useState<IntakeResult|null>(null);
@@ -232,10 +237,12 @@ export default function OnboardingCompany() {
   const [orgBuildStep, setOrgBuildStep] = useState(0);
 
   function toggleRole(deptId: string, role: string) {
+    if (isStarter) { setShowUpgrade(true); return; }
     const key = `${deptId}:${role}`;
     setHumanRoles(prev => ({ ...prev, [key]: !prev[key] }));
   }
   function toggleHead(deptId: string) {
+    if (isStarter) { setShowUpgrade(true); return; }
     const key = `${deptId}:__head__`;
     setHumanRoles(prev => ({ ...prev, [key]: !prev[key] }));
   }
@@ -480,7 +487,11 @@ export default function OnboardingCompany() {
             </div>
             <div className="flex-1">
               <h2 className="text-base font-bold text-fg">Your AI Organization</h2>
-              <p className="text-xs text-fg-hint">Click any role to toggle between AI agent and human employee</p>
+              <p className="text-xs text-fg-hint">
+                {isStarter
+                  ? "Preview of your AI org chart — upgrade to customize roles"
+                  : "Click any role to toggle between AI agent and human employee"}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/20">
@@ -494,6 +505,20 @@ export default function OnboardingCompany() {
               </span>
             </div>
           </div>
+
+          {/* Upgrade banner for starter users */}
+          {isStarter && (
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <Crown size={16} className="shrink-0 text-amber-500" />
+              <p className="flex-1 text-xs text-amber-800 dark:text-amber-300">
+                <span className="font-bold">Upgrade to Growth</span> to customize your AI org chart and deploy agents.
+              </p>
+              <button onClick={() => setShowUpgrade(true)}
+                className="shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-amber-600">
+                Upgrade
+              </button>
+            </div>
+          )}
 
           {/* CEO Node */}
           <div className="flex justify-center mb-2">
@@ -624,16 +649,39 @@ export default function OnboardingCompany() {
       )}
 
       {/* === CONFIRM BUTTON === */}
-      <motion.button onClick={handleConfirm} disabled={saving}
-        whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30 disabled:opacity-50">
-        {saving ? (
-          <><Loader2 size={18} className="animate-spin" /> Deploying your AI agents...</>
-        ) : (
-          <><Rocket size={18} /> Confirm and deploy AI agents <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></>
-        )}
-      </motion.button>
+      {isStarter ? (
+        <div className="space-y-3">
+          <motion.button onClick={handleConfirm} disabled={saving}
+            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30 disabled:opacity-50">
+            {saving ? (
+              <><Loader2 size={18} className="animate-spin" /> Generating your free report...</>
+            ) : (
+              <><Sparkles size={18} /> Continue with Free Report <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></>
+            )}
+          </motion.button>
+          <motion.button onClick={() => setShowUpgrade(true)}
+            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+            className="group flex w-full items-center justify-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 py-3.5 text-sm font-bold text-amber-700 transition-all hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+            <Crown size={16} /> Upgrade to deploy AI agents
+          </motion.button>
+        </div>
+      ) : (
+        <motion.button onClick={handleConfirm} disabled={saving}
+          whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-4 text-base font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30 disabled:opacity-50">
+          {saving ? (
+            <><Loader2 size={18} className="animate-spin" /> Deploying your AI agents...</>
+          ) : (
+            <><Rocket size={18} /> Confirm and deploy AI agents <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" /></>
+          )}
+        </motion.button>
+      )}
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="AI Organization Chart" />
     </motion.div>
   );
 }

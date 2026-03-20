@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.auth.dependencies import get_current_user, get_current_membership
 from app.auth.models import User, Membership
+from app.modules.billing.dependencies import require_paid_plan
+from app.modules.billing.models import Subscription
 
 from .schemas import *
 from .service import deploy_agents, get_agents, assign_task, get_tasks, get_department_summary
@@ -27,6 +29,7 @@ async def trigger_deploy(
     user: User = Depends(get_current_user),
     membership: Membership = Depends(get_current_membership),
     db: AsyncSession = Depends(get_db),
+    _sub: Subscription = Depends(require_paid_plan),
 ):
     """Deploy AI agents for the workspace."""
     result = await deploy_agents(db, membership.workspace_id, body.industry)
@@ -79,6 +82,7 @@ async def create_task(
     user: User = Depends(get_current_user),
     membership: Membership = Depends(get_current_membership),
     db: AsyncSession = Depends(get_db),
+    _sub: Subscription = Depends(require_paid_plan),
 ):
     """Assign a task to an AI agent."""
     try:
@@ -119,6 +123,7 @@ async def run_template_task(
     user: User = Depends(get_current_user),
     membership: Membership = Depends(get_current_membership),
     db: AsyncSession = Depends(get_db),
+    _sub: Subscription = Depends(require_paid_plan),
 ):
     """Run a predefined task template on an agent."""
     from .task_templates import get_task_template
