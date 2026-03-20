@@ -217,3 +217,73 @@ async def admin_reset_password(body: ResetPasswordRequest, db: AsyncSession = De
     await db.commit()
     logger.info("Admin reset password for user %s", user.email)
     return {"success": True, "email": user.email}
+
+
+# ── Redeploy Triggers ───────────────────────────────────────────────
+
+VERCEL_TOKEN = os.getenv("VERCEL_TOKEN", "")
+VERCEL_PROJECT_ID = os.getenv("VERCEL_PROJECT_ID", "prj_ZmrJuu5JRiA7Tk0JELqNGNULoBjH")
+VERCEL_TEAM_ID = os.getenv("VERCEL_TEAM_ID", "team_94SUwXdd5jjBOGhnY6Ifm2AG")
+RENDER_API_KEY = os.getenv("RENDER_API_KEY", "")
+RENDER_SERVICE_ID = os.getenv("RENDER_SERVICE_ID", "srv-d6s6mjq4d50c73bibuk0")
+
+
+@router.post("/redeploy/frontend")
+async def admin_redeploy_frontend(user: User = Depends(_require_admin)):
+    """Trigger a Vercel frontend redeploy."""
+    import httpx
+    token = VERCEL_TOKEN
+    if not token:
+        raise HTTPException(status_code=400, detail="VERCEL_TOKEN not configured on backend")
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            # Get latest deployment to redeploy
+            resp = await client.get(
+                f"https://api.vercel.com/v6/deployments?projectId={VERCEL_PROJECT_ID}&teamId={VERCEL_TEAM_ID}&limit=1",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if resp.status_code != 200:
+                raise HTTPException(status_code=502, detail=f"Vercel API error: {resp.status_code}")
+            deployments = resp.json().get("deployments", [])
+            if not deployments:
+                raise HTTPException(status_code=404, detail="No deployments found")
+
+            # Trigger redeploy
+            deploy_id = deployments[0]["uid"]
+            resp2 = await client.post(
+                f"https://api.vercel.com/v13/deployments?teamId={VERCEL_TEAM_ID}",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"name": "frontend", "deploymentId": deploy_id, "target": "production"},
+            )
+            if resp2.status_code in (200, 201):
+                return {"success": True, "service": "frontend", "message": "Vercel redeploy triggered"}
+            else:
+                return {"success": False, "service": "frontend", "error": resp2.text[:200]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
+@router.post("/redeploy/backend")
+async def admin_redeploy_backend(user: User = Depends(_require_admin)):
+    """Trigger a Render backend redeploy."""
+    import httpx
+    api_key = RENDER_API_KEY
+    if not api_key:
+        raise HTTPException(status_code=400, detail="RENDER_API_KEY not configured. Set it in Render environment variables.")
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"https://api.render.com/v1/services/{RENDER_SERVICE_ID}/deploys",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={"clearCache": "do_not_clear"},
+            )
+            if resp.status_code in (200, 201):
+                return {"success": True, "service": "backend", "message": "Render redeploy triggered"}
+            else:
+                return {"success": False, "service": "backend", "error": resp.text[:200]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:200])

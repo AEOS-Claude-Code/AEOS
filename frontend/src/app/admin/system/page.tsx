@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Activity, Database, Server, Cpu, Key, Shield, Loader2, RefreshCw,
   CheckCircle2, XCircle, Zap, Globe, HardDrive, Clock, AlertTriangle,
-  Wifi, WifiOff,
+  Wifi, WifiOff, RotateCcw, Play, Timer,
 } from "lucide-react";
 import axios from "axios";
 
@@ -19,18 +19,23 @@ export default function AdminSystemPage() {
   const [loading, setLoading] = useState(true);
   const [frontendStatus, setFrontendStatus] = useState<"healthy" | "checking" | "unhealthy">("checking");
   const [backendLatency, setBackendLatency] = useState(0);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [nextCheck, setNextCheck] = useState(180);
+  const [redeploying, setRedeploying] = useState<string | null>(null);
+  const [redeployMsg, setRedeployMsg] = useState<{ service: string; ok: boolean; msg: string } | null>(null);
 
   const api = axios.create({ baseURL: API, headers: { Authorization: `Bearer ${token}` } });
 
-  async function fetchHealth() {
-    setLoading(true);
+  async function fetchHealth(silent = false) {
+    if (!silent) setLoading(true);
     setFrontendStatus("checking");
     try {
       const start = Date.now();
       const res = await api.get("/api/v1/admin/health");
       setBackendLatency(Date.now() - start);
       setHealth(res.data);
-    } catch {} finally { setLoading(false); }
+    } catch {} finally { if (!silent) setLoading(false); }
 
     // Check frontend
     try {
@@ -39,9 +44,42 @@ export default function AdminSystemPage() {
     } catch {
       setFrontendStatus("unhealthy");
     }
+    setLastChecked(new Date());
+    setNextCheck(180);
   }
 
+  // Initial fetch
   useEffect(() => { if (token) fetchHealth(); }, [token]); // eslint-disable-line
+
+  // Auto-refresh every 3 minutes
+  useEffect(() => {
+    if (!autoRefresh || !token) return;
+    const interval = setInterval(() => {
+      fetchHealth(true);
+    }, 180000); // 3 minutes
+    return () => clearInterval(interval);
+  }, [autoRefresh, token]); // eslint-disable-line
+
+  // Countdown timer
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const timer = setInterval(() => {
+      setNextCheck(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [autoRefresh]);
+
+  async function triggerRedeploy(service: "frontend" | "backend") {
+    setRedeploying(service);
+    setRedeployMsg(null);
+    try {
+      const res = await api.post(`/api/v1/admin/redeploy/${service}`);
+      setRedeployMsg({ service, ok: res.data.success, msg: res.data.message || res.data.error || "Done" });
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || "Redeploy failed";
+      setRedeployMsg({ service, ok: false, msg: detail });
+    } finally { setRedeploying(null); }
+  }
 
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-slate-500" /></div>;
 
@@ -67,10 +105,82 @@ export default function AdminSystemPage() {
           <h1 className="text-2xl font-bold text-white">System Health</h1>
           <p className="text-sm text-slate-400">Infrastructure monitoring & API status</p>
         </div>
-        <button onClick={fetchHealth} className="flex items-center gap-2 rounded-xl bg-slate-700/50 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition">
-          <RefreshCw size={14} /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Auto-refresh toggle */}
+          <button onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition ${
+              autoRefresh ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20" : "bg-slate-700/50 text-slate-500"
+            }`}>
+            <Timer size={12} />
+            {autoRefresh ? `Auto ${Math.floor(nextCheck / 60)}:${String(nextCheck % 60).padStart(2, "0")}` : "Auto OFF"}
+          </button>
+          <button onClick={() => fetchHealth()} className="flex items-center gap-2 rounded-xl bg-slate-700/50 px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 transition">
+            <RefreshCw size={14} /> Check Now
+          </button>
+        </div>
       </div>
+
+      {lastChecked && (
+        <p className="text-2xs text-slate-600">Last checked: {lastChecked.toLocaleTimeString()}</p>
+      )}
+
+      {/* ── Redeploy Controls ── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          onClick={() => triggerRedeploy("frontend")} disabled={redeploying === "frontend"}
+          className="flex items-center gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-4 text-left transition hover:bg-blue-500/10 disabled:opacity-50">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20">
+            {redeploying === "frontend" ? <Loader2 size={18} className="animate-spin text-blue-400" /> : <RotateCcw size={18} className="text-blue-400" />}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-blue-400">Redeploy Frontend</p>
+            <p className="text-2xs text-slate-500">Vercel • Next.js</p>
+          </div>
+        </motion.button>
+
+        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          onClick={() => triggerRedeploy("backend")} disabled={redeploying === "backend"}
+          className="flex items-center gap-3 rounded-2xl border border-violet-500/20 bg-violet-500/[0.06] p-4 text-left transition hover:bg-violet-500/10 disabled:opacity-50">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/20">
+            {redeploying === "backend" ? <Loader2 size={18} className="animate-spin text-violet-400" /> : <RotateCcw size={18} className="text-violet-400" />}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-violet-400">Redeploy Backend</p>
+            <p className="text-2xs text-slate-500">Render • FastAPI</p>
+          </div>
+        </motion.button>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
+            <Database size={18} className="text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-emerald-400">Database</p>
+            <p className="text-2xs text-slate-500">PostgreSQL • Managed</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20">
+            <HardDrive size={18} className="text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-amber-400">Redis</p>
+            <p className="text-2xs text-slate-500">Cache • Managed</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Redeploy feedback */}
+      {redeployMsg && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+          className={`rounded-xl px-4 py-3 text-sm ${
+            redeployMsg.ok ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20" : "bg-red-500/10 text-red-400 ring-1 ring-red-500/20"
+          }`}>
+          {redeployMsg.ok ? <CheckCircle2 size={14} className="inline mr-2" /> : <XCircle size={14} className="inline mr-2" />}
+          <strong>{redeployMsg.service}:</strong> {redeployMsg.msg}
+        </motion.div>
+      )}
 
       {/* ── Service Status Grid ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
