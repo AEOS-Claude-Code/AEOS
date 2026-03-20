@@ -386,13 +386,94 @@ async def delete_workspace_full(db: AsyncSession, workspace_id: str) -> dict:
 
 
 async def get_system_health(db: AsyncSession) -> dict:
-    """Get system health indicators."""
+    """Get comprehensive system health indicators."""
     import os
-    health = {
-        "database": "healthy",
-        "engines_registered": 11,
-        "api_version": "0.4.0",
-        "uptime": "active",
-        "anthropic_key_set": bool(os.getenv("ANTHROPIC_API_KEY")),
+    import time
+
+    health: dict = {
+        "api_version": "0.5.0",
+        "engines_registered": 15,
+        "services": {},
+        "anthropic": {},
     }
+
+    # Database health
+    try:
+        start = time.time()
+        await db.execute(__import__('sqlalchemy').text("SELECT 1"))
+        latency = round((time.time() - start) * 1000)
+        health["services"]["database"] = {"status": "healthy", "latency_ms": latency}
+    except Exception as e:
+        health["services"]["database"] = {"status": "unhealthy", "error": str(e)}
+
+    # Redis health
+    try:
+        from app.core.config import get_settings
+        s = get_settings()
+        redis_url = getattr(s, 'REDIS_URL', os.getenv('REDIS_URL', ''))
+        if redis_url:
+            import redis.asyncio as aioredis
+            start = time.time()
+            r = aioredis.from_url(redis_url, socket_connect_timeout=3)
+            await r.ping()
+            latency = round((time.time() - start) * 1000)
+            await r.close()
+            health["services"]["redis"] = {"status": "healthy", "latency_ms": latency}
+        else:
+            health["services"]["redis"] = {"status": "not_configured", "latency_ms": 0}
+    except Exception as e:
+        health["services"]["redis"] = {"status": "unhealthy", "error": str(e)[:100]}
+
+    # Backend (self)
+    health["services"]["backend"] = {
+        "status": "healthy",
+        "environment": os.getenv("ENVIRONMENT", "production"),
+        "render_instance": os.getenv("RENDER_INSTANCE_ID", "unknown"),
+    }
+
+    # Anthropic API key check + balance
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if api_key:
+        health["anthropic"]["key_set"] = True
+        health["anthropic"]["key_prefix"] = api_key[:12] + "..."
+        # Try to check if key works by making a minimal API call
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=5) as client:
+                resp = await client.get(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                    }
+                )
+                # 405 = method not allowed (key works, just wrong method)
+                # 401 = invalid key
+                if resp.status_code == 405:
+                    health["anthropic"]["key_valid"] = True
+                elif resp.status_code == 401:
+                    health["anthropic"]["key_valid"] = False
+                    health["anthropic"]["error"] = "Invalid API key"
+                else:
+                    health["anthropic"]["key_valid"] = True
+        except Exception as e:
+            health["anthropic"]["key_valid"] = False
+            health["anthropic"]["error"] = str(e)[:100]
+    else:
+        health["anthropic"]["key_set"] = False
+        health["anthropic"]["key_valid"] = False
+
+    # Token usage stats
+    try:
+        from app.modules.billing.models import TokenWallet
+        from sqlalchemy import select as sel, func as fn
+        total_used = (await db.execute(sel(fn.sum(TokenWallet.used)))).scalar() or 0
+        total_purchased = (await db.execute(sel(fn.sum(TokenWallet.purchased)))).scalar() or 0
+        health["token_stats"] = {
+            "total_used_platform": total_used,
+            "total_purchased_platform": total_purchased,
+        }
+    except Exception:
+        health["token_stats"] = {"total_used_platform": 0, "total_purchased_platform": 0}
+
     return health
