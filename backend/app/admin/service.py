@@ -558,6 +558,30 @@ async def get_system_health(db: AsyncSession) -> dict:
         ai_api_tokens = ai_tokens_total * 100
         estimated_cost_usd = round(ai_api_tokens * 9 / 1_000_000, 2)
 
+        # Token purchase history
+        from app.modules.billing.models import TokenTransaction
+        purchases = (await db.execute(
+            sel(TokenTransaction)
+            .where(TokenTransaction.type == "purchase")
+            .order_by(TokenTransaction.created_at.desc())
+            .limit(50)
+        )).scalars().all()
+
+        purchase_list = []
+        for p in purchases:
+            ws = (await db.execute(sel(Workspace).where(Workspace.id == p.workspace_id))).scalar_one_or_none()
+            purchase_list.append({
+                "id": p.id,
+                "workspace_id": p.workspace_id,
+                "workspace_name": ws.name if ws else "Unknown",
+                "amount": p.amount,
+                "description": p.description or "",
+                "payment_status": p.payment_status,
+                "created_at": p.created_at.isoformat() if p.created_at else "",
+            })
+
+        total_purchase_revenue = sum(p.amount for p in purchases) * 0.002  # estimated revenue from token sales
+
         health["token_stats"] = {
             "total_used_platform": total_used,
             "total_purchased_platform": total_purchased,
@@ -569,6 +593,8 @@ async def get_system_health(db: AsyncSession) -> dict:
             "cost_per_1k_tokens": 0.9,
             "operations": operations,
             "workspace_breakdown": workspace_costs,
+            "token_purchases": purchase_list,
+            "total_purchase_revenue": round(total_purchase_revenue, 2),
         }
     except Exception as e:
         logger.warning("Token stats failed: %s", e)

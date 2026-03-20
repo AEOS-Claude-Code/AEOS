@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Zap, Clock, TrendingUp } from "lucide-react";
+import { CreditCard, Zap, Clock, TrendingUp, ShoppingCart, Loader2, CheckCircle2 } from "lucide-react";
 import DashCard from "./DashCard";
 import {
   CardLoading,
@@ -30,6 +30,72 @@ interface BalanceData {
   available: number;
   total: number;
   usage_pct: number;
+}
+
+const TOKEN_PACKS = [
+  { amount: 5000, price: 9.99, label: "5K", popular: false },
+  { amount: 25000, price: 39.99, label: "25K", popular: true },
+  { amount: 100000, price: 129.99, label: "100K", popular: false },
+  { amount: 500000, price: 499.99, label: "500K", popular: false },
+];
+
+function TokenPurchase({ onPurchased }: { onPurchased: (amount: number) => void }) {
+  const [buying, setBuying] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [showPacks, setShowPacks] = useState(false);
+
+  async function handleBuy(amount: number, price: number) {
+    setBuying(true);
+    setSuccess(null);
+    try {
+      await api.post("/api/v1/billing/purchase-tokens", { amount });
+      setSuccess(`${amount.toLocaleString()} tokens added!`);
+      onPurchased(amount);
+      setTimeout(() => { setSuccess(null); setShowPacks(false); }, 3000);
+    } catch {} finally { setBuying(false); }
+  }
+
+  return (
+    <div className="border-t border-border pt-3">
+      {!showPacks ? (
+        <button onClick={() => setShowPacks(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-widget bg-aeos-50 py-2.5 text-xs font-bold text-aeos-700 transition hover:bg-aeos-100">
+          <ShoppingCart size={14} /> Buy Extra Tokens
+        </button>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-fg-secondary">Select a token pack:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {TOKEN_PACKS.map(pack => (
+              <button key={pack.amount} onClick={() => handleBuy(pack.amount, pack.price)} disabled={buying}
+                className={`relative rounded-widget border px-3 py-2.5 text-left transition hover:border-aeos-400 ${
+                  pack.popular ? "border-aeos-300 bg-aeos-50/50" : "border-border bg-surface-secondary"
+                } disabled:opacity-50`}>
+                {pack.popular && (
+                  <span className="absolute -top-2 right-2 rounded-full bg-aeos-500 px-2 py-0.5 text-2xs font-bold text-white">Popular</span>
+                )}
+                <p className="text-sm font-bold text-fg">{pack.label} tokens</p>
+                <p className="text-2xs text-fg-muted">${pack.price}</p>
+              </button>
+            ))}
+          </div>
+          {success && (
+            <div className="flex items-center gap-2 rounded-widget bg-status-success-light px-3 py-2 text-xs text-status-success-text">
+              <CheckCircle2 size={12} /> {success}
+            </div>
+          )}
+          {buying && (
+            <div className="flex items-center justify-center gap-2 py-2 text-xs text-fg-muted">
+              <Loader2 size={12} className="animate-spin" /> Processing...
+            </div>
+          )}
+          <button onClick={() => setShowPacks(false)} className="w-full text-center text-2xs text-fg-hint hover:text-fg-muted transition">
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function BillingCard() {
@@ -155,6 +221,9 @@ export default function BillingCard() {
               <span className="block text-2xs text-fg-hint">Used</span>
             </div>
           </div>
+
+          {/* Buy Extra Tokens */}
+          <TokenPurchase onPurchased={(amt) => setBalance(b => b ? { ...b, purchased: b.purchased + amt, available: b.available + amt, total: b.total + amt } : b)} />
         </div>
       )}
     </DashCard>

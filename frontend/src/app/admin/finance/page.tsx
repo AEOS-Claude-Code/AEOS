@@ -322,6 +322,51 @@ export default function AdminFinancePage() {
         )}
       </motion.div>
 
+      {/* ── Token Purchases ── */}
+      {tokens.token_purchases && tokens.token_purchases.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.33 }}
+          className="rounded-2xl border border-emerald-500/20 bg-slate-800/50 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+              <CreditCard size={18} className="text-emerald-400" /> Token Purchases
+            </h2>
+            <span className="text-sm font-bold text-emerald-400">
+              ${(tokens.total_purchase_revenue || 0).toFixed(2)} revenue
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-slate-700/50">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700/50 bg-slate-800/80">
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-slate-500">Workspace</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Tokens</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Status</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-slate-500">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {tokens.token_purchases.map((p: any) => (
+                  <tr key={p.id} className="bg-slate-800/30">
+                    <td className="px-4 py-2 text-sm text-white">{p.workspace_name}</td>
+                    <td className="px-4 py-2 text-right text-sm font-mono font-bold text-emerald-400">+{p.amount.toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right">
+                      <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${
+                        p.payment_status === "completed" ? "bg-emerald-500/10 text-emerald-400" :
+                        p.payment_status === "simulated" ? "bg-blue-500/10 text-blue-400" :
+                        "bg-amber-500/10 text-amber-400"
+                      }`}>{p.payment_status}</span>
+                    </td>
+                    <td className="px-4 py-2 text-right text-xs text-slate-500">
+                      {p.created_at ? new Date(p.created_at).toLocaleDateString() : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      )}
+
       {/* ── Alerts ── */}
       {wsBreakdown.filter(ws => ws.tokens_included > 0 && (ws.tokens_used / ws.tokens_included) > 0.8).length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
