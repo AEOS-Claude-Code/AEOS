@@ -463,17 +463,68 @@ async def get_system_health(db: AsyncSession) -> dict:
         health["anthropic"]["key_set"] = False
         health["anthropic"]["key_valid"] = False
 
-    # Token usage stats
+    # Token usage stats + estimated cost
     try:
-        from app.modules.billing.models import TokenWallet
+        from app.modules.billing.models import TokenWallet, TokenUsage
+        from app.auth.models import Workspace
         from sqlalchemy import select as sel, func as fn
-        total_used = (await db.execute(sel(fn.sum(TokenWallet.used)))).scalar() or 0
-        total_purchased = (await db.execute(sel(fn.sum(TokenWallet.purchased)))).scalar() or 0
+
+        total_used = (await db.execute(sel(fn.sum(TokenWallet.used_tokens)))).scalar() or 0
+        total_purchased = (await db.execute(sel(fn.sum(TokenWallet.purchased_tokens)))).scalar() or 0
+        total_included = (await db.execute(sel(fn.sum(TokenWallet.included_tokens)))).scalar() or 0
+
+        # Per-operation token usage
+        op_usage = (await db.execute(
+            sel(TokenUsage.operation, fn.sum(TokenUsage.tokens_consumed).label("total"))
+            .group_by(TokenUsage.operation)
+            .order_by(fn.sum(TokenUsage.tokens_consumed).desc())
+        )).all()
+        operations = [{"operation": row[0], "tokens": row[1]} for row in op_usage]
+
+        # Per-workspace token usage
+        ws_usage = (await db.execute(
+            sel(
+                TokenWallet.workspace_id,
+                TokenWallet.used_tokens,
+                TokenWallet.included_tokens,
+                TokenWallet.purchased_tokens,
+            )
+        )).all()
+
+        workspace_costs = []
+        for row in ws_usage:
+            ws = (await db.execute(sel(Workspace).where(Workspace.id == row[0]))).scalar_one_or_none()
+            workspace_costs.append({
+                "workspace_id": row[0],
+                "workspace_name": ws.name if ws else "Unknown",
+                "tokens_used": row[1] or 0,
+                "tokens_included": row[2] or 0,
+                "tokens_purchased": row[3] or 0,
+            })
+
+        # Estimate USD cost based on Claude Sonnet pricing
+        # ~$3/million input + ~$15/million output, average ~$9/million tokens
+        # Our internal tokens map roughly 1:100 to API tokens
+        estimated_api_tokens = total_used * 100
+        estimated_cost_usd = round(estimated_api_tokens * 9 / 1_000_000, 2)
+
         health["token_stats"] = {
             "total_used_platform": total_used,
             "total_purchased_platform": total_purchased,
+            "total_included_platform": total_included,
+            "estimated_api_tokens": estimated_api_tokens,
+            "estimated_cost_usd": estimated_cost_usd,
+            "cost_per_1k_tokens": 0.9,  # $0.9 per 1000 internal tokens
+            "operations": operations,
+            "workspace_breakdown": workspace_costs,
         }
-    except Exception:
-        health["token_stats"] = {"total_used_platform": 0, "total_purchased_platform": 0}
+    except Exception as e:
+        logger.warning("Token stats failed: %s", e)
+        health["token_stats"] = {
+            "total_used_platform": 0, "total_purchased_platform": 0,
+            "total_included_platform": 0, "estimated_api_tokens": 0,
+            "estimated_cost_usd": 0, "cost_per_1k_tokens": 0,
+            "operations": [], "workspace_breakdown": [],
+        }
 
     return health
