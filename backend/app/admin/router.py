@@ -57,7 +57,7 @@ def _require_admin(user: User = Depends(get_current_user)) -> User:
 @router.post("/login", response_model=AdminLoginResponse)
 async def admin_login(body: AdminLoginRequest, db: AsyncSession = Depends(get_db)):
     """Admin login with email + password + admin secret."""
-    if body.admin_secret != ADMIN_SECRET:
+    if body.admin_secret != _get_admin_secret():
         raise HTTPException(status_code=403, detail="Invalid admin secret")
 
     user = await get_user_by_email(db, body.email)
@@ -226,7 +226,7 @@ class ResetPasswordRequest(BaseModel):
 @router.post("/reset-password")
 async def admin_reset_password(body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
     """Reset a user's password using admin secret (no login required)."""
-    if body.admin_secret != ADMIN_SECRET:
+    if body.admin_secret != _get_admin_secret():
         raise HTTPException(status_code=403, detail="Invalid admin secret")
     if len(body.new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
@@ -239,6 +239,33 @@ async def admin_reset_password(body: ResetPasswordRequest, db: AsyncSession = De
     await db.commit()
     logger.info("Admin reset password for user %s", user.email)
     return {"success": True, "email": user.email}
+
+
+class ChangeSecretRequest(BaseModel):
+    current_secret: str
+    new_secret: str
+
+
+# In-memory override (persists until restart; for permanent change, set AEOS_ADMIN_SECRET env var)
+_secret_override: str | None = None
+
+
+def _get_admin_secret() -> str:
+    return _secret_override or ADMIN_SECRET
+
+
+@router.put("/change-secret")
+async def admin_change_secret(body: ChangeSecretRequest, user: User = Depends(_require_admin)):
+    """Change the admin console secret."""
+    global _secret_override
+    current = _get_admin_secret()
+    if body.current_secret != current:
+        raise HTTPException(status_code=403, detail="Current secret is incorrect")
+    if len(body.new_secret) < 8:
+        raise HTTPException(status_code=400, detail="New secret must be at least 8 characters")
+    _secret_override = body.new_secret
+    logger.info("Admin secret changed by %s (in-memory only — set AEOS_ADMIN_SECRET env var for permanent change)", user.email)
+    return {"success": True, "message": "Admin secret changed. Note: This is in-memory only. Set AEOS_ADMIN_SECRET env var on Render for permanent change."}
 
 
 # ── Redeploy Triggers ───────────────────────────────────────────────

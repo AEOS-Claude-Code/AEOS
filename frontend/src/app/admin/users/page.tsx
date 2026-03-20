@@ -5,7 +5,7 @@ import { useAdmin } from "../layout";
 import { motion } from "framer-motion";
 import {
   Users, Trash2, Shield, ShieldOff, UserCheck, UserX,
-  Loader2, Search, RefreshCw, AlertTriangle,
+  Loader2, Search, RefreshCw, AlertTriangle, KeyRound, Check, X,
 } from "lucide-react";
 import axios from "axios";
 
@@ -24,6 +24,10 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [resetPwUser, setResetPwUser] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
   async function fetchUsers() {
     if (!token) return;
@@ -56,6 +60,20 @@ export default function AdminUsersPage() {
       await axios.put(`${API}/api/v1/admin/users/${userId}/active`, { is_active: active }, { headers });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: active } : u));
     } catch {}
+  }
+
+  async function handleResetPassword(email: string) {
+    if (!newPassword || newPassword.length < 8) return;
+    setResetting(true);
+    try {
+      await axios.post(`${API}/api/v1/admin/reset-password`, {
+        email, new_password: newPassword, admin_secret: "aeos-admin-2026!",
+      }, { headers });
+      setResetSuccess(email);
+      setResetPwUser(null);
+      setNewPassword("");
+      setTimeout(() => setResetSuccess(null), 3000);
+    } catch {} finally { setResetting(false); }
   }
 
   async function toggleAdmin(userId: string, isAdmin: boolean) {
@@ -139,6 +157,32 @@ export default function AdminUsersPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
+                    {/* Password Reset */}
+                    {resetPwUser === u.id ? (
+                      <div className="flex items-center gap-1">
+                        <input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                          placeholder="New password (min 8)" autoFocus
+                          className="w-32 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-2xs text-white outline-none focus:border-amber-500/30" />
+                        <button onClick={() => handleResetPassword(u.email)} disabled={resetting || newPassword.length < 8}
+                          className="rounded-lg bg-amber-500/20 p-1 text-amber-400 hover:bg-amber-500/30 transition disabled:opacity-30">
+                          {resetting ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                        </button>
+                        <button onClick={() => { setResetPwUser(null); setNewPassword(""); }}
+                          className="rounded-lg p-1 text-slate-500 hover:text-white transition">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => { setResetPwUser(u.id); setNewPassword(""); }}
+                        title="Reset password"
+                        className={`rounded-lg p-1.5 transition ${
+                          resetSuccess === u.email
+                            ? "text-emerald-400 bg-emerald-500/10"
+                            : "text-slate-500 hover:bg-slate-700 hover:text-amber-400"
+                        }`}>
+                        {resetSuccess === u.email ? <Check size={14} /> : <KeyRound size={14} />}
+                      </button>
+                    )}
                     <button onClick={() => toggleAdmin(u.id, u.role !== "platform_admin")}
                       title={u.role === "platform_admin" ? "Remove admin" : "Make admin"}
                       className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700 hover:text-amber-400 transition">

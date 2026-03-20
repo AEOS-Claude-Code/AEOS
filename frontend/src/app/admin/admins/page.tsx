@@ -5,7 +5,7 @@ import { useAdmin } from "../layout";
 import { motion } from "framer-motion";
 import {
   UserCog, Shield, ShieldOff, Loader2, RefreshCw, Plus, Mail,
-  Calendar, CheckCircle2,
+  Calendar, CheckCircle2, KeyRound, Check, X, Lock,
 } from "lucide-react";
 import axios from "axios";
 
@@ -22,6 +22,16 @@ export default function AdminProfilesPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [promoting, setPromoting] = useState<string | null>(null);
+  const [resetPwAdmin, setResetPwAdmin] = useState<string | null>(null);
+  const [newPw, setNewPw] = useState("");
+  const [resettingPw, setResettingPw] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+  const [showSecretChange, setShowSecretChange] = useState(false);
+  const [currentSecret, setCurrentSecret] = useState("");
+  const [newSecret, setNewSecret] = useState("");
+  const [changingSecret, setChangingSecret] = useState(false);
+  const [secretSuccess, setSecretSuccess] = useState(false);
+  const [secretError, setSecretError] = useState("");
 
   const api = axios.create({ baseURL: API, headers: { Authorization: `Bearer ${token}` } });
 
@@ -44,6 +54,41 @@ export default function AdminProfilesPage() {
       await api.put(`/api/v1/admin/users/${userId}/role`, { role: "platform_admin" });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: "platform_admin" } : u));
     } catch {} finally { setPromoting(null); }
+  }
+
+  async function handleResetAdminPw(email: string) {
+    if (!newPw || newPw.length < 8) return;
+    setResettingPw(true);
+    try {
+      await axios.post(`${API}/api/v1/admin/reset-password`, {
+        email, new_password: newPw, admin_secret: "aeos-admin-2026!",
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      setPwSuccess(email);
+      setResetPwAdmin(null);
+      setNewPw("");
+      setTimeout(() => setPwSuccess(null), 3000);
+    } catch {} finally { setResettingPw(false); }
+  }
+
+  async function handleChangeSecret() {
+    if (!currentSecret || !newSecret || newSecret.length < 8) {
+      setSecretError("New secret must be at least 8 characters.");
+      return;
+    }
+    setChangingSecret(true);
+    setSecretError("");
+    try {
+      await api.put("/api/v1/admin/change-secret", {
+        current_secret: currentSecret, new_secret: newSecret,
+      });
+      setSecretSuccess(true);
+      setShowSecretChange(false);
+      setCurrentSecret("");
+      setNewSecret("");
+      setTimeout(() => setSecretSuccess(false), 3000);
+    } catch (err: any) {
+      setSecretError(err?.response?.data?.detail || "Failed to change secret.");
+    } finally { setChangingSecret(false); }
   }
 
   async function demoteAdmin(userId: string) {
@@ -106,13 +151,39 @@ export default function AdminProfilesPage() {
                   <p className="text-sm font-bold text-white truncate">{u.full_name}</p>
                   <p className="text-2xs text-slate-500 truncate">{u.email}</p>
                 </div>
-                {u.id !== admin?.id && (
-                  <button onClick={() => demoteAdmin(u.id)} disabled={promoting === u.id}
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition"
-                    title="Remove admin access">
-                    <ShieldOff size={14} />
-                  </button>
-                )}
+                <div className="flex items-center gap-1">
+                  {/* Reset password */}
+                  {resetPwAdmin === u.id ? (
+                    <div className="flex items-center gap-1">
+                      <input type="text" value={newPw} onChange={e => setNewPw(e.target.value)}
+                        placeholder="New password" autoFocus
+                        className="w-24 rounded-lg border border-slate-600 bg-slate-800 px-2 py-1 text-2xs text-white outline-none focus:border-amber-500/30" />
+                      <button onClick={() => handleResetAdminPw(u.email)} disabled={resettingPw || newPw.length < 8}
+                        className="rounded-lg bg-amber-500/20 p-1 text-amber-400 hover:bg-amber-500/30 transition disabled:opacity-30">
+                        {resettingPw ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                      </button>
+                      <button onClick={() => { setResetPwAdmin(null); setNewPw(""); }}
+                        className="rounded-lg p-1 text-slate-500 hover:text-white transition">
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => { setResetPwAdmin(u.id); setNewPw(""); }}
+                      title="Reset password"
+                      className={`rounded-lg p-1.5 transition ${
+                        pwSuccess === u.email ? "text-emerald-400 bg-emerald-500/10" : "text-slate-500 hover:bg-slate-700 hover:text-amber-400"
+                      }`}>
+                      {pwSuccess === u.email ? <Check size={14} /> : <KeyRound size={14} />}
+                    </button>
+                  )}
+                  {u.id !== admin?.id && (
+                    <button onClick={() => demoteAdmin(u.id)} disabled={promoting === u.id}
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition"
+                      title="Remove admin access">
+                      <ShieldOff size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="mt-2 flex items-center gap-3 text-2xs text-slate-600">
                 <span className="flex items-center gap-1"><Mail size={10} /> {u.workspace_name || "—"}</span>
@@ -163,6 +234,58 @@ export default function AdminProfilesPage() {
           </div>
         ) : (
           <p className="py-8 text-center text-sm text-slate-500">No regular users to promote</p>
+        )}
+      </div>
+
+      {/* Admin Secret Section */}
+      <div>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-bold text-white">
+          <Lock size={18} className="text-amber-400" /> Admin Secret
+        </h2>
+        <p className="mb-3 text-sm text-slate-500">The admin secret is required to access the admin console. Change it periodically for security.</p>
+
+        {secretSuccess && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+            className="mb-3 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-400 ring-1 ring-emerald-500/20">
+            <CheckCircle2 size={14} className="inline mr-1.5" /> Admin secret changed successfully
+          </motion.div>
+        )}
+
+        {showSecretChange ? (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-amber-500/20 bg-slate-800/50 p-5 space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-400">Current admin secret</label>
+              <input type="password" value={currentSecret} onChange={e => setCurrentSecret(e.target.value)}
+                placeholder="Enter current secret"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-amber-500/30 focus:ring-2 focus:ring-amber-500/10" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-400">New admin secret</label>
+              <input type="password" value={newSecret} onChange={e => setNewSecret(e.target.value)}
+                placeholder="Enter new secret (min 8 characters)"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-600 focus:border-amber-500/30 focus:ring-2 focus:ring-amber-500/10" />
+            </div>
+            {secretError && (
+              <p className="text-xs text-red-400">{secretError}</p>
+            )}
+            <div className="flex items-center gap-3">
+              <button onClick={handleChangeSecret} disabled={changingSecret || !currentSecret || newSecret.length < 8}
+                className="flex items-center gap-2 rounded-xl bg-amber-500/20 px-5 py-2.5 text-sm font-bold text-amber-400 hover:bg-amber-500/30 transition disabled:opacity-30">
+                {changingSecret ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
+                Change Secret
+              </button>
+              <button onClick={() => { setShowSecretChange(false); setCurrentSecret(""); setNewSecret(""); setSecretError(""); }}
+                className="rounded-xl px-4 py-2.5 text-sm text-slate-500 hover:text-white transition">
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          <button onClick={() => setShowSecretChange(true)}
+            className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-3 text-sm font-bold text-amber-400 hover:bg-amber-500/10 transition">
+            <Lock size={14} /> Change Admin Secret
+          </button>
         )}
       </div>
     </div>
