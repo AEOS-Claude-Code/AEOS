@@ -399,30 +399,41 @@ async def get_system_health(db: AsyncSession) -> dict:
 
     # Database health
     try:
+        from sqlalchemy import text as sa_text
         start = time.time()
-        await db.execute(__import__('sqlalchemy').text("SELECT 1"))
+        await db.execute(sa_text("SELECT 1"))
         latency = round((time.time() - start) * 1000)
         health["services"]["database"] = {"status": "healthy", "latency_ms": latency}
     except Exception as e:
-        health["services"]["database"] = {"status": "unhealthy", "error": str(e)}
+        health["services"]["database"] = {"status": "unhealthy", "error": str(e)[:100]}
 
     # Redis health
     try:
-        from app.core.config import get_settings
-        s = get_settings()
-        redis_url = getattr(s, 'REDIS_URL', os.getenv('REDIS_URL', ''))
+        redis_url = os.getenv('REDIS_URL', '')
+        if not redis_url:
+            try:
+                from app.core.config import get_settings
+                s = get_settings()
+                redis_url = getattr(s, 'REDIS_URL', '')
+            except Exception:
+                pass
         if redis_url:
-            import redis.asyncio as aioredis
-            start = time.time()
-            r = aioredis.from_url(redis_url, socket_connect_timeout=3)
-            await r.ping()
-            latency = round((time.time() - start) * 1000)
-            await r.close()
-            health["services"]["redis"] = {"status": "healthy", "latency_ms": latency}
+            try:
+                import redis.asyncio as aioredis
+                start = time.time()
+                r = aioredis.from_url(redis_url, socket_connect_timeout=3)
+                await r.ping()
+                latency = round((time.time() - start) * 1000)
+                await r.close()
+                health["services"]["redis"] = {"status": "healthy", "latency_ms": latency}
+            except ImportError:
+                health["services"]["redis"] = {"status": "not_installed", "latency_ms": 0, "error": "redis package not installed"}
+            except Exception as e:
+                health["services"]["redis"] = {"status": "unhealthy", "error": str(e)[:100]}
         else:
             health["services"]["redis"] = {"status": "not_configured", "latency_ms": 0}
     except Exception as e:
-        health["services"]["redis"] = {"status": "unhealthy", "error": str(e)[:100]}
+        health["services"]["redis"] = {"status": "error", "error": str(e)[:100]}
 
     # Backend (self)
     health["services"]["backend"] = {
