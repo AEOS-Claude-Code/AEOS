@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ShieldCheck, LayoutDashboard, Users, Building2, Activity,
-  LogOut, ChevronLeft, Settings, Zap,
+  LogOut, ChevronLeft, Settings, Zap, DollarSign,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -20,6 +20,7 @@ export const useAdmin = () => useContext(AdminContext);
 
 const NAV = [
   { href: "/admin", icon: LayoutDashboard, label: "Overview" },
+  { href: "/admin/finance", icon: DollarSign, label: "Finance" },
   { href: "/admin/workspaces", icon: Building2, label: "Workspaces" },
   { href: "/admin/users", icon: Users, label: "Users" },
   { href: "/admin/system", icon: Activity, label: "System" },
