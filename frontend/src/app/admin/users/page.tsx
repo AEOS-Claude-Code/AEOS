@@ -25,22 +25,27 @@ export default function AdminUsersPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const api = axios.create({ baseURL: API, headers: { Authorization: `Bearer ${token}` } });
-
   async function fetchUsers() {
+    if (!token) return;
     setLoading(true);
     try {
-      const res = await api.get("/api/v1/admin/users?limit=200");
-      setUsers(res.data);
-    } catch {} finally { setLoading(false); }
+      const res = await axios.get(`${API}/api/v1/admin/users?limit=200`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (err: any) {
+      console.error("Failed to load users:", err?.response?.status, err?.response?.data);
+    } finally { setLoading(false); }
   }
 
   useEffect(() => { if (token) fetchUsers(); }, [token]); // eslint-disable-line
 
+  const headers = { Authorization: `Bearer ${token}` };
+
   async function handleDelete(userId: string) {
     setDeleting(userId);
     try {
-      await api.delete(`/api/v1/admin/users/${userId}`);
+      await axios.delete(`${API}/api/v1/admin/users/${userId}`, { headers });
       setUsers(prev => prev.filter(u => u.id !== userId));
       setConfirmDelete(null);
     } catch {} finally { setDeleting(null); }
@@ -48,14 +53,14 @@ export default function AdminUsersPage() {
 
   async function toggleActive(userId: string, active: boolean) {
     try {
-      await api.put(`/api/v1/admin/users/${userId}/active`, { is_active: active });
+      await axios.put(`${API}/api/v1/admin/users/${userId}/active`, { is_active: active }, { headers });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: active } : u));
     } catch {}
   }
 
   async function toggleAdmin(userId: string, isAdmin: boolean) {
     try {
-      await api.put(`/api/v1/admin/users/${userId}/role`, { role: isAdmin ? "platform_admin" : "user" });
+      await axios.put(`${API}/api/v1/admin/users/${userId}/role`, { role: isAdmin ? "platform_admin" : "user" }, { headers });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: isAdmin ? "platform_admin" : "user" } : u));
     } catch {}
   }
