@@ -5,7 +5,7 @@ import { useAdmin } from "../layout";
 import { motion } from "framer-motion";
 import {
   Building2, Globe, Users, Zap, Crown, Loader2, Search, RefreshCw,
-  ArrowUpCircle, ChevronDown,
+  ArrowUpCircle, ChevronDown, Trash2,
 } from "lucide-react";
 import axios from "axios";
 
@@ -32,6 +32,8 @@ export default function AdminWorkspacesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [upgradingId, setUpgradingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const api = axios.create({ baseURL: API, headers: { Authorization: `Bearer ${token}` } });
 
@@ -50,6 +52,15 @@ export default function AdminWorkspacesPage() {
       await api.put(`/api/v1/admin/workspaces/${wsId}/plan`, { plan_tier: plan });
       setWorkspaces(prev => prev.map(w => w.id === wsId ? { ...w, plan_tier: plan } : w));
     } catch {} finally { setUpgradingId(null); }
+  }
+
+  async function deleteWorkspace(wsId: string) {
+    setDeleting(wsId);
+    try {
+      await api.delete(`/api/v1/admin/workspaces/${wsId}`);
+      setWorkspaces(prev => prev.filter(w => w.id !== wsId));
+      setConfirmDeleteId(null);
+    } catch {} finally { setDeleting(null); }
   }
 
   const filtered = workspaces.filter(w =>
@@ -121,6 +132,26 @@ export default function AdminWorkspacesPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Delete button */}
+                {confirmDeleteId === w.id ? (
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => deleteWorkspace(w.id)} disabled={deleting === w.id}
+                      className="rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-bold text-red-400 hover:bg-red-500/30 transition">
+                      {deleting === w.id ? "Deleting..." : "Confirm Delete"}
+                    </button>
+                    <button onClick={() => setConfirmDeleteId(null)}
+                      className="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:text-white transition">
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDeleteId(w.id)}
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-red-500/10 hover:text-red-400 transition"
+                    title="Delete workspace">
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
 

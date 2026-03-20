@@ -341,6 +341,50 @@ async def update_workspace_plan(db: AsyncSession, workspace_id: str, plan_tier: 
     return {"workspace_id": workspace_id, "new_plan": plan_tier, "plan_name": plan.name}
 
 
+async def delete_workspace_full(db: AsyncSession, workspace_id: str) -> dict:
+    """Delete a workspace and all its members/data."""
+    from app.auth.models import Workspace, WorkspaceProfile, Membership, OnboardingProgress, RefreshToken, User
+
+    ws = (await db.execute(select(Workspace).where(Workspace.id == workspace_id))).scalar_one_or_none()
+    if not ws:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    ws_name = ws.name
+
+    # Find all members
+    memberships = (await db.execute(
+        select(Membership).where(Membership.workspace_id == workspace_id)
+    )).scalars().all()
+
+    deleted_users = []
+    for m in memberships:
+        # Check if user has other workspaces
+        other_ws = (await db.execute(
+            select(func.count(Membership.id)).where(
+                Membership.user_id == m.user_id,
+                Membership.workspace_id != workspace_id,
+            )
+        )).scalar() or 0
+
+        if other_ws == 0:
+            # Sole workspace — delete user too
+            user = (await db.execute(select(User).where(User.id == m.user_id))).scalar_one_or_none()
+            if user:
+                deleted_users.append(user.email)
+                await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+                await db.delete(user)
+
+    # Delete workspace data
+    await db.execute(delete(OnboardingProgress).where(OnboardingProgress.workspace_id == workspace_id))
+    await db.execute(delete(WorkspaceProfile).where(WorkspaceProfile.workspace_id == workspace_id))
+    await db.execute(delete(Membership).where(Membership.workspace_id == workspace_id))
+    await db.delete(ws)
+    await db.commit()
+
+    logger.info("Admin deleted workspace %s (%s) and %d users", ws_name, workspace_id, len(deleted_users))
+    return {"deleted": True, "workspace": ws_name, "users_deleted": deleted_users}
+
+
 async def get_system_health(db: AsyncSession) -> dict:
     """Get system health indicators."""
     import os

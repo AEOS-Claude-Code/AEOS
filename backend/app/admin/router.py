@@ -183,6 +183,16 @@ async def admin_update_plan(
     return await update_workspace_plan(db, workspace_id, body.plan_tier)
 
 
+@router.delete("/workspaces/{workspace_id}")
+async def admin_delete_workspace(
+    workspace_id: str,
+    user: User = Depends(_require_admin), db: AsyncSession = Depends(get_db),
+):
+    """Delete a workspace and all its members."""
+    from .service import delete_workspace_full
+    return await delete_workspace_full(db, workspace_id)
+
+
 # ── Password Reset (uses admin secret, no auth required) ────────────
 
 class ResetPasswordRequest(BaseModel):
