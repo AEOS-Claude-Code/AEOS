@@ -122,6 +122,11 @@ async def get_intake_results(
             detected_tech_stack=profile.tech_stack if isinstance(profile.tech_stack, list) else [],
             page_title="",
             meta_description="",
+            og_image=profile.og_image or "",
+            favicon_url=profile.favicon_url or "",
+            detected_business_hours=profile.business_hours if isinstance(profile.business_hours, list) else [],
+            detected_languages=profile.content_languages if isinstance(profile.content_languages, list) else [],
+            detected_competitors=profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else [],
         )
 
     # No stored data — trigger fresh scan if URL available
@@ -169,6 +174,17 @@ async def get_intake_results(
         emails = result.get("detected_emails", [])
         if emails:
             profile.emails = emails
+
+        if result.get("og_image"):
+            profile.og_image = result["og_image"]
+        if result.get("favicon_url"):
+            profile.favicon_url = result["favicon_url"]
+        if result.get("detected_business_hours"):
+            profile.business_hours = result["detected_business_hours"]
+        if result.get("detected_languages"):
+            profile.content_languages = result["detected_languages"]
+        if result.get("detected_competitors"):
+            profile.detected_competitors_data = result["detected_competitors"]
 
         await db.flush()
         return result

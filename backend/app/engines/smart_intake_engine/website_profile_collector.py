@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import httpx
 
@@ -146,6 +146,40 @@ async def collect_website_profile(url: str) -> dict:
                 if 2 < len(candidate) < 60:
                     result["detected_company_name"] = candidate
                     break
+
+    # OG image
+    og_image_tag = soup.find("meta", attrs={"property": "og:image"})
+    if og_image_tag:
+        og_img = og_image_tag.get("content", "").strip()
+        if og_img:
+            result["og_image"] = urljoin(url, og_img)
+
+    # Favicon
+    favicon_tag = soup.find("link", rel=lambda r: r and "icon" in r)
+    if favicon_tag:
+        fav_href = favicon_tag.get("href", "").strip()
+        if fav_href:
+            result["favicon_url"] = urljoin(url, fav_href)
+    if not result.get("favicon_url"):
+        result["favicon_url"] = urljoin(url, "/favicon.ico")
+
+    # Detected languages
+    languages: list[str] = []
+    html_tag = soup.find("html")
+    if html_tag:
+        lang_attr = html_tag.get("lang", "")
+        if lang_attr:
+            languages.append(lang_attr.strip().lower().split("-")[0])
+    for link_tag in soup.find_all("link", attrs={"hreflang": True}):
+        hl = link_tag.get("hreflang", "").strip().lower()
+        if hl and hl != "x-default":
+            languages.append(hl.split("-")[0])
+    content_lang_meta = soup.find("meta", attrs={"http-equiv": lambda v: v and v.lower() == "content-language"})
+    if content_lang_meta:
+        cl = content_lang_meta.get("content", "").strip().lower()
+        if cl:
+            languages.append(cl.split(",")[0].strip().split("-")[0])
+    result["detected_languages"] = list(dict.fromkeys(languages))  # unique, order-preserving
 
     # H1/H2 headings for industry inference
     for level in ["h1", "h2"]:

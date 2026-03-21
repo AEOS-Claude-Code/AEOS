@@ -30,3 +30,8 @@ class IntakeFromUrlResponse(BaseModel):
     detected_tech_stack: list[str] = []
     page_title: str = ""
     meta_description: str = ""
+    og_image: str = ""
+    favicon_url: str = ""
+    detected_business_hours: list[dict] = []
+    detected_languages: list[str] = []
+    detected_competitors: list[dict] = []

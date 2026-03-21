@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe, Loader2, CheckCircle2, XCircle, Phone, Mail, Share2,
   Sparkles, MessageCircle, ExternalLink, Building2, Bot, MapPin,
-  ArrowRight, Check, Code2, Zap, Shield, Flag,
+  ArrowRight, Check, Code2, Zap, Shield, Flag, Clock, Languages,
+  Users, Image, Trophy,
 } from "lucide-react";
 
 /* ── Data ─────────────────────────────────────────────────────────── */
@@ -73,6 +74,16 @@ const COUNTRY_CITIES: Record<string, string[]> = {
 };
 const COUNTRIES = Object.keys(COUNTRY_CITIES).sort();
 
+const LANG_NAMES: Record<string, string> = {
+  en: "English", ar: "Arabic", fr: "French", es: "Spanish", de: "German",
+  it: "Italian", pt: "Portuguese", nl: "Dutch", ru: "Russian", zh: "Chinese",
+  ja: "Japanese", ko: "Korean", hi: "Hindi", tr: "Turkish", th: "Thai",
+  vi: "Vietnamese", id: "Indonesian", ms: "Malay", sv: "Swedish", no: "Norwegian",
+  da: "Danish", fi: "Finnish", pl: "Polish", cs: "Czech", uk: "Ukrainian",
+  ro: "Romanian", hu: "Hungarian", el: "Greek", he: "Hebrew", fa: "Persian",
+  ur: "Urdu", bn: "Bengali", ta: "Tamil", te: "Telugu", sw: "Swahili",
+};
+
 interface IntakeResult {
   url:string; detected_company_name:string; detected_industry:string;
   industry_confidence:number; detected_country:string; detected_city:string;
@@ -80,6 +91,11 @@ interface IntakeResult {
   detected_social_links:Record<string,string[]>; detected_whatsapp_links:string[];
   detected_contact_pages:string[]; detected_booking_pages:string[];
   detected_tech_stack:string[]; page_title:string; meta_description:string;
+  og_image: string;
+  favicon_url: string;
+  detected_business_hours: { day: string; open: string; close: string }[];
+  detected_languages: string[];
+  detected_competitors: { name: string; url: string; type: string }[];
 }
 
 /* ── Social media brand SVG icons ──────────────────────────────────── */
@@ -341,7 +357,7 @@ export default function OnboardingCompany() {
   }
 
   const socialCount = intake ? Object.values(intake.detected_social_links).filter(u => u.length > 0).length : 0;
-  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length : 0;
+  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length + (intake.og_image ? 1 : 0) + (intake.detected_business_hours?.length > 0 ? 1 : 0) + (intake.detected_languages?.length || 0) + (intake.detected_competitors?.length || 0) : 0;
   const contactsFound = intake ? [
     intake.detected_phone_numbers.length > 0,
     intake.detected_emails.length > 0,
@@ -630,7 +646,253 @@ export default function OnboardingCompany() {
         )}
       </div>
 
-      {/* ══════════ ROW 2: Tech Stack (full width) ══════════ */}
+      {/* ══════════ ROW 2: Website Preview + Location Map + Business Hours ══════════ */}
+      {intake && (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {/* Website Preview */}
+          <Card delay={0.25} className="h-fit">
+            <CardHeader
+              icon={Image}
+              iconGradient="from-indigo-500 to-purple-600 shadow-indigo-500/25"
+              title="Website Preview"
+              subtitle="Open Graph & meta info"
+            />
+            <div className="p-5 space-y-3">
+              {intake.og_image ? (
+                <div className="overflow-hidden rounded-xl border border-border">
+                  <img
+                    src={intake.og_image}
+                    alt="Website preview"
+                    className="h-36 w-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-surface-secondary/50 px-4 py-6">
+                  {intake.favicon_url ? (
+                    <img src={intake.favicon_url} alt="" className="h-8 w-8 rounded-lg" />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
+                      <Globe size={16} className="text-indigo-400" />
+                    </div>
+                  )}
+                  <span className="text-xs font-medium text-fg-hint truncate">{intake.url || "No preview available"}</span>
+                </div>
+              )}
+              {intake.page_title && (
+                <p className="text-sm font-bold text-fg leading-snug">{intake.page_title}</p>
+              )}
+              {intake.meta_description && (
+                <p className="text-xs text-fg-hint leading-relaxed line-clamp-2">{intake.meta_description}</p>
+              )}
+            </div>
+          </Card>
+
+          {/* Location Map */}
+          {country && (
+            <Card delay={0.3} className="h-fit">
+              <CardHeader
+                icon={MapPin}
+                iconGradient="from-emerald-500 to-green-600 shadow-emerald-500/25"
+                title="Location"
+                subtitle="Detected headquarters"
+              />
+              <div className="p-5">
+                <div className="relative overflow-hidden rounded-xl border border-border">
+                  {/* Animated gradient map background */}
+                  <div className="relative flex flex-col items-center justify-center py-10">
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-400/5 to-teal-500/10"
+                    />
+                    <motion.div
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      className="relative"
+                    >
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/30">
+                        <MapPin size={32} className="text-white" />
+                      </div>
+                    </motion.div>
+                    <p className="relative mt-4 text-lg font-bold text-fg">{city || country}</p>
+                    {city && <p className="relative text-sm text-fg-hint">{country}</p>}
+                  </div>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((city ? city + ", " : "") + country)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-secondary/50 px-4 py-2.5 text-xs font-semibold text-fg-hint hover:text-fg hover:border-emerald-500/30 transition-all"
+                >
+                  <ExternalLink size={12} />
+                  Open in Google Maps
+                </a>
+              </div>
+            </Card>
+          )}
+
+          {/* Business Hours */}
+          <Card delay={0.35} className="h-fit">
+            <CardHeader
+              icon={Clock}
+              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
+              title="Business Hours"
+              subtitle="Detected operating schedule"
+            />
+            <div className="p-5">
+              {intake.detected_business_hours?.length > 0 ? (
+                <div className="space-y-1.5">
+                  {intake.detected_business_hours.map((h, i) => {
+                    const isClosed = h.open === "Closed" || h.close === "Closed" || (!h.open && !h.close);
+                    return (
+                      <motion.div
+                        key={h.day}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 + i * 0.04 }}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs ${
+                          isClosed ? "bg-surface-secondary/50 text-fg-hint/50" : "bg-surface-secondary text-fg"
+                        }`}
+                      >
+                        <span className="font-semibold">{h.day}</span>
+                        <span className={isClosed ? "italic" : "font-bold"}>
+                          {isClosed ? "Closed" : `${h.open} – ${h.close}`}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3">
+                    <Clock size={24} className="text-amber-500/50" />
+                  </div>
+                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Business hours were not found on your website</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ══════════ ROW 3: Content Languages + Competitors ══════════ */}
+      {intake && (
+        <div className={`grid gap-4 ${intake.detected_tech_stack?.length > 0 ? "lg:grid-cols-2" : "lg:grid-cols-2"}`}>
+          {/* Content Languages */}
+          <Card delay={0.4} className="h-fit">
+            <CardHeader
+              icon={Languages}
+              iconGradient="from-violet-500 to-purple-600 shadow-violet-500/25"
+              title="Content Languages"
+              subtitle="Languages detected on your site"
+              badge={intake.detected_languages?.length > 0 ? (
+                <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-2xs font-bold text-violet-500 ring-1 ring-violet-500/20">
+                  {intake.detected_languages.length} found
+                </span>
+              ) : undefined}
+            />
+            <div className="p-5">
+              {intake.detected_languages?.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {intake.detected_languages.map((lang, i) => (
+                    <motion.span
+                      key={lang}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 + i * 0.05 }}
+                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-500/10 to-purple-500/10 px-3 py-1.5 text-xs font-bold text-violet-600 ring-1 ring-violet-500/20 hover:ring-violet-500/40 transition-all cursor-default"
+                    >
+                      <Languages size={11} />
+                      {LANG_NAMES[lang] || lang.toUpperCase()}
+                    </motion.span>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <motion.div
+                    animate={{ opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3"
+                  >
+                    <Languages size={24} className="text-violet-500/50" />
+                  </motion.div>
+                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Language detection in progress</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Competitors */}
+          <Card delay={0.45} className="h-fit">
+            <CardHeader
+              icon={Trophy}
+              iconGradient="from-red-500 to-rose-600 shadow-red-500/25"
+              title="Competitors"
+              subtitle="Similar companies detected"
+              badge={intake.detected_competitors?.length > 0 ? (
+                <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-2xs font-bold text-red-500 ring-1 ring-red-500/20">
+                  {intake.detected_competitors.length} found
+                </span>
+              ) : undefined}
+            />
+            <div className="p-5">
+              {intake.detected_competitors?.length > 0 ? (
+                <div className="space-y-2">
+                  {intake.detected_competitors.map((comp, i) => (
+                    <motion.div
+                      key={comp.name + i}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.45 + i * 0.06 }}
+                      className="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2 hover:border-red-500/30 hover:shadow-sm transition-all duration-300"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/20">
+                        <Trophy size={14} className="text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-fg leading-snug">{comp.name}</p>
+                        {comp.url && (
+                          <a
+                            href={comp.url.startsWith("http") ? comp.url : `https://${comp.url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-2xs text-blue-500 hover:underline truncate block"
+                          >
+                            {comp.url}
+                          </a>
+                        )}
+                      </div>
+                      {comp.type && (
+                        <span className="shrink-0 rounded-full bg-red-500/10 px-2 py-0.5 text-2xs font-semibold text-red-500 ring-1 ring-red-500/20">
+                          {comp.type}
+                        </span>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <motion.div
+                    animate={{ opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10 mb-3"
+                  >
+                    <Trophy size={24} className="text-red-500/50" />
+                  </motion.div>
+                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Competitor detection in progress</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ══════════ Tech Stack (full width) ══════════ */}
       {intake && intake.detected_tech_stack.length > 0 && (
         <Card delay={0.3}>
           <div className="flex items-center gap-3.5 px-5 py-4">

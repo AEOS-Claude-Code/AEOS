@@ -119,6 +119,11 @@ class WorkspaceProfile(Base):
     google_business_url = Column(String(500), default="")
     tech_stack = Column(JSON, default=list)  # list of detected technology names
     emails = Column(JSON, default=list)  # list of detected email addresses
+    og_image = Column(String(1000), default="")
+    favicon_url = Column(String(500), default="")
+    business_hours = Column(JSON, default=list)
+    content_languages = Column(JSON, default=list)
+    detected_competitors_data = Column(JSON, default=list)
 
     competitor_urls = Column(JSON, default=list)  # list of strings
 

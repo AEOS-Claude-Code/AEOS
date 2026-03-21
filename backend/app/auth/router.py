@@ -154,6 +154,17 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
                         if emails:
                             profile.emails = emails
 
+                        if intake_data.get("og_image"):
+                            profile.og_image = intake_data["og_image"]
+                        if intake_data.get("favicon_url"):
+                            profile.favicon_url = intake_data["favicon_url"]
+                        if intake_data.get("detected_business_hours"):
+                            profile.business_hours = intake_data["detected_business_hours"]
+                        if intake_data.get("detected_languages"):
+                            profile.content_languages = intake_data["detected_languages"]
+                        if intake_data.get("detected_competitors"):
+                            profile.detected_competitors_data = intake_data["detected_competitors"]
+
                         await bg_db.flush()
 
                         ob_result = await bg_db.execute(
