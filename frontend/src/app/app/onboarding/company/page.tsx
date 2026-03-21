@@ -655,11 +655,11 @@ export default function OnboardingCompany() {
         )}
       </div>
 
-      {/* ══════════ ROW 2: Website Preview + Location Map ══════════ */}
+      {/* ══════════ ROW 2: Website Preview + Location + SEO Keywords ══════════ */}
       {intake && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           {/* Website Preview */}
-          <Card delay={0.25}>
+          <Card delay={0.25} className="h-full">
             <CardHeader
               icon={Image}
               iconGradient="from-indigo-500 to-purple-600 shadow-indigo-500/25"
@@ -698,53 +698,107 @@ export default function OnboardingCompany() {
           </Card>
 
           {/* Location Map */}
-          {country && (
-            <Card delay={0.3}>
-              <CardHeader
-                icon={MapPin}
-                iconGradient="from-emerald-500 to-green-600 shadow-emerald-500/25"
-                title="Location"
-                subtitle="Detected headquarters"
-              />
-              <div className="flex-1 p-5">
-                <div className="relative overflow-hidden rounded-xl border border-border">
-                  {/* Animated gradient map background */}
-                  <div className="relative flex flex-col items-center justify-center py-10">
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-400/5 to-teal-500/10"
-                    />
-                    <motion.div
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                      className="relative"
-                    >
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/30">
-                        <MapPin size={32} className="text-white" />
-                      </div>
-                    </motion.div>
-                    <p className="relative mt-4 text-lg font-bold text-fg">{city || country}</p>
-                    {city && <p className="relative text-sm text-fg-hint">{country}</p>}
+          <Card delay={0.3} className="h-full">
+            <CardHeader
+              icon={MapPin}
+              iconGradient="from-emerald-500 to-green-600 shadow-emerald-500/25"
+              title="Location"
+              subtitle="Detected headquarters"
+            />
+            <div className="flex-1 p-5">
+              {country ? (
+                <>
+                  <div className="relative overflow-hidden rounded-xl border border-border">
+                    <div className="relative flex flex-col items-center justify-center py-8">
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-400/5 to-teal-500/10"
+                      />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative"
+                      >
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/30">
+                          <MapPin size={28} className="text-white" />
+                        </div>
+                      </motion.div>
+                      <p className="relative mt-3 text-base font-bold text-fg">{city || country}</p>
+                      {city && <p className="relative text-xs text-fg-hint">{country}</p>}
+                    </div>
                   </div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((city ? city + ", " : "") + country)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-secondary/50 px-4 py-2 text-xs font-semibold text-fg-hint hover:text-fg hover:border-emerald-500/30 transition-all"
+                  >
+                    <ExternalLink size={12} />
+                    Open in Google Maps
+                  </a>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 mb-3">
+                    <MapPin size={24} className="text-emerald-500/50" />
+                  </div>
+                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Set your country above</p>
                 </div>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((city ? city + ", " : "") + country)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-secondary/50 px-4 py-2.5 text-xs font-semibold text-fg-hint hover:text-fg hover:border-emerald-500/30 transition-all"
-                >
-                  <ExternalLink size={12} />
-                  Open in Google Maps
-                </a>
-              </div>
-            </Card>
-          )}
+              )}
+            </div>
+          </Card>
 
+          {/* SEO Keywords */}
+          <Card delay={0.35} className="h-full">
+            <CardHeader
+              icon={Search}
+              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
+              title="SEO Keywords"
+              subtitle="Top keywords from your website"
+              badge={intake.detected_keywords?.length > 0 ? (
+                <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-2xs font-bold text-amber-600 ring-1 ring-amber-500/20">
+                  {intake.detected_keywords.length} found
+                </span>
+              ) : undefined}
+            />
+            <div className="flex-1 p-5">
+              {intake.detected_keywords?.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {intake.detected_keywords.map((kw, i) => (
+                    <motion.span
+                      key={kw}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.35 + i * 0.03 }}
+                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500/20 hover:ring-amber-500/40 transition-all cursor-default"
+                    >
+                      <Search size={10} />
+                      {kw}
+                    </motion.span>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <motion.div
+                    animate={{ opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
+                  >
+                    <Search size={24} className="text-amber-500/50" />
+                  </motion.div>
+                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Keyword extraction in progress</p>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       )}
 
-      {/* ══════════ ROW 3: Team/People + SEO Keywords + Competitors ══════════ */}
+      {/* ══════════ ROW 3: Team/People + Products/Services + Competitors ══════════ */}
       {intake && (
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Team / People */}
@@ -817,47 +871,43 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* SEO Keywords */}
+          {/* Products & Services */}
           <Card delay={0.42} className="h-full">
             <CardHeader
-              icon={Search}
-              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
-              title="SEO Keywords"
-              subtitle="Top keywords from your website"
-              badge={intake.detected_keywords?.length > 0 ? (
-                <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-2xs font-bold text-amber-600 ring-1 ring-amber-500/20">
-                  {intake.detected_keywords.length} found
+              icon={Briefcase}
+              iconGradient="from-teal-500 to-emerald-600 shadow-teal-500/25"
+              title="Products & Services"
+              subtitle="Detected offerings"
+              badge={intake.detected_services?.length > 0 ? (
+                <span className="rounded-full bg-teal-500/10 px-2.5 py-1 text-2xs font-bold text-teal-600 ring-1 ring-teal-500/20">
+                  {intake.detected_services.length} found
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_keywords?.length > 0 ? (
+              {intake.detected_services?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {intake.detected_keywords.map((kw, i) => (
+                  {intake.detected_services.map((svc, i) => (
                     <motion.span
-                      key={kw}
+                      key={svc}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.42 + i * 0.03 }}
+                      transition={{ delay: 0.42 + i * 0.04 }}
                       whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500/20 hover:ring-amber-500/40 transition-all cursor-default"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-default"
                     >
-                      <Search size={10} />
-                      {kw}
+                      <Briefcase size={10} />
+                      {svc}
                     </motion.span>
                   ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <motion.div
-                    animate={{ opacity: [0.4, 0.8, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
-                  >
-                    <Search size={24} className="text-amber-500/50" />
-                  </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Keyword extraction in progress</p>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 mb-3">
+                    <Briefcase size={24} className="text-teal-500/50" />
+                  </div>
+                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">No services found on the website</p>
                 </div>
               )}
             </div>
@@ -927,41 +977,6 @@ export default function OnboardingCompany() {
             </div>
           </Card>
         </div>
-      )}
-
-      {/* ══════════ Products / Services (full width) ══════════ */}
-      {intake && intake.detected_services?.length > 0 && (
-        <Card delay={0.35}>
-          <div className="flex items-center gap-3.5 px-5 py-4">
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 3 }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25"
-            >
-              <Briefcase size={18} className="text-white" />
-            </motion.div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-fg">Products & Services</h3>
-            </div>
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-2xs font-bold text-emerald-500 ring-1 ring-emerald-500/20">
-              {intake.detected_services.length} detected
-            </span>
-            <div className="flex flex-wrap gap-2 ml-2">
-              {intake.detected_services.map((svc, i) => (
-                <motion.span
-                  key={svc}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.35 + i * 0.05 }}
-                  whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 px-3 py-1.5 text-xs font-bold text-emerald-600 ring-1 ring-emerald-500/20 hover:ring-emerald-500/40 transition-all cursor-default"
-                >
-                  <Briefcase size={11} />
-                  {svc}
-                </motion.span>
-              ))}
-            </div>
-          </div>
-        </Card>
       )}
 
       {/* ══════════ Tech Stack (full width) ══════════ */}

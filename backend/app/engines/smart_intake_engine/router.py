@@ -118,6 +118,36 @@ async def get_intake_results(
         except Exception:
             fresh_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else []
 
+        # Backfill team, services, keywords if missing (new features on existing user)
+        team_data = profile.detected_team if isinstance(profile.detected_team, dict) and profile.detected_team.get("count") else {}
+        services_data = profile.detected_services if isinstance(profile.detected_services, list) and profile.detected_services else []
+        keywords_data = profile.seo_keywords if isinstance(profile.seo_keywords, list) and profile.seo_keywords else []
+
+        if url and (not team_data or not services_data or not keywords_data):
+            try:
+                from .website_profile_collector import collect_website_profile
+                from .service import _extract_team_members, _extract_services, _extract_seo_keywords
+                wp = await collect_website_profile(url)
+                html = wp.get("html", "")
+                if html:
+                    if not team_data:
+                        team_data = _extract_team_members(html, url)
+                        profile.detected_team = team_data
+                    if not services_data:
+                        services_data = _extract_services(html, wp.get("headings", []))
+                        profile.detected_services = services_data
+                    if not keywords_data:
+                        keywords_data = _extract_seo_keywords(
+                            html=html,
+                            title=wp.get("title", ""),
+                            description=wp.get("description", ""),
+                            headings=wp.get("headings", []),
+                        )
+                        profile.seo_keywords = keywords_data
+                    await db.flush()
+            except Exception:
+                logger.info("Backfill extraction failed for workspace=%s", workspace.id)
+
         return IntakeFromUrlResponse(
             url=url,
             detected_company_name=workspace.name or "",
@@ -139,9 +169,9 @@ async def get_intake_results(
             detected_business_hours=profile.business_hours if isinstance(profile.business_hours, list) else [],
             detected_languages=profile.content_languages if isinstance(profile.content_languages, list) else [],
             detected_competitors=fresh_competitors,
-            detected_keywords=profile.seo_keywords if isinstance(profile.seo_keywords, list) else [],
-            detected_team=profile.detected_team if isinstance(profile.detected_team, dict) else {},
-            detected_services=profile.detected_services if isinstance(profile.detected_services, list) else [],
+            detected_keywords=keywords_data,
+            detected_team=team_data,
+            detected_services=services_data,
         )
 
     # No stored data — trigger fresh scan if URL available
