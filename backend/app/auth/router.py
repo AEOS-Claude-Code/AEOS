@@ -166,6 +166,10 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
                             profile.detected_competitors_data = intake_data["detected_competitors"]
                         if intake_data.get("detected_keywords"):
                             profile.seo_keywords = intake_data["detected_keywords"]
+                        if intake_data.get("detected_team"):
+                            profile.detected_team = intake_data["detected_team"]
+                        if intake_data.get("detected_services"):
+                            profile.detected_services = intake_data["detected_services"]
 
                         await bg_db.flush()
 

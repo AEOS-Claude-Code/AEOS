@@ -36,3 +36,5 @@ class IntakeFromUrlResponse(BaseModel):
     detected_languages: list[str] = []
     detected_competitors: list[dict] = []
     detected_keywords: list[str] = []
+    detected_team: dict = {}
+    detected_services: list[str] = []

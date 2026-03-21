@@ -517,6 +517,188 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
     return keywords[:20]
 
 
+def _extract_team_members(html: str, url: str) -> dict:
+    """
+    Detect team page and extract team member names/roles.
+    Returns dict with: team_page_url, members: [{name, role}], count.
+    """
+    result: dict = {"team_page_url": "", "members": [], "count": 0}
+
+    try:
+        from bs4 import BeautifulSoup as _BS
+        soup = _BS(html, "lxml")
+    except Exception:
+        return result
+
+    base_domain = urlparse(url).netloc
+
+    # 1. Look for team/about page links
+    team_keywords = ["team", "our-team", "our_team", "about-us", "about_us", "about",
+                     "people", "leadership", "staff", "who-we-are", "founders"]
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip().lower()
+        for kw in team_keywords:
+            if kw in href:
+                from urllib.parse import urljoin as _urljoin
+                full = _urljoin(url, a["href"])
+                if base_domain in full:
+                    result["team_page_url"] = full
+                    break
+        if result["team_page_url"]:
+            break
+
+    # 2. Extract team members from JSON-LD Person schema
+    for match in re.finditer(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.DOTALL | re.IGNORECASE):
+        try:
+            data = json.loads(match.group(1))
+            items = data if isinstance(data, list) else [data]
+            if isinstance(data, dict) and "@graph" in data:
+                items = data["@graph"]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("@type") in ("Person", "Employee"):
+                    name = item.get("name", "")
+                    role = item.get("jobTitle", "") or item.get("description", "")
+                    if name:
+                        result["members"].append({"name": name.strip(), "role": role.strip()})
+        except Exception:
+            continue
+
+    # 3. Look for team sections in HTML (cards with name + job title patterns)
+    team_sections = soup.find_all(["section", "div"], class_=lambda c: c and any(
+        kw in str(c).lower() for kw in ["team", "staff", "people", "leadership", "founders"]
+    ))
+    if not team_sections:
+        # Try id-based
+        team_sections = soup.find_all(["section", "div"], id=lambda i: i and any(
+            kw in str(i).lower() for kw in ["team", "staff", "people", "leadership"]
+        ))
+
+    seen_names = {m["name"].lower() for m in result["members"]}
+    for section in team_sections[:3]:  # Limit to avoid scanning entire page
+        # Look for heading + subtitle patterns (name + role)
+        for card in section.find_all(["div", "li", "article"], recursive=True):
+            texts = [t.get_text(strip=True) for t in card.find_all(["h3", "h4", "h5", "strong", "b"], limit=2)]
+            subtexts = [t.get_text(strip=True) for t in card.find_all(["p", "span", "small"], limit=2)]
+            if texts:
+                name_candidate = texts[0]
+                role_candidate = subtexts[0] if subtexts else (texts[1] if len(texts) > 1 else "")
+                # Basic validation: name should be 2-50 chars, look like a name
+                if (2 < len(name_candidate) < 50
+                    and name_candidate.lower() not in seen_names
+                    and not name_candidate.startswith("http")
+                    and " " in name_candidate  # Real names usually have spaces
+                    and not any(c.isdigit() for c in name_candidate)):
+                    result["members"].append({
+                        "name": name_candidate,
+                        "role": role_candidate[:100] if role_candidate else "",
+                    })
+                    seen_names.add(name_candidate.lower())
+                    if len(result["members"]) >= 10:
+                        break
+        if len(result["members"]) >= 10:
+            break
+
+    result["count"] = len(result["members"])
+    return result
+
+
+def _extract_services(html: str, headings: list[str]) -> list[str]:
+    """
+    Extract main products/services offered by the company from the website.
+    Returns a list of service/product names (up to 12).
+    """
+    services: list[str] = []
+    seen = set()
+
+    def _add(s: str):
+        s = s.strip()
+        if s and s.lower() not in seen and 3 <= len(s) <= 80:
+            seen.add(s.lower())
+            services.append(s)
+
+    try:
+        from bs4 import BeautifulSoup as _BS
+        soup = _BS(html, "lxml")
+    except Exception:
+        return services
+
+    # 1. Extract from JSON-LD Service/Product schema
+    for match in re.finditer(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.DOTALL | re.IGNORECASE):
+        try:
+            data = json.loads(match.group(1))
+            items = data if isinstance(data, list) else [data]
+            if isinstance(data, dict) and "@graph" in data:
+                items = data["@graph"]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("@type") in ("Service", "Product", "Offer", "SoftwareApplication"):
+                    name = item.get("name", "")
+                    if name:
+                        _add(name)
+                # Also check hasOfferCatalog
+                catalog = item.get("hasOfferCatalog", {})
+                if isinstance(catalog, dict):
+                    for offer in catalog.get("itemListElement", []):
+                        if isinstance(offer, dict) and offer.get("name"):
+                            _add(offer["name"])
+        except Exception:
+            continue
+
+    # 2. Look for services/products sections
+    service_keywords = ["service", "product", "solution", "offering", "what-we-do",
+                        "what_we_do", "capabilities", "expertise"]
+    service_sections = soup.find_all(["section", "div"], class_=lambda c: c and any(
+        kw in str(c).lower() for kw in service_keywords
+    ))
+    if not service_sections:
+        service_sections = soup.find_all(["section", "div"], id=lambda i: i and any(
+            kw in str(i).lower() for kw in service_keywords
+        ))
+
+    for section in service_sections[:3]:
+        # Extract from list items or cards within service sections
+        for el in section.find_all(["h3", "h4", "h5", "strong"], limit=12):
+            text = el.get_text(strip=True)
+            if text and len(text) < 80:
+                _add(text)
+        for li in section.find_all("li", limit=12):
+            text = li.get_text(strip=True)
+            if text and len(text) < 80 and not text.startswith("http"):
+                _add(text)
+        if len(services) >= 8:
+            break
+
+    # 3. Extract from navigation menu items under "Services"/"Products"
+    for nav in soup.find_all("nav"):
+        for a in nav.find_all("a", href=True):
+            text = a.get_text(strip=True).lower()
+            href = a["href"].lower()
+            if any(kw in text or kw in href for kw in ["service", "product", "solution"]):
+                # This link's siblings or children might list services
+                parent = a.parent
+                if parent:
+                    for sub_a in parent.find_all("a", href=True):
+                        sub_text = sub_a.get_text(strip=True)
+                        if (sub_text and len(sub_text) < 60
+                            and sub_text.lower() not in {"services", "products", "solutions", "all services", "all products", "home", "about", "contact"}):
+                            _add(sub_text)
+
+    # 4. Fallback: check headings for service-like content
+    if not services:
+        for heading in headings:
+            heading_lower = heading.lower()
+            if any(kw in heading_lower for kw in ["service", "product", "solution", "what we",
+                                                    "our expertise", "we offer", "we provide", "we do"]):
+                # The heading itself might describe a service category
+                if len(heading) < 80:
+                    _add(heading)
+
+    return services[:12]
+
+
 async def intake_from_url(url: str) -> dict:
     """
     Main intake pipeline: fetch website and extract everything.
@@ -601,6 +783,12 @@ async def intake_from_url(url: str) -> dict:
         headings=profile.get("headings", []),
     )
 
+    # 7c. Extract team members
+    team_data = _extract_team_members(html, url)
+
+    # 7d. Extract services/products
+    detected_services = _extract_services(html, profile.get("headings", []))
+
     # 8. Detect competitors
     competitors = _detect_competitors(
         industry=industry_result["detected_industry"],
@@ -642,6 +830,8 @@ async def intake_from_url(url: str) -> dict:
         "detected_languages": profile.get("detected_languages", []),
         "detected_competitors": competitors,
         "detected_keywords": seo_keywords,
+        "detected_team": team_data,
+        "detected_services": detected_services,
     }
 
 

@@ -140,6 +140,8 @@ async def get_intake_results(
             detected_languages=profile.content_languages if isinstance(profile.content_languages, list) else [],
             detected_competitors=fresh_competitors,
             detected_keywords=profile.seo_keywords if isinstance(profile.seo_keywords, list) else [],
+            detected_team=profile.detected_team if isinstance(profile.detected_team, dict) else {},
+            detected_services=profile.detected_services if isinstance(profile.detected_services, list) else [],
         )
 
     # No stored data — trigger fresh scan if URL available
@@ -200,6 +202,10 @@ async def get_intake_results(
             profile.detected_competitors_data = result["detected_competitors"]
         if result.get("detected_keywords"):
             profile.seo_keywords = result["detected_keywords"]
+        if result.get("detected_team"):
+            profile.detected_team = result["detected_team"]
+        if result.get("detected_services"):
+            profile.detected_services = result["detected_services"]
 
         await db.flush()
         return result

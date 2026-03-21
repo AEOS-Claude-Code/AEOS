@@ -8,8 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe, Loader2, CheckCircle2, XCircle, Phone, Mail, Share2,
   Sparkles, MessageCircle, ExternalLink, Building2, Bot, MapPin,
-  ArrowRight, Check, Code2, Zap, Shield, Flag, Languages,
-  Users, Image, Trophy, Search,
+  ArrowRight, Check, Code2, Zap, Shield, Flag,
+  Users, Image, Trophy, Search, Briefcase, UserCircle,
 } from "lucide-react";
 
 /* ── Data ─────────────────────────────────────────────────────────── */
@@ -97,6 +97,8 @@ interface IntakeResult {
   detected_languages: string[];
   detected_competitors: { name: string; url: string; type: string }[];
   detected_keywords: string[];
+  detected_team: { team_page_url: string; members: { name: string; role: string }[]; count: number };
+  detected_services: string[];
 }
 
 /* ── Social media brand SVG icons ──────────────────────────────────── */
@@ -364,7 +366,7 @@ export default function OnboardingCompany() {
   }
 
   const socialCount = intake ? Object.values(intake.detected_social_links).filter(u => u.length > 0).length : 0;
-  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length + (intake.og_image ? 1 : 0) + (intake.detected_languages?.length || 0) + (intake.detected_competitors?.length || 0) : 0;
+  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length + (intake.og_image ? 1 : 0) + (intake.detected_competitors?.length || 0) + (intake.detected_keywords?.length || 0) + (intake.detected_team?.count || 0) + (intake.detected_services?.length || 0) : 0;
   const contactsFound = intake ? [
     intake.detected_phone_numbers.length > 0,
     intake.detected_emails.length > 0,
@@ -742,50 +744,74 @@ export default function OnboardingCompany() {
         </div>
       )}
 
-      {/* ══════════ ROW 3: Content Languages + SEO Keywords + Competitors ══════════ */}
+      {/* ══════════ ROW 3: Team/People + SEO Keywords + Competitors ══════════ */}
       {intake && (
         <div className="grid gap-4 lg:grid-cols-3">
-          {/* Content Languages */}
+          {/* Team / People */}
           <Card delay={0.4} className="h-full">
             <CardHeader
-              icon={Languages}
+              icon={Users}
               iconGradient="from-violet-500 to-purple-600 shadow-violet-500/25"
-              title="Content Languages"
-              subtitle="Languages detected on your site"
-              badge={intake.detected_languages?.length > 0 ? (
+              title="Team / People"
+              subtitle="Detected team members"
+              badge={intake.detected_team?.count > 0 ? (
                 <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-2xs font-bold text-violet-500 ring-1 ring-violet-500/20">
-                  {intake.detected_languages.length} found
+                  {intake.detected_team.count} found
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_languages?.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {intake.detected_languages.map((lang, i) => (
-                    <motion.span
-                      key={lang}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
+              {intake.detected_team?.members?.length > 0 ? (
+                <div className="space-y-2">
+                  {intake.detected_team.members.slice(0, 6).map((member, i) => (
+                    <motion.div
+                      key={member.name + i}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.4 + i * 0.05 }}
-                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-500/10 to-purple-500/10 px-3 py-1.5 text-xs font-bold text-violet-600 ring-1 ring-violet-500/20 hover:ring-violet-500/40 transition-all cursor-default"
+                      className="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2 hover:border-violet-500/30 hover:shadow-sm transition-all"
                     >
-                      <Languages size={11} />
-                      {LANG_NAMES[lang] || lang.toUpperCase()}
-                    </motion.span>
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-500/20">
+                        <span className="text-xs font-bold text-white">
+                          {member.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-fg leading-snug truncate">{member.name}</p>
+                        {member.role && (
+                          <p className="text-2xs text-fg-hint truncate">{member.role}</p>
+                        )}
+                      </div>
+                    </motion.div>
                   ))}
+                  {intake.detected_team.team_page_url && (
+                    <a
+                      href={intake.detected_team.team_page_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-2xs font-semibold text-blue-500 hover:border-blue-500/30 transition-all"
+                    >
+                      <ExternalLink size={10} /> View team page
+                    </a>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <motion.div
-                    animate={{ opacity: [0.4, 0.8, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3"
-                  >
-                    <Languages size={24} className="text-violet-500/50" />
-                  </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Language detection in progress</p>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3">
+                    <Users size={24} className="text-violet-500/50" />
+                  </div>
+                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">No team members found on the website</p>
+                  {intake.detected_team?.team_page_url && (
+                    <a
+                      href={intake.detected_team.team_page_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 text-2xs font-semibold text-blue-500 hover:underline"
+                    >
+                      Team page detected →
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -901,6 +927,41 @@ export default function OnboardingCompany() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* ══════════ Products / Services (full width) ══════════ */}
+      {intake && intake.detected_services?.length > 0 && (
+        <Card delay={0.35}>
+          <div className="flex items-center gap-3.5 px-5 py-4">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 3 }}
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25"
+            >
+              <Briefcase size={18} className="text-white" />
+            </motion.div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-fg">Products & Services</h3>
+            </div>
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-2xs font-bold text-emerald-500 ring-1 ring-emerald-500/20">
+              {intake.detected_services.length} detected
+            </span>
+            <div className="flex flex-wrap gap-2 ml-2">
+              {intake.detected_services.map((svc, i) => (
+                <motion.span
+                  key={svc}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.35 + i * 0.05 }}
+                  whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-teal-500/10 px-3 py-1.5 text-xs font-bold text-emerald-600 ring-1 ring-emerald-500/20 hover:ring-emerald-500/40 transition-all cursor-default"
+                >
+                  <Briefcase size={11} />
+                  {svc}
+                </motion.span>
+              ))}
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* ══════════ Tech Stack (full width) ══════════ */}

@@ -125,6 +125,8 @@ class WorkspaceProfile(Base):
     content_languages = Column(JSON, default=list)
     detected_competitors_data = Column(JSON, default=list)
     seo_keywords = Column(JSON, default=list)  # list of detected SEO keyword strings
+    detected_team = Column(JSON, default=dict)  # {team_page_url, members: [{name, role}], count}
+    detected_services = Column(JSON, default=list)  # list of service/product names
 
     competitor_urls = Column(JSON, default=list)  # list of strings
 
