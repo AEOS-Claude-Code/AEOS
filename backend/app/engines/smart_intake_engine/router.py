@@ -89,13 +89,30 @@ async def get_intake_results(
                 elif isinstance(link, str) and link:
                     social_links[platform] = [link]
 
+        # Backfill country from URL if not yet stored (fast TLD check, no network)
+        country = profile.country or ""
+        city = profile.city or ""
+        if not country and url:
+            try:
+                from .industry_inference import detect_location
+                loc = detect_location(url=url)
+                country = loc.get("country", "")
+                city = loc.get("city", "") or city
+                if country:
+                    profile.country = country
+                    if city:
+                        profile.city = city
+                    await db.flush()
+            except Exception:
+                pass
+
         return IntakeFromUrlResponse(
             url=url,
             detected_company_name=workspace.name or "",
             detected_industry=profile.industry or "other",
             industry_confidence=0.8 if profile.industry and profile.industry != "general" else 0.0,
-            detected_country=profile.country or "",
-            detected_city=profile.city or "",
+            detected_country=country,
+            detected_city=city,
             detected_phone_numbers=[profile.phone] if profile.phone else [],
             detected_emails=[],
             detected_social_links=social_links,

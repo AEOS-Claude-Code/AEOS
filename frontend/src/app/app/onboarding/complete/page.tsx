@@ -40,8 +40,8 @@ export default function OnboardingComplete() {
       <div className="overflow-hidden rounded-2xl border border-border bg-surface p-8 text-center">
         {/* Success icon with glow */}
         <div className="relative mx-auto mb-6 flex h-20 w-20 items-center justify-center">
-          <div className="absolute inset-0 animate-ping rounded-full bg-emerald-500/10" />
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-xl shadow-emerald-500/20">
+          <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/10" />
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/20">
             <CheckCircle2 size={40} className="text-white" />
           </div>
         </div>
@@ -62,11 +62,11 @@ export default function OnboardingComplete() {
           className="mx-auto mt-6 max-w-xs">
           <div className="flex items-center justify-between text-xs">
             <span className="text-fg-hint">Readiness</span>
-            <span className="font-bold text-emerald-400">{readiness}%</span>
+            <span className="font-bold text-blue-400">{readiness}%</span>
           </div>
           <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface-secondary">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400"
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
               initial={{ width: 0 }}
               animate={{ width: marked ? `${readiness}%` : "0%" }}
               transition={{ duration: 1.5, ease: "easeOut" }}
@@ -78,7 +78,7 @@ export default function OnboardingComplete() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
           className="mx-auto mt-6 grid max-w-sm grid-cols-3 gap-3">
           {[
-            { icon: Bot, value: "22+", label: "AI Agents", color: "from-emerald-500 to-emerald-700" },
+            { icon: Bot, value: "22+", label: "AI Agents", color: "from-blue-500 to-blue-700" },
             { icon: Sparkles, value: "9", label: "Departments", color: "from-violet-500 to-purple-600" },
             { icon: Zap, value: "24/7", label: "Active", color: "from-cyan-500 to-blue-600" },
           ].map((stat) => (
@@ -117,12 +117,12 @@ export default function OnboardingComplete() {
         {/* Free report */}
         {shareToken && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}
-            className="mx-auto mt-6 max-w-sm rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4">
+            className="mx-auto mt-6 max-w-sm rounded-xl border border-blue-500/20 bg-blue-500/[0.06] p-4">
             <p className="text-sm font-bold text-fg">Your free intelligence report is ready!</p>
-            <p className="mt-1 text-xs text-fg-hint">Share it with your team to showcase your digital presence.</p>
+            <p className="mt-1 text-xs text-fg-hint">See where your company stands — share it with your team.</p>
             <a href={`/report/${shareToken}`} target="_blank" rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-emerald-500/20 transition hover:bg-emerald-600">
-              <ExternalLink size={12} /> View report
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-blue-500/20 transition hover:bg-blue-600">
+              <ExternalLink size={12} /> View Your Report
             </a>
           </motion.div>
         )}
@@ -131,10 +131,10 @@ export default function OnboardingComplete() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
           className="mt-8 space-y-3">
           <button onClick={() => router.push("/app/dashboard")}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 text-sm font-bold text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30">
-            <LayoutDashboard size={16} />
-            Open your AI dashboard
-            <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 py-4 text-base font-bold text-white shadow-xl shadow-blue-500/25 transition-all hover:shadow-2xl hover:shadow-blue-500/35 hover:scale-[1.01]">
+            <LayoutDashboard size={18} />
+            Go to Your Dashboard
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </button>
           <button onClick={() => router.push("/app/integrations")}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-medium text-fg-hint transition hover:bg-surface-secondary hover:text-fg-muted">

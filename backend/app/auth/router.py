@@ -39,7 +39,7 @@ from app.auth.service import (
     get_permissions,
 )
 from app.auth.dependencies import get_current_user, get_current_membership
-from app.auth.models import User, Membership
+from app.auth.models import User, Membership, Workspace
 
 router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
 
@@ -81,79 +81,99 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
     except Exception:
         logger.exception("Billing setup failed for workspace=%s (non-fatal)", workspace.id)
 
-    # Auto-trigger Smart Intake + company scan if website URL was provided
+    # Auto-trigger Smart Intake in background + queue company scan
+    # NOTE: We do NOT block the register response on heavy I/O.
+    # The intake + scan will run when the user hits the onboarding page.
     if body.website_url and body.website_url.strip():
         url = body.website_url.strip()
 
-        # 1. Run Smart Intake — detect company info, contacts, social, tech stack
-        try:
-            from app.engines.smart_intake_engine.service import intake_from_url
-            intake_data = await intake_from_url(url)
+        # Save website URL to profile (already done above) and schedule
+        # background intake. The onboarding company page will call
+        # /api/v1/onboarding/intake-from-url if no cached results exist,
+        # so data is available when the user gets there.
+        import asyncio
 
-            # Save detected data to workspace profile
-            from sqlalchemy import select
-            from app.auth.models import WorkspaceProfile, OnboardingProgress
-            result = await db.execute(
-                select(WorkspaceProfile).where(WorkspaceProfile.workspace_id == workspace.id)
-            )
-            profile = result.scalar_one_or_none()
-            if profile:
-                # Update workspace name if detected
-                if intake_data.get("detected_company_name"):
-                    workspace.name = intake_data["detected_company_name"]
+        async def _background_intake():
+            """Run intake + scan in background after response is sent."""
+            try:
+                from app.core.database import async_session_factory
+                from app.engines.smart_intake_engine.service import intake_from_url
 
-                # Save industry
-                if intake_data.get("detected_industry"):
-                    profile.industry = intake_data["detected_industry"]
+                intake_data = await intake_from_url(url)
 
-                # Save social links (flatten to {platform: first_url})
-                social_raw = intake_data.get("detected_social_links", {})
-                social_flat = {}
-                for platform, urls in social_raw.items():
-                    if urls:
-                        social_flat[platform] = urls[0]
-                if social_flat:
-                    profile.social_links = social_flat
+                async with async_session_factory() as bg_db:
+                    from sqlalchemy import select
+                    from app.auth.models import WorkspaceProfile, OnboardingProgress
 
-                # Save contact info
-                phones = intake_data.get("detected_phone_numbers", [])
-                if phones:
-                    profile.phone = phones[0]
+                    result = await bg_db.execute(
+                        select(WorkspaceProfile).where(WorkspaceProfile.workspace_id == workspace.id)
+                    )
+                    profile = result.scalar_one_or_none()
+                    if profile:
+                        if intake_data.get("detected_company_name"):
+                            ws_result = await bg_db.execute(
+                                select(Workspace).where(Workspace.id == workspace.id)
+                            )
+                            ws = ws_result.scalar_one_or_none()
+                            if ws:
+                                ws.name = intake_data["detected_company_name"]
 
-                whatsapp = intake_data.get("detected_whatsapp_links", [])
-                if whatsapp:
-                    profile.whatsapp_link = whatsapp[0]
+                        if intake_data.get("detected_industry"):
+                            profile.industry = intake_data["detected_industry"]
 
-                contacts = intake_data.get("detected_contact_pages", [])
-                if contacts:
-                    profile.contact_page = contacts[0]
+                        social_raw = intake_data.get("detected_social_links", {})
+                        social_flat = {}
+                        for platform, urls in social_raw.items():
+                            if urls:
+                                social_flat[platform] = urls[0]
+                        if social_flat:
+                            profile.social_links = social_flat
 
-                # Store full intake result as JSON for frontend retrieval
-                profile._intake_cache = intake_data  # transient, not persisted
+                        phones = intake_data.get("detected_phone_numbers", [])
+                        if phones:
+                            profile.phone = phones[0]
 
-                await db.flush()
+                        whatsapp = intake_data.get("detected_whatsapp_links", [])
+                        if whatsapp:
+                            profile.whatsapp_link = whatsapp[0]
 
-                # Auto-mark onboarding steps since we have data
-                ob_result = await db.execute(
-                    select(OnboardingProgress).where(OnboardingProgress.workspace_id == workspace.id)
-                )
-                ob = ob_result.scalar_one_or_none()
-                if ob:
-                    ob.step_company = True
-                    ob.step_presence = True
-                    ob.current_step = max(ob.current_step, 3)
-                    await db.flush()
+                        contacts = intake_data.get("detected_contact_pages", [])
+                        if contacts:
+                            profile.contact_page = contacts[0]
 
-            logger.info("Smart intake completed for workspace=%s", workspace.id)
-        except Exception:
-            logger.exception("Smart intake failed for workspace=%s (non-fatal)", workspace.id)
+                        if intake_data.get("detected_country"):
+                            profile.country = intake_data["detected_country"]
+                        if intake_data.get("detected_city"):
+                            profile.city = intake_data["detected_city"]
 
-        # 2. Run full company scan (for detailed scoring)
-        try:
-            from app.engines.company_scanner_engine.service import run_scan
-            await run_scan(db, workspace.id, url)
-        except Exception:
-            logger.exception("Auto-scan failed for workspace=%s (non-fatal)", workspace.id)
+                        await bg_db.flush()
+
+                        ob_result = await bg_db.execute(
+                            select(OnboardingProgress).where(OnboardingProgress.workspace_id == workspace.id)
+                        )
+                        ob = ob_result.scalar_one_or_none()
+                        if ob:
+                            ob.step_company = True
+                            ob.step_presence = True
+                            ob.current_step = max(ob.current_step, 3)
+                            await bg_db.flush()
+
+                    await bg_db.commit()
+                    logger.info("Background intake completed for workspace=%s", workspace.id)
+
+                    # Also run company scan in same background flow
+                    try:
+                        from app.engines.company_scanner_engine.service import run_scan
+                        await run_scan(bg_db, workspace.id, url)
+                        await bg_db.commit()
+                    except Exception:
+                        logger.exception("Background scan failed for workspace=%s", workspace.id)
+
+            except Exception:
+                logger.exception("Background intake failed for workspace=%s", workspace.id)
+
+        # Fire and forget — don't block the response
+        asyncio.ensure_future(_background_intake())
 
     logger.info("User registered: %s workspace=%s", user.email, workspace.id)
     return AuthTokens(
@@ -253,6 +273,43 @@ async def refresh(request: Request, body: RefreshRequest, db: AsyncSession = Dep
         access_token=new_access,
         refresh_token=new_refresh.token,
     )
+
+
+@router.post(
+    "/change-password",
+    summary="Change password for current user",
+)
+async def change_password(
+    request: Request,
+    body: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    current_password = body.get("current_password", "")
+    new_password = body.get("new_password", "")
+
+    if not current_password or not new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Both current_password and new_password are required",
+        )
+
+    if len(new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 8 characters",
+        )
+
+    if not verify_password(current_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+
+    user.hashed_password = hash_password(new_password)
+    await db.flush()
+    logger.info("Password changed for user: %s", user.email)
+    return {"status": "password_changed"}
 
 
 @router.get(

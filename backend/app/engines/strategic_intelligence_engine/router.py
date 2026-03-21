@@ -2,12 +2,15 @@
 AEOS – Strategic Intelligence Engine: API Router.
 
 Phase 3.5: Authenticated, workspace-scoped, queries real DB.
+Returns sensible defaults when no strategy data exists for new workspaces.
 
 Prefix: /api/v1/strategy
 """
 
 from __future__ import annotations
 
+import logging
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -19,16 +22,54 @@ from app.auth.models import Workspace
 
 from app.engines.strategic_intelligence_engine.schemas import (
     ContextPack,
+    HealthScore,
     PriorityCategory,
     PriorityList,
     RiskList,
     RoadmapResponse,
     Severity,
+    SignalMap,
     StrategicSummary,
 )
 from app.engines.strategic_intelligence_engine import service
 
+logger = logging.getLogger("aeos.engine.strategy.router")
+
 router = APIRouter(prefix="/v1/strategy", tags=["Strategic Intelligence"])
+
+
+def _default_summary(workspace: Workspace) -> StrategicSummary:
+    """Return a safe default summary for new/empty workspaces."""
+    return StrategicSummary(
+        workspace_id=workspace.id,
+        company_name=workspace.name or "Workspace",
+        health_score=HealthScore(
+            overall=0, digital_presence=0, lead_generation=0,
+            competitive_position=0, integration_coverage=0, setup_completeness=0,
+        ),
+        headline="Getting ready — complete setup to unlock strategic intelligence.",
+        key_insight="Complete the AEOS Setup Wizard to unlock strategic insights.",
+        signal_map=SignalMap(),
+        generated_at=datetime.utcnow(),
+    )
+
+
+def _default_priorities(workspace: Workspace) -> PriorityList:
+    return PriorityList(
+        workspace_id=workspace.id, priorities=[], generated_at=datetime.utcnow(),
+    )
+
+
+def _default_roadmap(workspace: Workspace) -> RoadmapResponse:
+    return RoadmapResponse(
+        workspace_id=workspace.id, roadmaps={}, generated_at=datetime.utcnow(),
+    )
+
+
+def _default_risks(workspace: Workspace) -> RiskList:
+    return RiskList(
+        workspace_id=workspace.id, risks=[], generated_at=datetime.utcnow(),
+    )
 
 
 @router.get(
@@ -40,7 +81,11 @@ async def strategic_summary(
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.get_strategic_summary(db, workspace)
+    try:
+        return await service.get_strategic_summary(db, workspace)
+    except Exception:
+        logger.warning("Strategy summary failed for workspace=%s — returning defaults", workspace.id, exc_info=True)
+        return _default_summary(workspace)
 
 
 @router.get(
@@ -53,7 +98,11 @@ async def strategic_priorities(
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.get_priorities(db, workspace, category=category)
+    try:
+        return await service.get_priorities(db, workspace, category=category)
+    except Exception:
+        logger.warning("Strategy priorities failed for workspace=%s — returning defaults", workspace.id, exc_info=True)
+        return _default_priorities(workspace)
 
 
 @router.get(
@@ -65,7 +114,11 @@ async def strategic_roadmap(
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.get_roadmaps(db, workspace)
+    try:
+        return await service.get_roadmaps(db, workspace)
+    except Exception:
+        logger.warning("Strategy roadmap failed for workspace=%s — returning defaults", workspace.id, exc_info=True)
+        return _default_roadmap(workspace)
 
 
 @router.get(
@@ -78,10 +131,14 @@ async def strategic_risks(
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
-    risk_list = await service.get_risks(db, workspace)
-    if severity is not None:
-        risk_list.risks = [r for r in risk_list.risks if r.severity == severity]
-    return risk_list
+    try:
+        risk_list = await service.get_risks(db, workspace)
+        if severity is not None:
+            risk_list.risks = [r for r in risk_list.risks if r.severity == severity]
+        return risk_list
+    except Exception:
+        logger.warning("Strategy risks failed for workspace=%s — returning defaults", workspace.id, exc_info=True)
+        return _default_risks(workspace)
 
 
 @router.get(
@@ -93,4 +150,17 @@ async def context_pack(
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
-    return await service.get_context_pack(db, workspace)
+    try:
+        return await service.get_context_pack(db, workspace)
+    except Exception:
+        logger.warning("Strategy context-pack failed for workspace=%s — returning defaults", workspace.id, exc_info=True)
+        return ContextPack(
+            workspace_id=workspace.id,
+            company_name=workspace.name or "Workspace",
+            industry="general",
+            health_score=0,
+            top_priorities=[],
+            active_risks=[],
+            key_metrics={},
+            generated_at=datetime.utcnow(),
+        )

@@ -30,7 +30,7 @@ export default function OnboardingPresence() {
     } catch {} finally { setLoading(false); }
   }
 
-  const ic = "w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-emerald-500/40 focus:bg-surface focus:ring-2 focus:ring-emerald-500/10";
+  const ic = "w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-blue-500/40 focus:bg-surface focus:ring-2 focus:ring-blue-500/10";
 
   const fields = [
     { label: "Facebook", val: facebook, set: setFacebook, ph: "facebook.com/...", icon: "f" },
@@ -86,7 +86,7 @@ export default function OnboardingPresence() {
           {/* Action bar */}
           <div className="border-t border-border px-6 py-4">
             <button type="submit" disabled={loading}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50">
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50">
               {loading ? <Loader2 size={16} className="animate-spin" /> : <>Continue <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" /></>}
             </button>
           </div>

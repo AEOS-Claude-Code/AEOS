@@ -7,10 +7,11 @@ import { RequireAuth } from "@/lib/auth/AuthProvider";
 
 const STEPS = [
   { path: "/app/onboarding/company", label: "Company", num: 1 },
-  { path: "/app/onboarding/presence", label: "Presence", num: 2 },
-  { path: "/app/onboarding/competitors", label: "Competitors", num: 3 },
-  { path: "/app/onboarding/integrations", label: "Integrations", num: 4 },
-  { path: "/app/onboarding/complete", label: "Ready", num: 5 },
+  { path: "/app/onboarding/org-chart", label: "Org Chart", num: 2 },
+  { path: "/app/onboarding/presence", label: "Presence", num: 3 },
+  { path: "/app/onboarding/competitors", label: "Competitors", num: 4 },
+  { path: "/app/onboarding/integrations", label: "Integrations", num: 5 },
+  { path: "/app/onboarding/complete", label: "Ready", num: 6 },
 ];
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +31,7 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b border-border bg-surface px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-sm shadow-emerald-500/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm shadow-blue-500/20">
             <Zap size={15} className="text-white" />
           </div>
           <span className="text-sm font-bold tracking-wide text-fg">AEOS</span>
@@ -80,7 +81,7 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <span className="text-2xs text-fg-hint sm:hidden">
-          Step {(currentIdx >= 0 ? currentIdx : 0) + 1}/5
+          Step {(currentIdx >= 0 ? currentIdx : 0) + 1}/6
         </span>
       </header>
 

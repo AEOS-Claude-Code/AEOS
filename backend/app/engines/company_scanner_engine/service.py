@@ -194,6 +194,19 @@ async def run_scan(
             },
         ))
 
+        # Create notification for scan completion
+        try:
+            from app.modules.notifications.service import create_notification
+            await create_notification(
+                db, workspace_id,
+                title="Website scan complete",
+                message=f"Your website scored {report.overall_score}/100. View the full report for details.",
+                type="success",
+                link="/app/digital-presence",
+            )
+        except Exception:
+            logger.warning("Failed to create scan notification (non-fatal)")
+
     except Exception as e:
         report.status = "failed"
         report.scan_summary = f"Scan failed: {str(e)[:200]}"

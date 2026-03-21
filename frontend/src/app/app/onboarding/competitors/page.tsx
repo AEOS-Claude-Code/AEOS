@@ -124,8 +124,8 @@ export default function OnboardingCompetitors() {
           {/* AI Discovery Section */}
           <div className="border-b border-border px-6 py-5">
             <div className="mb-4 flex items-center gap-2">
-              <Sparkles size={13} className="text-emerald-400" />
-              <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
+              <Sparkles size={13} className="text-blue-400" />
+              <span className="text-xs font-bold uppercase tracking-widest text-blue-400">
                 AI-Discovered Competitors
               </span>
             </div>
@@ -134,9 +134,9 @@ export default function OnboardingCompetitors() {
               /* Scanning animation */
               <div className="flex flex-col items-center gap-4 py-10">
                 <div className="relative flex h-14 w-14 items-center justify-center">
-                  <div className="absolute inset-0 animate-ping rounded-full bg-emerald-500/10" />
-                  <div className="absolute inset-1 animate-pulse rounded-full bg-emerald-500/5" />
-                  <Radar size={24} className="animate-pulse text-emerald-400" />
+                  <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/10" />
+                  <div className="absolute inset-1 animate-pulse rounded-full bg-blue-500/5" />
+                  <Radar size={24} className="animate-pulse text-blue-400" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium text-fg-secondary">Scanning your industry...</p>
@@ -155,7 +155,7 @@ export default function OnboardingCompetitors() {
                       <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-hint">
                         {stat.label}
                       </p>
-                      <p className={`mt-0.5 text-sm font-bold ${stat.accent ? "text-emerald-400" : "text-fg-muted"}`}>
+                      <p className={`mt-0.5 text-sm font-bold ${stat.accent ? "text-blue-400" : "text-fg-muted"}`}>
                         {stat.value}
                       </p>
                     </div>
@@ -177,7 +177,7 @@ export default function OnboardingCompetitors() {
                       onClick={() => toggleCompetitor(comp.url)}
                       className={`group flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${
                         isSelected
-                          ? "border-emerald-500/30 bg-emerald-500/[0.06]"
+                          ? "border-blue-500/30 bg-blue-500/[0.06]"
                           : "border-border bg-surface-secondary hover:border-border hover:bg-surface"
                       }`}
                     >
@@ -185,7 +185,7 @@ export default function OnboardingCompetitors() {
                       <div
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-all ${
                           isSelected
-                            ? "bg-emerald-500 shadow-sm shadow-emerald-500/30"
+                            ? "bg-blue-500 shadow-sm shadow-blue-500/30"
                             : "border border-border bg-surface-secondary"
                         }`}
                       >
@@ -197,7 +197,7 @@ export default function OnboardingCompetitors() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold text-fg">{comp.name}</span>
                           {isSelected && (
-                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                            <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">
                               Selected
                             </span>
                           )}
@@ -220,7 +220,7 @@ export default function OnboardingCompetitors() {
 
                 {/* Match confidence tag */}
                 <div className="flex justify-end pt-1">
-                  <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-400">
+                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-[10px] font-bold text-blue-400">
                     {discovered.length} competitors found
                   </span>
                 </div>
@@ -243,7 +243,7 @@ export default function OnboardingCompetitors() {
               <button
                 type="button"
                 onClick={() => setShowManual(true)}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-blue-400 transition hover:bg-blue-500/10"
               >
                 <Plus size={14} /> Add more competitors manually
               </button>
@@ -269,7 +269,7 @@ export default function OnboardingCompetitors() {
                       value={url}
                       onChange={(e) => updateManualUrl(i, e.target.value)}
                       placeholder={`https://competitor-${i + 1}.com`}
-                      className="w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-emerald-500/40 focus:bg-surface focus:ring-2 focus:ring-emerald-500/10"
+                      className="w-full rounded-xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-fg outline-none transition placeholder:text-fg-hint focus:border-blue-500/40 focus:bg-surface focus:ring-2 focus:ring-blue-500/10"
                     />
                     {manualUrls.length > 1 && (
                       <button
@@ -286,7 +286,7 @@ export default function OnboardingCompetitors() {
                   <button
                     type="button"
                     onClick={addManualRow}
-                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-blue-400 transition hover:bg-blue-500/10"
                   >
                     <Plus size={14} /> Add another
                   </button>
@@ -301,7 +301,7 @@ export default function OnboardingCompetitors() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30 disabled:opacity-50"
+                className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 size={16} className="animate-spin" />

@@ -45,6 +45,7 @@ from app.engines.command_dashboard.router import router as command_router
 from app.admin.router import router as admin_router
 from app.modules.billing.router import router as billing_router
 from app.modules.integrations.router import router as integrations_router
+from app.modules.notifications.router import router as notifications_router
 from app.seed.router import seed_router
 
 # Import models so Base.metadata sees all tables
@@ -65,6 +66,7 @@ import app.engines.agent_framework_engine.models  # noqa
 import app.engines.executive_copilot_engine.models  # noqa
 import app.modules.billing.models  # noqa
 import app.modules.integrations.models  # noqa
+import app.modules.notifications.models  # noqa
 
 settings = get_settings()
 logger = logging.getLogger("aeos.http")
@@ -200,6 +202,7 @@ app.include_router(admin_router, prefix="/api")
 app.include_router(copilot_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
 app.include_router(integrations_router, prefix="/api")
+app.include_router(notifications_router, prefix="/api")
 app.include_router(seed_router, prefix="/api")
 
 

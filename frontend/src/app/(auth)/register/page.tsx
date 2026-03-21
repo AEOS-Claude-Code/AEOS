@@ -23,11 +23,11 @@ function getPasswordStrength(pw: string): { label: string; color: string; width:
 
 const PROGRESS_STEPS = [
   { icon: Globe, label: "Workspace", delay: 0 },
-  { icon: Globe, label: "Scanning", delay: 2500 },
-  { icon: Building2, label: "Company", delay: 6000 },
-  { icon: Phone, label: "Contacts", delay: 10000 },
-  { icon: Share2, label: "Social", delay: 14000 },
-  { icon: Bot, label: "AI Agents", delay: 18000 },
+  { icon: Globe, label: "Scanning", delay: 1500 },
+  { icon: Building2, label: "Company", delay: 3000 },
+  { icon: Phone, label: "Contacts", delay: 4500 },
+  { icon: Share2, label: "Social", delay: 6000 },
+  { icon: Bot, label: "AI Agents", delay: 7500 },
 ];
 
 const ACTIVE_MESSAGES = [
@@ -41,11 +41,14 @@ const ACTIVE_MESSAGES = [
 
 function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [allDone, setAllDone] = useState(false);
   useEffect(() => {
     const timers = PROGRESS_STEPS.map((step, i) => setTimeout(() => setCurrentStep(i), step.delay));
-    return () => timers.forEach(clearTimeout);
+    // Mark all steps done after the last one completes
+    const doneTimer = setTimeout(() => setAllDone(true), PROGRESS_STEPS[PROGRESS_STEPS.length - 1].delay + 1500);
+    return () => { timers.forEach(clearTimeout); clearTimeout(doneTimer); };
   }, []);
-  const progress = Math.min(100, ((currentStep + 1) / PROGRESS_STEPS.length) * 100);
+  const progress = allDone ? 100 : Math.min(95, ((currentStep + 1) / PROGRESS_STEPS.length) * 100);
 
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md">
@@ -78,8 +81,8 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
 
         <div className="flex items-center justify-between gap-1">
           {PROGRESS_STEPS.map((step, i) => {
-            const done = i < currentStep;
-            const active = i === currentStep;
+            const done = allDone || i < currentStep;
+            const active = !allDone && i === currentStep;
             const Icon = step.icon;
             return (
               <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -107,7 +110,9 @@ function ProgressOverlay({ websiteUrl }: { websiteUrl: string }) {
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
           className="mt-5 rounded-xl bg-gradient-to-r from-aeos-500/10 to-violet-500/10 px-4 py-2.5 text-center">
-          <p className="text-xs font-medium text-aeos-400">{ACTIVE_MESSAGES[currentStep] || "Processing..."}</p>
+          <p className="text-xs font-medium text-aeos-400">
+            {allDone ? "Almost there — redirecting to your workspace..." : (ACTIVE_MESSAGES[currentStep] || "Processing...")}
+          </p>
         </motion.div>
       </div>
     </motion.div>

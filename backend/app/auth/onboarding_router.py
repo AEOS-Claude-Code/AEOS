@@ -329,6 +329,19 @@ async def step_complete(
     ob.completed_at = datetime.utcnow()
     ob.current_step = 5
 
+    # Create welcome notification
+    try:
+        from app.modules.notifications.service import create_notification
+        await create_notification(
+            db, workspace.id,
+            title="Welcome to AEOS!",
+            message="Your workspace is ready. Explore your dashboard to see strategic insights.",
+            type="success",
+            link="/app/dashboard",
+        )
+    except Exception:
+        logger.exception("Failed to create welcome notification (non-fatal)")
+
     # Trigger company scan if website URL exists
     profile = workspace.profile
     if profile and profile.website_url:

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,8 +19,11 @@ import {
   Eye,
   FileText,
   Bot,
+  Download,
 } from "lucide-react";
 import api from "@/lib/api";
+
+/* ── Types ─────────────────────────────────────────────────── */
 
 interface ScanReport {
   id: string;
@@ -48,6 +51,29 @@ interface ScanReport {
   scan_summary: string;
   created_at: string;
 }
+
+interface ReportSection {
+  title: string;
+  content: string;
+  data?: Record<string, any>;
+}
+
+interface GeneratedReport {
+  id: string;
+  workspace_id: string;
+  report_type: string;
+  title: string;
+  status: string;
+  sections: ReportSection[];
+  summary: string;
+  share_token: string;
+  is_public: boolean;
+  metadata: Record<string, any>;
+  generated_at: string | null;
+  created_at: string;
+}
+
+/* ── Constants ─────────────────────────────────────────────── */
 
 const SOCIAL_LABELS: Record<string, string> = {
   linkedin: "LinkedIn",
@@ -77,6 +103,29 @@ const SECURITY_LABELS: Record<string, string> = {
   referrer_policy: "Referrer Policy",
   permissions_policy: "Permissions Policy",
 };
+
+/* ── Helpers ───────────────────────────────────────────────── */
+
+function markdownToHtml(md: string): string {
+  if (!md) return "<p class='text-slate-400 italic'>No content generated.</p>";
+  return md
+    .replace(/^### (.+)$/gm, "<h4 class='text-sm font-bold text-slate-900 mt-4 mb-2'>$1</h4>")
+    .replace(/^## (.+)$/gm, "<h3 class='text-base font-bold text-slate-900 mt-5 mb-2'>$1</h3>")
+    .replace(/^\*\*(.+?)\*\*/gm, "<strong>$1</strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/^\* (.+)$/gm, "<li class='ml-4 text-sm text-slate-700'>$1</li>")
+    .replace(/^- (.+)$/gm, "<li class='ml-4 text-sm text-slate-700'>$1</li>")
+    .replace(/^(\d+)\. (.+)$/gm, "<li class='ml-4 text-sm text-slate-700'><strong>$1.</strong> $2</li>")
+    .replace(/(<li.*<\/li>\n?)+/g, (match) => `<ul class='space-y-1 my-2'>${match}</ul>`)
+    .replace(/\n\n/g, "</p><p class='text-sm text-slate-700 leading-relaxed'>")
+    .replace(/^(.+)$/gm, (line) => {
+      if (line.startsWith("<")) return line;
+      return `<p class='text-sm text-slate-700 leading-relaxed'>${line}</p>`;
+    })
+    .replace(/<p class='text-sm text-slate-700 leading-relaxed'>\s*<\/p>/g, "");
+}
+
+/* ── Score components ──────────────────────────────────────── */
 
 function ScoreRing({ score, size = 80, label }: { score: number; size?: number; label?: string }) {
   const r = size / 2 - 6;
@@ -132,19 +181,34 @@ function BoolRow({ label, value }: { label: string; value: boolean }) {
   );
 }
 
+/* ── Main page ─────────────────────────────────────────────── */
+
 export default function PublicReportPage() {
   const params = useParams();
   const token = params.token as string;
-  const [report, setReport] = useState<ScanReport | null>(null);
+  const [scanReport, setScanReport] = useState<ScanReport | null>(null);
+  const [generatedReport, setGeneratedReport] = useState<GeneratedReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function load() {
+      // Try company scan report first
       try {
         const res = await api.get(`/api/v1/company-scan/report/${token}`);
-        setReport(res.data);
+        setScanReport(res.data);
+        setLoading(false);
+        return;
+      } catch {
+        // Not a scan report, try generated report
+      }
+
+      // Try generated report (business plan, etc.)
+      try {
+        const res = await api.get(`/api/v1/public/report/${token}`);
+        setGeneratedReport(res.data);
       } catch {
         setError("Report not found or is no longer available.");
       } finally {
@@ -162,18 +226,22 @@ export default function PublicReportPage() {
     });
   }
 
+  function handleDownloadPdf() {
+    window.print();
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
-          <span className="text-sm text-slate-400">Analyzing website{"\u2026"}</span>
+          <span className="text-sm text-slate-400">Loading report{"\u2026"}</span>
         </div>
       </div>
     );
   }
 
-  if (error || !report) {
+  if (error || (!scanReport && !generatedReport)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
@@ -188,6 +256,127 @@ export default function PublicReportPage() {
     );
   }
 
+  // Render generated report (business plan, etc.)
+  if (generatedReport) {
+    return <GeneratedReportView report={generatedReport} copyLink={copyLink} copied={copied} onDownload={handleDownloadPdf} />;
+  }
+
+  // Render scan report
+  return <ScanReportView report={scanReport!} copyLink={copyLink} copied={copied} onDownload={handleDownloadPdf} />;
+}
+
+/* ── Generated Report View (Business Plan, etc.) ───────────── */
+
+function GeneratedReportView({ report, copyLink, copied, onDownload }: {
+  report: GeneratedReport;
+  copyLink: () => void;
+  copied: boolean;
+  onDownload: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-white print:bg-white">
+      {/* Print styles */}
+      <style jsx global>{`
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .no-print { display: none !important; }
+          .print-break { page-break-before: always; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <header className="border-b border-slate-200 bg-white no-print">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700">
+              <Zap size={16} className="text-white" />
+            </div>
+            <span className="text-sm font-bold text-slate-900">AEOS Intelligence Report</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onDownload}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              <Download size={13} />
+              Download PDF
+            </button>
+            <button
+              onClick={copyLink}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+              {copied ? "Copied!" : "Share link"}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-4xl px-6 py-8">
+        {/* Title */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-slate-900">{report.title}</h1>
+          {report.summary && (
+            <p className="mt-2 text-sm text-slate-500">{report.summary}</p>
+          )}
+          <p className="mt-1 text-xs text-slate-400">
+            Generated by AEOS {report.generated_at ? `on ${new Date(report.generated_at).toLocaleDateString()}` : ""}
+          </p>
+        </div>
+
+        {/* Sections */}
+        <div className="space-y-6">
+          {report.sections.map((section, i) => (
+            <div key={i} className={`rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${i > 0 ? "print-break" : ""}`}>
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                <FileText size={18} className="text-blue-600" />
+                {section.title}
+              </h2>
+              <div
+                className="prose prose-sm prose-slate max-w-none"
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(section.content) }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-10 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-8 text-center shadow-sm no-print">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700">
+            <Zap size={22} className="text-white" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">
+            Want deeper insights for your business?
+          </h2>
+          <p className="mt-2 mx-auto max-w-md text-sm text-slate-500">
+            AEOS continuously monitors your digital presence, tracks leads, detects opportunities, and generates strategic roadmaps — powered by AI.
+          </p>
+          <Link
+            href="/register"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+          >
+            Get your free AEOS workspace
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 pb-8 text-center text-xs text-slate-400">
+          Powered by AEOS — Autonomous Enterprise Operating System
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ── Scan Report View (original) ───────────────────────────── */
+
+function ScanReportView({ report, copyLink, copied, onDownload }: {
+  report: ScanReport;
+  copyLink: () => void;
+  copied: boolean;
+  onDownload: () => void;
+}) {
   const socialEntries = Object.entries(report.social_presence || {});
   const socialActive = socialEntries.filter(([, v]) => v).length;
   const seoDetails = Object.entries(report.seo_details || {});
@@ -197,11 +386,21 @@ export default function PublicReportPage() {
   const struct = report.structured_data || {};
   const crawl = report.crawl_info || {};
   const hasOverall = (report.overall_score ?? 0) > 0;
+  const companyName = report.company_name || report.page_title || "Company";
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white print:bg-white">
+      {/* Print styles */}
+      <style jsx global>{`
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .no-print { display: none !important; }
+          .print-break { page-break-before: always; }
+        }
+      `}</style>
+
       {/* Header */}
-      <header className="border-b border-border bg-surface">
+      <header className="border-b border-border bg-surface no-print">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700">
@@ -209,13 +408,22 @@ export default function PublicReportPage() {
             </div>
             <span className="text-sm font-bold text-fg">AEOS Intelligence Report</span>
           </div>
-          <button
-            onClick={copyLink}
-            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-fg-secondary transition hover:bg-surface-secondary"
-          >
-            {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-            {copied ? "Copied!" : "Share link"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onDownload}
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-fg-secondary transition hover:bg-surface-secondary"
+            >
+              <Download size={13} />
+              Download PDF
+            </button>
+            <button
+              onClick={copyLink}
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-fg-secondary transition hover:bg-surface-secondary"
+            >
+              {copied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+              {copied ? "Copied!" : "Share link"}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -223,7 +431,7 @@ export default function PublicReportPage() {
         {/* Title section */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-fg">
-            {report.company_name || report.page_title || "Company"} Intelligence Report
+            Where {companyName} Stands Now
           </h1>
           <p className="mt-1 text-sm text-fg-muted">
             Automated analysis of {report.website_url} · Generated by AEOS
@@ -529,7 +737,7 @@ export default function PublicReportPage() {
         )}
 
         {/* CTA */}
-        <div className="mt-10 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-8 text-center shadow-sm">
+        <div className="mt-10 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-8 text-center shadow-sm no-print">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700">
             <Zap size={22} className="text-white" />
           </div>

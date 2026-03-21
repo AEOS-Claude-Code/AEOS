@@ -154,8 +154,22 @@ export function useStrategyData(): StrategyData {
         }
       } catch (e: any) {
         if (!cancelled) {
-          setError(e?.message || "Strategy API unavailable");
-          setConnected(false);
+          // If backend returns data but with a network hiccup, keep connected
+          // state so the UI shows "Getting ready..." instead of a hard error
+          const status = e?.response?.status;
+          if (status && status >= 500) {
+            // Server error — show gentle "getting ready" message
+            setError(null);
+            setConnected(true);
+            setSummary({
+              ...EMPTY_SUMMARY,
+              headline: "Getting ready — your strategic intelligence is being prepared...",
+              key_insight: "Complete your workspace setup to unlock full strategic insights.",
+            });
+          } else {
+            setError(e?.message || "Strategy API unavailable");
+            setConnected(false);
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
