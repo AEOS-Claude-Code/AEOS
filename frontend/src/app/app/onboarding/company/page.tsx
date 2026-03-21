@@ -355,7 +355,7 @@ export default function OnboardingCompany() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-5xl space-y-6 px-4 pb-8">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-6xl space-y-5 px-4 pb-8">
 
       {/* ══════════ HERO BANNER ══════════ */}
       <AnimatePresence>
@@ -364,7 +364,7 @@ export default function OnboardingCompany() {
             initial={{ opacity: 0, y: -20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/[0.08] via-cyan-500/[0.06] to-violet-500/[0.08] px-7 py-6"
+            className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/[0.08] via-cyan-500/[0.06] to-violet-500/[0.08] px-6 py-4"
           >
             {/* Animated background dots */}
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMS41IiBmaWxsPSJyZ2JhKDU5LDEzMCwyNDYsMC4wNSkiLz48L3N2Zz4=')] opacity-80" />
@@ -380,17 +380,17 @@ export default function OnboardingCompany() {
               className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl"
             />
 
-            <div className="relative flex items-center gap-5">
+            <div className="relative flex items-center gap-4">
               <motion.div
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 4, repeat: Infinity, repeatDelay: 3 }}
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/20"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/20"
               >
-                <Sparkles size={30} className="text-white" />
+                <Sparkles size={24} className="text-white" />
               </motion.div>
               <div className="flex-1">
                 <div className="flex items-center gap-2.5">
-                  <h2 className="text-xl font-bold text-fg">{totalDetected} items detected</h2>
+                  <h2 className="text-lg font-bold text-fg">{totalDetected} items detected</h2>
                   <motion.span
                     initial={{ scale: 0 }} animate={{ scale: 1 }}
                     className="rounded-full bg-blue-500 px-2.5 py-0.5 text-xs font-bold text-white shadow-md shadow-blue-500/30"
@@ -419,258 +419,255 @@ export default function OnboardingCompany() {
           className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-6 py-4 text-sm text-amber-400">{error}</motion.div>
       )}
 
-      {/* ══════════ COMPANY IDENTITY CARD ══════════ */}
-      <Card delay={0.1}>
-        <CardHeader
-          icon={Building2}
-          iconGradient="from-blue-500 to-cyan-500 shadow-blue-500/25"
-          title="Company Identity"
-          subtitle="Auto-detected from your website — edit if needed"
-          badge={intake ? (
-            <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }}
-              className="rounded-full bg-blue-500/10 px-3.5 py-1.5 text-xs font-bold text-blue-500 ring-1 ring-blue-500/20">
-              Auto-detected
-            </motion.span>
-          ) : undefined}
-        />
-        <div className="p-6">
-          <div className="grid gap-5 sm:grid-cols-2">
-            {/* Company name - full width */}
-            <div className="sm:col-span-2">
-              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
-                <Building2 size={12} /> Company name
-              </label>
-              <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className={ic} />
-            </div>
-            {/* Industry */}
-            <div>
-              <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
-                <Zap size={12} /> Industry
-                {intake && intake.industry_confidence > 0 && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    className="rounded-full bg-blue-500/10 px-2 py-0.5 text-2xs font-bold text-blue-500 normal-case tracking-normal"
-                  >{Math.round(intake.industry_confidence * 100)}% match</motion.span>
-                )}
-              </label>
-              <select value={industry} onChange={e => setIndustry(e.target.value)} className={selectClass}>
-                <option value="">Select industry</option>
-                {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
-              </select>
-            </div>
-            {/* Country & City */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
-                  <Flag size={12} /> Country
-                  {country && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><CheckCircle2 size={11} className="text-emerald-500" /></motion.div>}
-                </label>
-                <select value={country} onChange={e => { setCountry(e.target.value); if (!COUNTRY_CITIES[e.target.value]?.includes(city)) setCity(""); }} className={selectClass}>
-                  <option value="">Select</option>
-                  {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fg-muted">
-                  <MapPin size={12} /> City
-                  {city && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><CheckCircle2 size={11} className="text-emerald-500" /></motion.div>}
-                </label>
-                <select value={city} onChange={e => setCity(e.target.value)} className={selectClass} disabled={!country}>
-                  <option value="">Select</option>
-                  {(COUNTRY_CITIES[country] || []).map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* ══════════ CONTACT INFORMATION CARD ══════════ */}
-      {intake && (
-        <Card delay={0.2}>
+      {/* ══════════ ROW 1: Company Identity + Contact Information ══════════ */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* Company Identity */}
+        <Card delay={0.1} className="h-fit">
           <CardHeader
-            icon={Phone}
-            iconGradient="from-emerald-500 to-teal-600 shadow-emerald-500/25"
-            title="Contact Information"
-            subtitle="Phone, email, and messaging channels detected"
-            badge={contactsFound > 0 ? (
-              <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-500 ring-1 ring-emerald-500/20">
-                {contactsFound} found
-              </span>
+            icon={Building2}
+            iconGradient="from-blue-500 to-cyan-500 shadow-blue-500/25"
+            title="Company Identity"
+            subtitle="Auto-detected — edit if needed"
+            badge={intake ? (
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.3 }}
+                className="rounded-full bg-blue-500/10 px-2.5 py-1 text-2xs font-bold text-blue-500 ring-1 ring-blue-500/20">
+                Auto-detected
+              </motion.span>
             ) : undefined}
           />
-          <div className="p-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                {
-                  icon: Phone, label: "Phone Number",
-                  value: intake.detected_phone_numbers[0],
-                  found: intake.detected_phone_numbers.length > 0,
-                  gradient: "from-blue-500 to-blue-600",
-                  glow: "shadow-blue-500/20",
-                },
-                {
-                  icon: Mail, label: "Email Address",
-                  value: intake.detected_emails[0],
-                  found: intake.detected_emails.length > 0,
-                  gradient: "from-violet-500 to-purple-600",
-                  glow: "shadow-violet-500/20",
-                },
-                {
-                  icon: WhatsAppIcon, label: "WhatsApp",
-                  value: intake.detected_whatsapp_links[0] ? "Connected" : undefined,
-                  found: intake.detected_whatsapp_links.length > 0,
-                  gradient: "from-green-500 to-emerald-600",
-                  glow: "shadow-green-500/20",
-                  isSvg: true,
-                },
-                {
-                  icon: ExternalLink, label: "Contact Page",
-                  value: intake.detected_contact_pages[0] ? "Detected" : undefined,
-                  found: intake.detected_contact_pages.length > 0,
-                  gradient: "from-amber-500 to-orange-600",
-                  glow: "shadow-amber-500/20",
-                },
-              ].map(({ icon: Ic, label, value, found, gradient, glow, isSvg }, i) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.08 }}
-                  whileHover={{ y: -2, transition: { duration: 0.2 } }}
-                  className={`group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 ${
-                    found
-                      ? "border-border bg-surface hover:border-blue-500/30 hover:shadow-md"
-                      : "border-dashed border-border bg-surface-secondary/50"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      found
-                        ? `bg-gradient-to-br ${gradient} shadow-lg ${glow}`
-                        : "bg-surface-secondary"
-                    }`}>
-                      {isSvg ? (
-                        <Ic className={`h-5 w-5 ${found ? "text-white" : "text-fg-hint"}`} />
-                      ) : (
-                        // @ts-ignore
-                        <Ic size={18} className={found ? "text-white" : "text-fg-hint"} />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-fg-hint mb-0.5">{label}</p>
-                      {found ? (
-                        <p className="truncate text-sm font-bold text-fg">{value || "Found"}</p>
-                      ) : (
-                        <p className="text-sm text-fg-hint/60">Not detected</p>
-                      )}
-                    </div>
-                  </div>
-                  {found && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 + i * 0.1 }}
-                      className="absolute right-3 top-3">
-                      <CheckCircle2 size={14} className="text-emerald-500" />
-                    </motion.div>
-                  )}
-                </motion.div>
-              ))}
+          <div className="p-5">
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                  <Building2 size={10} /> Company name
+                </label>
+                <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className={ic} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <Zap size={10} /> Industry
+                    {intake && intake.industry_confidence > 0 && (
+                      <span className="rounded-full bg-blue-500/10 px-1.5 py-0.5 text-2xs font-bold text-blue-500 normal-case tracking-normal"
+                      >{Math.round(intake.industry_confidence * 100)}%</span>
+                    )}
+                  </label>
+                  <select value={industry} onChange={e => setIndustry(e.target.value)} className={selectClass}>
+                    <option value="">Select</option>
+                    {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <Flag size={10} /> Country
+                    {country && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><CheckCircle2 size={10} className="text-emerald-500" /></motion.div>}
+                  </label>
+                  <select value={country} onChange={e => { setCountry(e.target.value); if (!COUNTRY_CITIES[e.target.value]?.includes(city)) setCity(""); }} className={selectClass}>
+                    <option value="">Select</option>
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                    <MapPin size={10} /> City
+                    {city && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}><CheckCircle2 size={10} className="text-emerald-500" /></motion.div>}
+                  </label>
+                  <select value={city} onChange={e => setCity(e.target.value)} className={selectClass} disabled={!country}>
+                    <option value="">Select</option>
+                    {(COUNTRY_CITIES[country] || []).map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
-      )}
 
-      {/* ══════════ SOCIAL PROFILES CARD ══════════ */}
-      {intake && (
-        <Card delay={0.3}>
-          <CardHeader
-            icon={Share2}
-            iconGradient="from-pink-500 to-rose-600 shadow-pink-500/25"
-            title="Social Media Profiles"
-            subtitle="Detected social presence from your website"
-            badge={socialCount > 0 ? (
-              <span className="rounded-full bg-pink-500/10 px-3 py-1.5 text-xs font-bold text-pink-500 ring-1 ring-pink-500/20">
-                {socialCount} connected
-              </span>
-            ) : undefined}
-          />
-          <div className="p-6">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {SOCIAL_PLATFORMS.map((platform, i) => {
-                const found = (intake.detected_social_links[platform.key] || []).length > 0;
-                const SocialIcon = platform.icon;
-                return (
+        {/* Contact Information */}
+        {intake && (
+          <Card delay={0.15} className="h-fit">
+            <CardHeader
+              icon={Phone}
+              iconGradient="from-emerald-500 to-teal-600 shadow-emerald-500/25"
+              title="Contact Information"
+              subtitle="Phone, email & messaging"
+              badge={contactsFound > 0 ? (
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-2xs font-bold text-emerald-500 ring-1 ring-emerald-500/20">
+                  {contactsFound} found
+                </span>
+              ) : undefined}
+            />
+            <div className="p-5">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {
+                    icon: Phone, label: "Phone",
+                    value: intake.detected_phone_numbers[0],
+                    found: intake.detected_phone_numbers.length > 0,
+                    gradient: "from-blue-500 to-blue-600",
+                    glow: "shadow-blue-500/20",
+                  },
+                  {
+                    icon: Mail, label: "Email",
+                    value: intake.detected_emails[0],
+                    found: intake.detected_emails.length > 0,
+                    gradient: "from-violet-500 to-purple-600",
+                    glow: "shadow-violet-500/20",
+                  },
+                  {
+                    icon: WhatsAppIcon, label: "WhatsApp",
+                    value: intake.detected_whatsapp_links[0] ? "Connected" : undefined,
+                    found: intake.detected_whatsapp_links.length > 0,
+                    gradient: "from-green-500 to-emerald-600",
+                    glow: "shadow-green-500/20",
+                    isSvg: true,
+                  },
+                  {
+                    icon: ExternalLink, label: "Contact Page",
+                    value: intake.detected_contact_pages[0] ? "Detected" : undefined,
+                    found: intake.detected_contact_pages.length > 0,
+                    gradient: "from-amber-500 to-orange-600",
+                    glow: "shadow-amber-500/20",
+                  },
+                ].map(({ icon: Ic, label, value, found, gradient, glow, isSvg }, i) => (
                   <motion.div
-                    key={platform.key}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.35 + i * 0.05 }}
-                    whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-                    className={`group flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 cursor-default ${
+                    key={label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 + i * 0.06 }}
+                    whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                    className={`group relative overflow-hidden rounded-xl border p-3 transition-all duration-300 ${
                       found
-                        ? "border-border bg-surface hover:shadow-md hover:border-blue-500/20"
-                        : "border-dashed border-border/60 bg-surface-secondary/30"
+                        ? "border-border bg-surface hover:border-blue-500/30 hover:shadow-md"
+                        : "border-dashed border-border bg-surface-secondary/50"
                     }`}
                   >
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-300 ${
-                      found
-                        ? `${platform.bgColor}`
-                        : "bg-surface-secondary"
-                    }`}>
-                      <SocialIcon className={`h-4 w-4 transition-all duration-300 ${
-                        found ? platform.brandColor : "text-fg-hint/40"
-                      }`} />
+                    <div className="flex items-center gap-2.5">
+                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                        found
+                          ? `bg-gradient-to-br ${gradient} shadow-md ${glow}`
+                          : "bg-surface-secondary"
+                      }`}>
+                        {isSvg ? (
+                          <Ic className={`h-4 w-4 ${found ? "text-white" : "text-fg-hint"}`} />
+                        ) : (
+                          // @ts-ignore
+                          <Ic size={16} className={found ? "text-white" : "text-fg-hint"} />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-2xs font-medium text-fg-hint">{label}</p>
+                        {found ? (
+                          <p className="truncate text-xs font-bold text-fg">{value || "Found"}</p>
+                        ) : (
+                          <p className="text-xs text-fg-hint/60">Not detected</p>
+                        )}
+                      </div>
+                      {found && (
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 + i * 0.08 }}>
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                        </motion.div>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold transition-colors ${found ? "text-fg" : "text-fg-hint/50"}`}>
-                        {platform.label}
-                      </p>
-                    </div>
-                    {found ? (
-                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.5 + i * 0.05 }}>
-                        <CheckCircle2 size={16} className="text-emerald-500" />
-                      </motion.div>
-                    ) : (
-                      <XCircle size={14} className="text-fg-hint/20" />
-                    )}
                   </motion.div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
+      </div>
 
-      {/* ══════════ TECH STACK CARD ══════════ */}
-      {intake && intake.detected_tech_stack.length > 0 && (
-        <Card delay={0.4}>
-          <CardHeader
-            icon={Code2}
-            iconGradient="from-cyan-500 to-blue-600 shadow-cyan-500/25"
-            title="Technology Stack"
-            subtitle="Technologies detected on your website"
-            badge={
-              <span className="rounded-full bg-cyan-500/10 px-3 py-1.5 text-xs font-bold text-cyan-500 ring-1 ring-cyan-500/20">
-                {intake.detected_tech_stack.length} detected
-              </span>
-            }
-          />
-          <div className="p-6">
-            <div className="flex flex-wrap gap-2.5">
-              {intake.detected_tech_stack.map((tech, i) => (
-                <motion.span
-                  key={tech}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.45 + i * 0.06 }}
-                  whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3.5 py-2 text-sm font-bold text-cyan-600 ring-1 ring-cyan-500/20 hover:ring-cyan-500/40 transition-all cursor-default"
-                >
-                  <Code2 size={13} />
-                  {tech}
-                </motion.span>
-              ))}
+      {/* ══════════ ROW 2: Social Profiles + Tech Stack ══════════ */}
+      {intake && (
+        <div className={`grid gap-5 ${intake.detected_tech_stack.length > 0 ? "lg:grid-cols-5" : "lg:grid-cols-1"}`}>
+          {/* Social Media Profiles */}
+          <Card delay={0.25} className={`h-fit ${intake.detected_tech_stack.length > 0 ? "lg:col-span-3" : ""}`}>
+            <CardHeader
+              icon={Share2}
+              iconGradient="from-pink-500 to-rose-600 shadow-pink-500/25"
+              title="Social Media Profiles"
+              subtitle="Detected social presence"
+              badge={socialCount > 0 ? (
+                <span className="rounded-full bg-pink-500/10 px-2.5 py-1 text-2xs font-bold text-pink-500 ring-1 ring-pink-500/20">
+                  {socialCount} connected
+                </span>
+              ) : undefined}
+            />
+            <div className="p-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {SOCIAL_PLATFORMS.map((platform, i) => {
+                  const found = (intake.detected_social_links[platform.key] || []).length > 0;
+                  const SocialIcon = platform.icon;
+                  return (
+                    <motion.div
+                      key={platform.key}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3 + i * 0.04 }}
+                      whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
+                      className={`group flex flex-col items-center gap-2 rounded-xl border px-3 py-3 transition-all duration-300 cursor-default ${
+                        found
+                          ? "border-border bg-surface hover:shadow-md hover:border-blue-500/20"
+                          : "border-dashed border-border/60 bg-surface-secondary/30"
+                      }`}
+                    >
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
+                        found ? platform.bgColor : "bg-surface-secondary"
+                      }`}>
+                        <SocialIcon className={`h-5 w-5 transition-all duration-300 ${
+                          found ? platform.brandColor : "text-fg-hint/30"
+                        }`} />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <p className={`text-xs font-semibold transition-colors ${found ? "text-fg" : "text-fg-hint/40"}`}>
+                          {platform.label}
+                        </p>
+                        {found && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.4 + i * 0.04 }}>
+                            <CheckCircle2 size={12} className="text-emerald-500" />
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+
+          {/* Tech Stack */}
+          {intake.detected_tech_stack.length > 0 && (
+            <Card delay={0.3} className="h-fit lg:col-span-2">
+              <CardHeader
+                icon={Code2}
+                iconGradient="from-cyan-500 to-blue-600 shadow-cyan-500/25"
+                title="Tech Stack"
+                subtitle="Detected technologies"
+                badge={
+                  <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-2xs font-bold text-cyan-500 ring-1 ring-cyan-500/20">
+                    {intake.detected_tech_stack.length} found
+                  </span>
+                }
+              />
+              <div className="p-5">
+                <div className="flex flex-wrap gap-2">
+                  {intake.detected_tech_stack.map((tech, i) => (
+                    <motion.span
+                      key={tech}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.35 + i * 0.05 }}
+                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-2 text-sm font-bold text-cyan-600 ring-1 ring-cyan-500/20 hover:ring-cyan-500/40 transition-all cursor-default"
+                    >
+                      <Code2 size={12} />
+                      {tech}
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* ══════════ CONTINUE BUTTON ══════════ */}
@@ -684,7 +681,7 @@ export default function OnboardingCompany() {
           disabled={saving}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
-          className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 bg-[length:200%_100%] py-5 text-base font-bold text-white shadow-xl shadow-blue-500/25 transition-all duration-500 hover:bg-right hover:shadow-2xl hover:shadow-blue-500/30 disabled:opacity-50"
+          className="group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 via-blue-600 to-blue-500 bg-[length:200%_100%] py-4 text-sm font-bold text-white shadow-xl shadow-blue-500/25 transition-all duration-500 hover:bg-right hover:shadow-2xl hover:shadow-blue-500/30 disabled:opacity-50"
         >
           {/* Shimmer effect */}
           <motion.div
