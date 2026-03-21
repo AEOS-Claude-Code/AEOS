@@ -86,8 +86,8 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Content */}
-      <main className="flex flex-1 items-start justify-center px-4 py-10">
-        <div className="w-full max-w-3xl">{children}</div>
+      <main className="flex flex-1 items-start justify-center px-6 py-8">
+        <div className="w-full max-w-7xl">{children}</div>
       </main>
     </div>
   );

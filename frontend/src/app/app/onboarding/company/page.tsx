@@ -355,7 +355,7 @@ export default function OnboardingCompany() {
   if (loading) return <LoadingScreen />;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-auto max-w-6xl space-y-5 px-4 pb-8">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full space-y-4 pb-6">
 
       {/* ══════════ HERO BANNER ══════════ */}
       <AnimatePresence>
@@ -419,8 +419,8 @@ export default function OnboardingCompany() {
           className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-6 py-4 text-sm text-amber-400">{error}</motion.div>
       )}
 
-      {/* ══════════ ROW 1: Company Identity + Contact Information ══════════ */}
-      <div className="grid gap-5 lg:grid-cols-2">
+      {/* ══════════ ROW 1: Company Identity + Contact Info + Social ══════════ */}
+      <div className="grid gap-4 lg:grid-cols-3">
         {/* Company Identity */}
         <Card delay={0.1} className="h-fit">
           <CardHeader
@@ -436,27 +436,27 @@ export default function OnboardingCompany() {
             ) : undefined}
           />
           <div className="p-5">
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
                   <Building2 size={10} /> Company name
                 </label>
                 <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Your company name" className={ic} />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
-                    <Zap size={10} /> Industry
-                    {intake && intake.industry_confidence > 0 && (
-                      <span className="rounded-full bg-blue-500/10 px-1.5 py-0.5 text-2xs font-bold text-blue-500 normal-case tracking-normal"
-                      >{Math.round(intake.industry_confidence * 100)}%</span>
-                    )}
-                  </label>
-                  <select value={industry} onChange={e => setIndustry(e.target.value)} className={selectClass}>
-                    <option value="">Select</option>
-                    {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
-                  </select>
-                </div>
+              <div>
+                <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
+                  <Zap size={10} /> Industry
+                  {intake && intake.industry_confidence > 0 && (
+                    <span className="rounded-full bg-blue-500/10 px-1.5 py-0.5 text-2xs font-bold text-blue-500 normal-case tracking-normal"
+                    >{Math.round(intake.industry_confidence * 100)}%</span>
+                  )}
+                </label>
+                <select value={industry} onChange={e => setIndustry(e.target.value)} className={selectClass}>
+                  <option value="">Select</option>
+                  {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
                     <Flag size={10} /> Country
@@ -497,7 +497,7 @@ export default function OnboardingCompany() {
               ) : undefined}
             />
             <div className="p-5">
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {[
                   {
                     icon: Phone, label: "Phone",
@@ -534,7 +534,7 @@ export default function OnboardingCompany() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.25 + i * 0.06 }}
-                    className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-all duration-300 ${
+                    className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 transition-all duration-300 ${
                       found
                         ? "border-border bg-surface hover:border-blue-500/30 hover:shadow-sm"
                         : "border-dashed border-border bg-surface-secondary/50"
@@ -546,10 +546,10 @@ export default function OnboardingCompany() {
                         : "bg-surface-secondary"
                     }`}>
                       {isSvg ? (
-                        <Ic className={`h-4 w-4 ${found ? "text-white" : "text-fg-hint"}`} />
+                        <Ic className={`h-3.5 w-3.5 ${found ? "text-white" : "text-fg-hint"}`} />
                       ) : (
                         // @ts-ignore
-                        <Ic size={15} className={found ? "text-white" : "text-fg-hint"} />
+                        <Ic size={14} className={found ? "text-white" : "text-fg-hint"} />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -562,7 +562,7 @@ export default function OnboardingCompany() {
                     </div>
                     {found && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 + i * 0.08 }}>
-                        <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                        <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
                       </motion.div>
                     )}
                   </motion.div>
@@ -571,17 +571,14 @@ export default function OnboardingCompany() {
             </div>
           </Card>
         )}
-      </div>
 
-      {/* ══════════ ROW 2: Social Profiles + Tech Stack ══════════ */}
-      {intake && (
-        <div className={`grid gap-5 ${intake.detected_tech_stack.length > 0 ? "lg:grid-cols-5" : "lg:grid-cols-1"}`}>
-          {/* Social Media Profiles */}
-          <Card delay={0.25} className={`h-fit ${intake.detected_tech_stack.length > 0 ? "lg:col-span-3" : ""}`}>
+        {/* Social Media Profiles */}
+        {intake && (
+          <Card delay={0.2} className="h-fit">
             <CardHeader
               icon={Share2}
               iconGradient="from-pink-500 to-rose-600 shadow-pink-500/25"
-              title="Social Media Profiles"
+              title="Social Profiles"
               subtitle="Detected social presence"
               badge={socialCount > 0 ? (
                 <span className="rounded-full bg-pink-500/10 px-2.5 py-1 text-2xs font-bold text-pink-500 ring-1 ring-pink-500/20">
@@ -590,7 +587,7 @@ export default function OnboardingCompany() {
               ) : undefined}
             />
             <div className="p-5">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 gap-2">
                 {SOCIAL_PLATFORMS.map((platform, i) => {
                   const found = (intake.detected_social_links[platform.key] || []).length > 0;
                   const SocialIcon = platform.icon;
@@ -600,71 +597,72 @@ export default function OnboardingCompany() {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.3 + i * 0.04 }}
-                      whileHover={{ scale: 1.04, transition: { duration: 0.2 } }}
-                      className={`group flex flex-col items-center gap-2 rounded-xl border px-3 py-3 transition-all duration-300 cursor-default ${
+                      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+                      className={`group flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all duration-300 cursor-default ${
                         found
                           ? "border-border bg-surface hover:shadow-md hover:border-blue-500/20"
                           : "border-dashed border-border/60 bg-surface-secondary/30"
                       }`}
                     >
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300 ${
                         found ? platform.bgColor : "bg-surface-secondary"
                       }`}>
-                        <SocialIcon className={`h-5 w-5 transition-all duration-300 ${
+                        <SocialIcon className={`h-4 w-4 transition-all duration-300 ${
                           found ? platform.brandColor : "text-fg-hint/30"
                         }`} />
                       </div>
-                      <div className="flex items-center gap-1">
-                        <p className={`text-xs font-semibold transition-colors ${found ? "text-fg" : "text-fg-hint/40"}`}>
-                          {platform.label}
-                        </p>
-                        {found && (
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.4 + i * 0.04 }}>
-                            <CheckCircle2 size={12} className="text-emerald-500" />
-                          </motion.div>
-                        )}
-                      </div>
+                      <p className={`text-xs font-semibold transition-colors flex-1 ${found ? "text-fg" : "text-fg-hint/40"}`}>
+                        {platform.label}
+                      </p>
+                      {found ? (
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.4 + i * 0.04 }}>
+                          <CheckCircle2 size={13} className="text-emerald-500" />
+                        </motion.div>
+                      ) : (
+                        <XCircle size={12} className="text-fg-hint/20" />
+                      )}
                     </motion.div>
                   );
                 })}
               </div>
             </div>
           </Card>
+        )}
+      </div>
 
-          {/* Tech Stack */}
-          {intake.detected_tech_stack.length > 0 && (
-            <Card delay={0.3} className="h-fit lg:col-span-2">
-              <CardHeader
-                icon={Code2}
-                iconGradient="from-cyan-500 to-blue-600 shadow-cyan-500/25"
-                title="Tech Stack"
-                subtitle="Detected technologies"
-                badge={
-                  <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-2xs font-bold text-cyan-500 ring-1 ring-cyan-500/20">
-                    {intake.detected_tech_stack.length} found
-                  </span>
-                }
-              />
-              <div className="p-5">
-                <div className="flex flex-wrap gap-2">
-                  {intake.detected_tech_stack.map((tech, i) => (
-                    <motion.span
-                      key={tech}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.35 + i * 0.05 }}
-                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-2 text-sm font-bold text-cyan-600 ring-1 ring-cyan-500/20 hover:ring-cyan-500/40 transition-all cursor-default"
-                    >
-                      <Code2 size={12} />
-                      {tech}
-                    </motion.span>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
+      {/* ══════════ ROW 2: Tech Stack (full width) ══════════ */}
+      {intake && intake.detected_tech_stack.length > 0 && (
+        <Card delay={0.3}>
+          <div className="flex items-center gap-3.5 px-5 py-4">
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 3 }}
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25"
+            >
+              <Code2 size={18} className="text-white" />
+            </motion.div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-bold text-fg">Technology Stack</h3>
+            </div>
+            <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-2xs font-bold text-cyan-500 ring-1 ring-cyan-500/20">
+              {intake.detected_tech_stack.length} detected
+            </span>
+            <div className="flex flex-wrap gap-2 ml-2">
+              {intake.detected_tech_stack.map((tech, i) => (
+                <motion.span
+                  key={tech}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.35 + i * 0.05 }}
+                  whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 ring-1 ring-cyan-500/20 hover:ring-cyan-500/40 transition-all cursor-default"
+                >
+                  <Code2 size={11} />
+                  {tech}
+                </motion.span>
+              ))}
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* ══════════ CONTINUE BUTTON ══════════ */}
