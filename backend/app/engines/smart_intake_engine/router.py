@@ -106,19 +106,8 @@ async def get_intake_results(
             except Exception:
                 pass
 
-        # Always re-detect competitors using latest country-specific logic
-        industry = profile.industry or "other"
-        try:
-            from .service import _detect_competitors
-            fresh_competitors = _detect_competitors(industry=industry, country=country, url=url)
-            # Update stored data if changed
-            if fresh_competitors:
-                profile.detected_competitors_data = fresh_competitors
-                await db.flush()
-        except Exception:
-            fresh_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else []
-
         # Backfill team, services, seo_health if missing (new features on existing user)
+        industry = profile.industry or "other"
         team_data = profile.detected_team if isinstance(profile.detected_team, dict) and profile.detected_team.get("count") else {}
         services_data = profile.detected_services if isinstance(profile.detected_services, list) and profile.detected_services else []
         seo_health = profile.detected_seo_health if isinstance(profile.detected_seo_health, dict) and profile.detected_seo_health.get("score") is not None else {}
@@ -139,14 +128,26 @@ async def get_intake_results(
                     if not seo_health:
                         seo_health = await _check_seo_health(html_content, url)
                         profile.detected_seo_health = seo_health
-                    # Re-detect competitors with services context
-                    if services_data:
-                        from .service import _detect_competitors as _dc
-                        fresh_competitors = _dc(industry=industry, country=country, url=url, services=services_data)
-                        profile.detected_competitors_data = fresh_competitors
                     await db.flush()
             except Exception:
                 logger.info("Backfill extraction failed for workspace=%s", workspace.id)
+
+        # AI-powered competitor discovery (uses Claude to find real local competitors)
+        try:
+            from .service import _discover_competitors_ai
+            fresh_competitors = await _discover_competitors_ai(
+                company_name=workspace.name or "",
+                industry=industry,
+                country=country,
+                city=city,
+                url=url,
+                services=services_data if services_data else None,
+            )
+            if fresh_competitors:
+                profile.detected_competitors_data = fresh_competitors
+                await db.flush()
+        except Exception:
+            fresh_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else []
 
         return IntakeFromUrlResponse(
             url=url,

@@ -976,16 +976,16 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* Competitors */}
+          {/* Competitors — AI-Powered Discovery */}
           <Card delay={0.45} className="h-full">
             <CardHeader
               icon={Trophy}
               iconGradient="from-red-500 to-rose-600 shadow-red-500/25"
               title="Competitors"
-              subtitle="Similar companies detected"
+              subtitle="AI-powered market discovery"
               badge={intake.detected_competitors?.length > 0 ? (
-                <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-2xs font-bold text-red-500 ring-1 ring-red-500/20">
-                  {intake.detected_competitors.length} found
+                <span className="rounded-full bg-gradient-to-r from-red-500/10 to-purple-500/10 px-2.5 py-1 text-2xs font-bold text-red-500 ring-1 ring-red-500/20">
+                  <span className="mr-1">🤖</span>{intake.detected_competitors.length} found
                 </span>
               ) : undefined}
             />
@@ -998,29 +998,29 @@ export default function OnboardingCompany() {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.45 + i * 0.06 }}
-                      className="flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2 hover:border-red-500/30 hover:shadow-sm transition-all duration-300"
+                      className="group flex items-start gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 hover:border-red-500/30 hover:shadow-sm transition-all duration-300"
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/20">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/20 mt-0.5">
                         <Trophy size={14} className="text-white" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-fg leading-snug">{comp.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-fg leading-snug truncate">{comp.name}</p>
+                        </div>
+                        {comp.type && (
+                          <p className="text-2xs text-fg-hint mt-0.5 leading-relaxed line-clamp-1">{comp.type}</p>
+                        )}
                         {comp.url && (
                           <a
                             href={comp.url.startsWith("http") ? comp.url : `https://${comp.url}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-2xs text-blue-500 hover:underline truncate block"
+                            className="text-2xs text-blue-500 hover:underline truncate block mt-0.5 opacity-60 group-hover:opacity-100 transition-opacity"
                           >
-                            {comp.url}
+                            {comp.url.replace(/^https?:\/\/(www\.)?/, '')}
                           </a>
                         )}
                       </div>
-                      {comp.type && (
-                        <span className="shrink-0 rounded-full bg-red-500/10 px-2 py-0.5 text-2xs font-semibold text-red-500 ring-1 ring-red-500/20">
-                          {comp.type}
-                        </span>
-                      )}
                     </motion.div>
                   ))}
                 </div>
@@ -1033,8 +1033,8 @@ export default function OnboardingCompany() {
                   >
                     <Trophy size={24} className="text-red-500/50" />
                   </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Competitor detection in progress</p>
+                  <p className="text-xs font-medium text-fg-hint">Discovering competitors...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">AI analyzing your market &amp; services</p>
                 </div>
               )}
             </div>

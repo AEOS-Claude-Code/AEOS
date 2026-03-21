@@ -493,20 +493,16 @@ SERVICE_COMPETITORS: dict[str, list[dict]] = {
 }
 
 
-def _detect_competitors(industry: str, country: str, url: str, services: list[str] = None) -> list[dict]:
-    """Return well-known competitors for the given industry, preferring country-specific ones.
-    Also includes service-specific competitors based on the detected services."""
-    # Try country-specific competitors first
+def _detect_competitors_static(industry: str, country: str, url: str, services: list[str] = None) -> list[dict]:
+    """Static fallback: Return well-known competitors from hardcoded datasets."""
     country_key = country.lower().strip() if country else ""
     country_comps = COUNTRY_COMPETITORS.get(country_key, {}).get(industry, [])
 
-    # Fall back to global if no country-specific data
     if not country_comps:
         competitors = list(INDUSTRY_COMPETITORS.get(industry, []))
     else:
         competitors = list(country_comps)
 
-    # Filter out the scanned company's own domain
     try:
         scanned_domain = urlparse(url).netloc.replace("www.", "").lower()
     except Exception:
@@ -525,7 +521,6 @@ def _detect_competitors(industry: str, country: str, url: str, services: list[st
             result.append(comp)
             seen_domains.add(comp_domain)
 
-    # Add service-specific competitors
     if services:
         for service in services:
             service_lower = service.lower()
@@ -547,6 +542,167 @@ def _detect_competitors(industry: str, country: str, url: str, services: list[st
                 break
 
     return result[:6]
+
+
+async def _discover_competitors_ai(
+    company_name: str,
+    industry: str,
+    country: str,
+    city: str,
+    url: str,
+    services: list[str] = None,
+) -> list[dict]:
+    """
+    AI-powered competitor discovery using Claude API.
+
+    Uses the AEOS Competitor Intelligence Engine approach:
+    1. Builds a rich context prompt from company profile data
+    2. Asks Claude to identify real local competitors in the same market
+    3. Parses structured JSON response with competitor names, URLs, and types
+    4. Falls back to static data if AI is unavailable
+    """
+    from app.core.config import settings
+
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key:
+        logger.info("No Anthropic API key — falling back to static competitor detection")
+        return _detect_competitors_static(industry, country, url, services)
+
+    try:
+        scanned_domain = urlparse(url).netloc.replace("www.", "").lower()
+    except Exception:
+        scanned_domain = ""
+
+    # Build the context for AI
+    services_text = ", ".join(services[:10]) if services else "not detected"
+    country_text = country or "unknown"
+    city_text = city or ""
+    location_text = f"{city_text}, {country_text}".strip(", ") if city_text else country_text
+
+    prompt = (
+        f"You are an AI-powered competitor intelligence engine for the MENA region and global markets.\n\n"
+        f"Company: {company_name or scanned_domain}\n"
+        f"Website: {url}\n"
+        f"Industry: {industry}\n"
+        f"Location: {location_text}\n"
+        f"Services/Products: {services_text}\n\n"
+        f"Identify exactly 6 real competitors for this company. Focus on:\n"
+        f"1. LOCAL competitors in {country_text} that offer similar services/products\n"
+        f"2. Regional competitors in the same market (MENA/GCC if applicable)\n"
+        f"3. Only include companies that ACTUALLY EXIST with real, working websites\n"
+        f"4. Match competitors to the specific services: {services_text}\n"
+        f"5. Do NOT include the company itself ({scanned_domain})\n"
+        f"6. Prefer direct competitors (same services/industry) over indirect ones\n\n"
+        f"Return ONLY a JSON array with exactly 6 objects. No markdown, no explanation:\n"
+        f'[{{"name": "Company Name", "url": "https://example.com", "type": "Brief description of what they do"}}]\n\n'
+        f"Requirements:\n"
+        f"- Each URL must be a real, valid website (https://...)\n"
+        f"- Each name must be the actual company name\n"
+        f"- Each type should be a short description (under 50 chars) mentioning their market\n"
+        f"- Prioritize competitors from {country_text} first, then regional, then global\n"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=25) as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 800,
+                    "system": (
+                        "You are the AEOS Competitor Intelligence Engine. "
+                        "You identify real, verified competitors for businesses based on their industry, "
+                        "location, and services. You ONLY return real companies with real websites. "
+                        "You focus on local and regional competitors first. "
+                        "You respond with ONLY valid JSON arrays, no markdown, no explanation."
+                    ),
+                    "messages": [
+                        {"role": "user", "content": prompt},
+                    ],
+                },
+            )
+
+            if resp.status_code != 200:
+                logger.warning("Claude API returned %d for competitor discovery", resp.status_code)
+                return _detect_competitors_static(industry, country, url, services)
+
+            data = resp.json()
+            if not data.get("content") or not data["content"][0].get("text"):
+                return _detect_competitors_static(industry, country, url, services)
+
+            ai_text = data["content"][0]["text"].strip()
+
+            # Parse JSON — handle potential markdown wrapping
+            if ai_text.startswith("```"):
+                ai_text = re.sub(r"^```(?:json)?\s*", "", ai_text)
+                ai_text = re.sub(r"\s*```$", "", ai_text)
+
+            competitors = json.loads(ai_text)
+            if not isinstance(competitors, list):
+                return _detect_competitors_static(industry, country, url, services)
+
+            # Validate and filter
+            result = []
+            seen_domains: set[str] = set()
+            for comp in competitors:
+                if not isinstance(comp, dict):
+                    continue
+                name = comp.get("name", "").strip()
+                comp_url = comp.get("url", "").strip()
+                comp_type = comp.get("type", "").strip()
+
+                if not name or not comp_url:
+                    continue
+                if not comp_url.startswith("http"):
+                    comp_url = "https://" + comp_url
+
+                try:
+                    comp_domain = urlparse(comp_url).netloc.replace("www.", "").lower()
+                except Exception:
+                    continue
+
+                # Skip self
+                if comp_domain and scanned_domain and comp_domain == scanned_domain:
+                    continue
+                # Skip duplicates
+                if comp_domain in seen_domains:
+                    continue
+
+                result.append({
+                    "name": name[:60],
+                    "url": comp_url,
+                    "type": comp_type[:80] if comp_type else f"{industry} competitor",
+                })
+                seen_domains.add(comp_domain)
+
+                if len(result) >= 6:
+                    break
+
+            if result:
+                logger.info(
+                    "AI competitor discovery found %d competitors for %s (%s, %s)",
+                    len(result), company_name or scanned_domain, industry, country_text,
+                )
+                return result
+
+            # AI returned empty/invalid — fall back
+            logger.info("AI competitor discovery returned no valid results — using static fallback")
+            return _detect_competitors_static(industry, country, url, services)
+
+    except Exception as e:
+        logger.warning("AI competitor discovery failed: %s — using static fallback", str(e)[:100])
+        return _detect_competitors_static(industry, country, url, services)
+
+
+# Keep sync wrapper for backward compatibility
+def _detect_competitors(industry: str, country: str, url: str, services: list[str] = None) -> list[dict]:
+    """Sync fallback — uses static data. Prefer _discover_competitors_ai() for AI-powered discovery."""
+    return _detect_competitors_static(industry, country, url, services)
 
 
 # ── Common English / HTML stop words to exclude from SEO keywords ──
@@ -1219,10 +1375,12 @@ async def intake_from_url(url: str) -> dict:
     # 7e. Check SEO health
     seo_health = await _check_seo_health(html, url)
 
-    # 8. Detect competitors
-    competitors = _detect_competitors(
+    # 8. Discover competitors (AI-powered with static fallback)
+    competitors = await _discover_competitors_ai(
+        company_name=profile.get("detected_company_name", ""),
         industry=industry_result["detected_industry"],
         country=location.get("country", ""),
+        city=location.get("city", ""),
         url=url,
         services=detected_services,
     )
