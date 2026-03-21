@@ -497,7 +497,7 @@ export default function OnboardingCompany() {
               ) : undefined}
             />
             <div className="p-5">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2.5">
                 {[
                   {
                     icon: Phone, label: "Phone",
@@ -531,43 +531,40 @@ export default function OnboardingCompany() {
                 ].map(({ icon: Ic, label, value, found, gradient, glow, isSvg }, i) => (
                   <motion.div
                     key={label}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.25 + i * 0.06 }}
-                    whileHover={{ y: -2, transition: { duration: 0.2 } }}
-                    className={`group relative overflow-hidden rounded-xl border p-3 transition-all duration-300 ${
+                    className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-all duration-300 ${
                       found
-                        ? "border-border bg-surface hover:border-blue-500/30 hover:shadow-md"
+                        ? "border-border bg-surface hover:border-blue-500/30 hover:shadow-sm"
                         : "border-dashed border-border bg-surface-secondary/50"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                        found
-                          ? `bg-gradient-to-br ${gradient} shadow-md ${glow}`
-                          : "bg-surface-secondary"
-                      }`}>
-                        {isSvg ? (
-                          <Ic className={`h-4 w-4 ${found ? "text-white" : "text-fg-hint"}`} />
-                        ) : (
-                          // @ts-ignore
-                          <Ic size={16} className={found ? "text-white" : "text-fg-hint"} />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-2xs font-medium text-fg-hint">{label}</p>
-                        {found ? (
-                          <p className="truncate text-xs font-bold text-fg">{value || "Found"}</p>
-                        ) : (
-                          <p className="text-xs text-fg-hint/60">Not detected</p>
-                        )}
-                      </div>
-                      {found && (
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 + i * 0.08 }}>
-                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                        </motion.div>
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      found
+                        ? `bg-gradient-to-br ${gradient} shadow-md ${glow}`
+                        : "bg-surface-secondary"
+                    }`}>
+                      {isSvg ? (
+                        <Ic className={`h-4 w-4 ${found ? "text-white" : "text-fg-hint"}`} />
+                      ) : (
+                        // @ts-ignore
+                        <Ic size={15} className={found ? "text-white" : "text-fg-hint"} />
                       )}
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-2xs font-medium text-fg-hint">{label}</p>
+                      {found ? (
+                        <p className="break-all text-xs font-bold text-fg leading-snug">{value || "Found"}</p>
+                      ) : (
+                        <p className="text-xs text-fg-hint/60">Not detected</p>
+                      )}
+                    </div>
+                    {found && (
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 + i * 0.08 }}>
+                        <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                      </motion.div>
+                    )}
                   </motion.div>
                 ))}
               </div>
