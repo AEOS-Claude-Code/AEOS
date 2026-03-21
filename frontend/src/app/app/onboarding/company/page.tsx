@@ -668,7 +668,7 @@ export default function OnboardingCompany() {
         )}
       </div>
 
-      {/* ══════════ ROW 2: Website Preview + Location + SEO Keywords ══════════ */}
+      {/* ══════════ ROW 2: Website Preview + Location + Products & Services ══════════ */}
       {intake && (
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Website Preview */}
@@ -763,73 +763,43 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* SEO & Site Health */}
+          {/* Products & Services */}
           <Card delay={0.35} className="h-full">
             <CardHeader
-              icon={ShieldCheck}
-              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
-              title="SEO & Site Health"
-              subtitle="Website optimization checks"
-              badge={intake.detected_seo_health?.score != null ? (
-                <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
-                  intake.detected_seo_health.score >= 80
-                    ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
-                    : intake.detected_seo_health.score >= 50
-                    ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
-                    : "bg-red-500/10 text-red-500 ring-red-500/20"
-                }`}>
-                  {intake.detected_seo_health.score}%
+              icon={Briefcase}
+              iconGradient="from-teal-500 to-emerald-600 shadow-teal-500/25"
+              title="Products & Services"
+              subtitle="Detected offerings"
+              badge={intake.detected_services?.length > 0 ? (
+                <span className="rounded-full bg-teal-500/10 px-2.5 py-1 text-2xs font-bold text-teal-600 ring-1 ring-teal-500/20">
+                  {intake.detected_services.length} found
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_seo_health?.score != null ? (
-                <div className="space-y-1.5">
-                  {[
-                    { key: "has_ssl", label: "SSL / HTTPS", icon: "🔒" },
-                    { key: "has_meta_title", label: "Meta Title", icon: "📄" },
-                    { key: "has_meta_description", label: "Meta Description", icon: "📝" },
-                    { key: "has_sitemap", label: "Sitemap.xml", icon: "🗺️" },
-                    { key: "has_robots", label: "Robots.txt", icon: "🤖" },
-                    { key: "has_h1", label: "H1 Heading", icon: "🔤" },
-                    { key: "has_viewport", label: "Mobile Ready", icon: "📱" },
-                    { key: "has_og_tags", label: "OG Tags", icon: "🏷️" },
-                    { key: "has_canonical", label: "Canonical URL", icon: "🔗" },
-                  ].map(({ key, label, icon }, i) => {
-                    const check = (intake.detected_seo_health as any)?.[key];
-                    const passed = check?.status === true;
-                    return (
-                      <motion.div
-                        key={key}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.35 + i * 0.03 }}
-                        className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
-                          passed ? "bg-emerald-500/[0.06]" : "bg-red-500/[0.06]"
-                        }`}
-                      >
-                        <span className="text-xs">{icon}</span>
-                        <span className="flex-1 font-medium text-fg">{label}</span>
-                        {passed ? (
-                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                        ) : (
-                          <XCircle size={13} className="text-red-400 shrink-0" />
-                        )}
-                      </motion.div>
-                    );
-                  })}
+              {intake.detected_services?.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {intake.detected_services.map((svc, i) => (
+                    <motion.span
+                      key={svc}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.35 + i * 0.04 }}
+                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-default"
+                    >
+                      <Briefcase size={10} />
+                      {svc}
+                    </motion.span>
+                  ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <motion.div
-                    animate={{ opacity: [0.4, 0.8, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
-                  >
-                    <ShieldCheck size={24} className="text-amber-500/50" />
-                  </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Checking...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Running SEO health checks</p>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 mb-3">
+                    <Briefcase size={24} className="text-teal-500/50" />
+                  </div>
+                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">No services found on the website</p>
                 </div>
               )}
             </div>
@@ -837,7 +807,7 @@ export default function OnboardingCompany() {
         </div>
       )}
 
-      {/* ══════════ ROW 3: Team/People + Products/Services + Competitors ══════════ */}
+      {/* ══════════ ROW 3: Team/People + SEO & Site Health + Competitors ══════════ */}
       {intake && (
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Team / People */}
@@ -934,43 +904,73 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* Products & Services */}
+          {/* SEO & Site Health */}
           <Card delay={0.42} className="h-full">
             <CardHeader
-              icon={Briefcase}
-              iconGradient="from-teal-500 to-emerald-600 shadow-teal-500/25"
-              title="Products & Services"
-              subtitle="Detected offerings"
-              badge={intake.detected_services?.length > 0 ? (
-                <span className="rounded-full bg-teal-500/10 px-2.5 py-1 text-2xs font-bold text-teal-600 ring-1 ring-teal-500/20">
-                  {intake.detected_services.length} found
+              icon={ShieldCheck}
+              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
+              title="SEO & Site Health"
+              subtitle="Website optimization checks"
+              badge={intake.detected_seo_health?.score != null ? (
+                <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
+                  intake.detected_seo_health.score >= 80
+                    ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
+                    : intake.detected_seo_health.score >= 50
+                    ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
+                    : "bg-red-500/10 text-red-500 ring-red-500/20"
+                }`}>
+                  {intake.detected_seo_health.score}%
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_services?.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {intake.detected_services.map((svc, i) => (
-                    <motion.span
-                      key={svc}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.42 + i * 0.04 }}
-                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-teal-500/10 to-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-500/20 hover:ring-teal-500/40 transition-all cursor-default"
-                    >
-                      <Briefcase size={10} />
-                      {svc}
-                    </motion.span>
-                  ))}
+              {intake.detected_seo_health?.score != null ? (
+                <div className="space-y-1.5">
+                  {[
+                    { key: "has_ssl", label: "SSL / HTTPS", icon: "🔒" },
+                    { key: "has_meta_title", label: "Meta Title", icon: "📄" },
+                    { key: "has_meta_description", label: "Meta Description", icon: "📝" },
+                    { key: "has_sitemap", label: "Sitemap.xml", icon: "🗺️" },
+                    { key: "has_robots", label: "Robots.txt", icon: "🤖" },
+                    { key: "has_h1", label: "H1 Heading", icon: "🔤" },
+                    { key: "has_viewport", label: "Mobile Ready", icon: "📱" },
+                    { key: "has_og_tags", label: "OG Tags", icon: "🏷️" },
+                    { key: "has_canonical", label: "Canonical URL", icon: "🔗" },
+                  ].map(({ key, label, icon }, i) => {
+                    const check = (intake.detected_seo_health as any)?.[key];
+                    const passed = check?.status === true;
+                    return (
+                      <motion.div
+                        key={key}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.42 + i * 0.03 }}
+                        className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                          passed ? "bg-emerald-500/[0.06]" : "bg-red-500/[0.06]"
+                        }`}
+                      >
+                        <span className="text-xs">{icon}</span>
+                        <span className="flex-1 font-medium text-fg">{label}</span>
+                        {passed ? (
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                        ) : (
+                          <XCircle size={13} className="text-red-400 shrink-0" />
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 mb-3">
-                    <Briefcase size={24} className="text-teal-500/50" />
-                  </div>
-                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">No services found on the website</p>
+                  <motion.div
+                    animate={{ opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
+                  >
+                    <ShieldCheck size={24} className="text-amber-500/50" />
+                  </motion.div>
+                  <p className="text-xs font-medium text-fg-hint">Checking...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Running SEO health checks</p>
                 </div>
               )}
             </div>
