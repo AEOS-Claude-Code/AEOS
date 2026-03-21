@@ -114,12 +114,12 @@ async def get_intake_results(
             detected_country=country,
             detected_city=city,
             detected_phone_numbers=[profile.phone] if profile.phone else [],
-            detected_emails=[],
+            detected_emails=profile.emails if isinstance(profile.emails, list) else [],
             detected_social_links=social_links,
             detected_whatsapp_links=[profile.whatsapp_link] if profile.whatsapp_link else [],
             detected_contact_pages=[profile.contact_page] if profile.contact_page else [],
             detected_booking_pages=[],
-            detected_tech_stack=[],
+            detected_tech_stack=profile.tech_stack if isinstance(profile.tech_stack, list) else [],
             page_title="",
             meta_description="",
         )
@@ -161,6 +161,14 @@ async def get_intake_results(
             profile.country = result["detected_country"]
         if result.get("detected_city"):
             profile.city = result["detected_city"]
+
+        tech = result.get("detected_tech_stack", [])
+        if tech:
+            profile.tech_stack = tech
+
+        emails = result.get("detected_emails", [])
+        if emails:
+            profile.emails = emails
 
         await db.flush()
         return result

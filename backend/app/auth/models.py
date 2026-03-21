@@ -117,6 +117,8 @@ class WorkspaceProfile(Base):
     contact_page = Column(String(500), default="")
     phone = Column(String(50), default="")
     google_business_url = Column(String(500), default="")
+    tech_stack = Column(JSON, default=list)  # list of detected technology names
+    emails = Column(JSON, default=list)  # list of detected email addresses
 
     competitor_urls = Column(JSON, default=list)  # list of strings
 

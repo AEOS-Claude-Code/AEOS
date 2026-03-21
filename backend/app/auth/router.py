@@ -146,6 +146,14 @@ async def register(request: Request, body: RegisterRequest, db: AsyncSession = D
                         if intake_data.get("detected_city"):
                             profile.city = intake_data["detected_city"]
 
+                        tech = intake_data.get("detected_tech_stack", [])
+                        if tech:
+                            profile.tech_stack = tech
+
+                        emails = intake_data.get("detected_emails", [])
+                        if emails:
+                            profile.emails = emails
+
                         await bg_db.flush()
 
                         ob_result = await bg_db.execute(

@@ -94,6 +94,8 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS allow_overage BOOLEAN DEFAULT FALSE NOT NULL",
                     "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS overage_rate FLOAT DEFAULT 0.002 NOT NULL",
                     "ALTER TABLE token_wallets ADD COLUMN IF NOT EXISTS overage_tokens INTEGER DEFAULT 0 NOT NULL",
+                    "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS tech_stack JSON DEFAULT '[]'::json",
+                    "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS emails JSON DEFAULT '[]'::json",
                 ]
                 for sql in migrations:
                     await conn.execute(sa_text(sql))
