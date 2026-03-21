@@ -124,6 +124,7 @@ class WorkspaceProfile(Base):
     business_hours = Column(JSON, default=list)
     content_languages = Column(JSON, default=list)
     detected_competitors_data = Column(JSON, default=list)
+    seo_keywords = Column(JSON, default=list)  # list of detected SEO keyword strings
 
     competitor_urls = Column(JSON, default=list)  # list of strings
 

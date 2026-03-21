@@ -426,6 +426,97 @@ def _detect_competitors(industry: str, country: str, url: str) -> list[dict]:
     return result
 
 
+# ── Common English / HTML stop words to exclude from SEO keywords ──
+_STOP_WORDS = {
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of",
+    "with", "by", "from", "is", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should",
+    "may", "might", "must", "can", "could", "this", "that", "these", "those",
+    "it", "its", "we", "our", "us", "you", "your", "they", "their", "them",
+    "he", "she", "him", "her", "his", "all", "each", "every", "both", "few",
+    "more", "most", "other", "some", "such", "no", "not", "only", "own", "same",
+    "so", "than", "too", "very", "just", "about", "above", "after", "again",
+    "also", "any", "as", "back", "because", "before", "between", "both",
+    "come", "contact", "get", "go", "here", "how", "if", "into", "know",
+    "like", "make", "many", "me", "my", "new", "now", "one", "out", "over",
+    "said", "see", "take", "there", "then", "time", "two", "up", "use",
+    "want", "way", "what", "when", "which", "who", "why", "work",
+    "home", "page", "click", "read", "learn", "menu", "skip", "main",
+    "content", "navigation", "search", "close", "open", "more", "less",
+    "copyright", "reserved", "rights", "privacy", "policy", "terms",
+    "conditions", "cookie", "cookies", "accept", "website", "site",
+}
+
+
+def _extract_seo_keywords(html: str, title: str, description: str, headings: list[str]) -> list[str]:
+    """Extract top SEO keywords from page content using meta keywords + TF analysis."""
+    keywords: list[str] = []
+    seen = set()
+
+    def _add(kw: str):
+        kw = kw.strip().lower()
+        if kw and kw not in seen and len(kw) >= 3 and kw not in _STOP_WORDS:
+            seen.add(kw)
+            keywords.append(kw.title())
+
+    # 1. Meta keywords tag (highest priority — site explicitly declared these)
+    kw_match = re.search(r'<meta\s+name=["\']keywords["\']\s+content=["\']([^"\']+)', html, re.IGNORECASE)
+    if not kw_match:
+        kw_match = re.search(r'<meta\s+content=["\']([^"\']+)["\']\s+name=["\']keywords["\']', html, re.IGNORECASE)
+    if kw_match:
+        for kw in kw_match.group(1).split(","):
+            _add(kw.strip())
+
+    # 2. Extract from title (strong SEO signal)
+    if title:
+        for sep in [" | ", " - ", " – ", " — ", " :: ", " : ", ","]:
+            if sep in title:
+                for part in title.split(sep):
+                    part = part.strip()
+                    if 3 <= len(part) <= 40:
+                        _add(part)
+                break
+        else:
+            for word in title.split():
+                _add(word)
+
+    # 3. Extract from headings (H1/H2)
+    for heading in headings[:6]:
+        words = re.findall(r'\b[a-zA-Z]{3,}\b', heading)
+        for w in words:
+            _add(w)
+
+    # 4. Extract from meta description
+    if description:
+        words = re.findall(r'\b[a-zA-Z]{4,}\b', description)
+        for w in words:
+            _add(w)
+
+    # 5. Simple term frequency on visible text (fallback)
+    if len(keywords) < 8:
+        try:
+            from bs4 import BeautifulSoup as _BS
+            soup = _BS(html, "lxml")
+            # Remove script/style
+            for tag in soup.find_all(["script", "style", "nav", "footer", "header"]):
+                tag.decompose()
+            text = soup.get_text(separator=" ", strip=True).lower()
+            words = re.findall(r'\b[a-z]{4,15}\b', text)
+            freq: dict[str, int] = {}
+            for w in words:
+                if w not in _STOP_WORDS and w not in seen:
+                    freq[w] = freq.get(w, 0) + 1
+            # Top by frequency
+            for w, _ in sorted(freq.items(), key=lambda x: -x[1])[:15]:
+                _add(w)
+                if len(keywords) >= 20:
+                    break
+        except Exception:
+            pass
+
+    return keywords[:20]
+
+
 async def intake_from_url(url: str) -> dict:
     """
     Main intake pipeline: fetch website and extract everything.
@@ -502,6 +593,14 @@ async def intake_from_url(url: str) -> dict:
     # 7. Extract business hours
     business_hours = _detect_business_hours(html)
 
+    # 7b. Extract SEO keywords
+    seo_keywords = _extract_seo_keywords(
+        html=html,
+        title=profile.get("title", ""),
+        description=profile.get("description", ""),
+        headings=profile.get("headings", []),
+    )
+
     # 8. Detect competitors
     competitors = _detect_competitors(
         industry=industry_result["detected_industry"],
@@ -542,6 +641,7 @@ async def intake_from_url(url: str) -> dict:
         "detected_business_hours": business_hours,
         "detected_languages": profile.get("detected_languages", []),
         "detected_competitors": competitors,
+        "detected_keywords": seo_keywords,
     }
 
 

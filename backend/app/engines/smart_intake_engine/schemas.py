@@ -35,3 +35,4 @@ class IntakeFromUrlResponse(BaseModel):
     detected_business_hours: list[dict] = []
     detected_languages: list[str] = []
     detected_competitors: list[dict] = []
+    detected_keywords: list[str] = []

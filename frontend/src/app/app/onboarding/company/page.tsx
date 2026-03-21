@@ -9,7 +9,7 @@ import {
   Globe, Loader2, CheckCircle2, XCircle, Phone, Mail, Share2,
   Sparkles, MessageCircle, ExternalLink, Building2, Bot, MapPin,
   ArrowRight, Check, Code2, Zap, Shield, Flag, Languages,
-  Users, Image, Trophy,
+  Users, Image, Trophy, Search,
 } from "lucide-react";
 
 /* ── Data ─────────────────────────────────────────────────────────── */
@@ -96,6 +96,7 @@ interface IntakeResult {
   detected_business_hours: { day: string; open: string; close: string }[];
   detected_languages: string[];
   detected_competitors: { name: string; url: string; type: string }[];
+  detected_keywords: string[];
 }
 
 /* ── Social media brand SVG icons ──────────────────────────────────── */
@@ -741,9 +742,9 @@ export default function OnboardingCompany() {
         </div>
       )}
 
-      {/* ══════════ ROW 3: Content Languages + Competitors ══════════ */}
+      {/* ══════════ ROW 3: Content Languages + SEO Keywords + Competitors ══════════ */}
       {intake && (
-        <div className={`grid gap-4 ${intake.detected_tech_stack?.length > 0 ? "lg:grid-cols-2" : "lg:grid-cols-2"}`}>
+        <div className="grid gap-4 lg:grid-cols-3">
           {/* Content Languages */}
           <Card delay={0.4} className="h-full">
             <CardHeader
@@ -785,6 +786,52 @@ export default function OnboardingCompany() {
                   </motion.div>
                   <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
                   <p className="text-2xs text-fg-hint/60 mt-1">Language detection in progress</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* SEO Keywords */}
+          <Card delay={0.42} className="h-full">
+            <CardHeader
+              icon={Search}
+              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
+              title="SEO Keywords"
+              subtitle="Top keywords from your website"
+              badge={intake.detected_keywords?.length > 0 ? (
+                <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-2xs font-bold text-amber-600 ring-1 ring-amber-500/20">
+                  {intake.detected_keywords.length} found
+                </span>
+              ) : undefined}
+            />
+            <div className="flex-1 p-5">
+              {intake.detected_keywords?.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {intake.detected_keywords.map((kw, i) => (
+                    <motion.span
+                      key={kw}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.42 + i * 0.03 }}
+                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500/20 hover:ring-amber-500/40 transition-all cursor-default"
+                    >
+                      <Search size={10} />
+                      {kw}
+                    </motion.span>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <motion.div
+                    animate={{ opacity: [0.4, 0.8, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
+                  >
+                    <Search size={24} className="text-amber-500/50" />
+                  </motion.div>
+                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Keyword extraction in progress</p>
                 </div>
               )}
             </div>

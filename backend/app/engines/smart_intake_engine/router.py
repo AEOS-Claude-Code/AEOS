@@ -106,10 +106,22 @@ async def get_intake_results(
             except Exception:
                 pass
 
+        # Always re-detect competitors using latest country-specific logic
+        industry = profile.industry or "other"
+        try:
+            from .service import _detect_competitors
+            fresh_competitors = _detect_competitors(industry=industry, country=country, url=url)
+            # Update stored data if changed
+            if fresh_competitors:
+                profile.detected_competitors_data = fresh_competitors
+                await db.flush()
+        except Exception:
+            fresh_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else []
+
         return IntakeFromUrlResponse(
             url=url,
             detected_company_name=workspace.name or "",
-            detected_industry=profile.industry or "other",
+            detected_industry=industry,
             industry_confidence=0.8 if profile.industry and profile.industry != "general" else 0.0,
             detected_country=country,
             detected_city=city,
@@ -126,7 +138,8 @@ async def get_intake_results(
             favicon_url=profile.favicon_url or "",
             detected_business_hours=profile.business_hours if isinstance(profile.business_hours, list) else [],
             detected_languages=profile.content_languages if isinstance(profile.content_languages, list) else [],
-            detected_competitors=profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else [],
+            detected_competitors=fresh_competitors,
+            detected_keywords=profile.seo_keywords if isinstance(profile.seo_keywords, list) else [],
         )
 
     # No stored data — trigger fresh scan if URL available
@@ -185,6 +198,8 @@ async def get_intake_results(
             profile.content_languages = result["detected_languages"]
         if result.get("detected_competitors"):
             profile.detected_competitors_data = result["detected_competitors"]
+        if result.get("detected_keywords"):
+            profile.seo_keywords = result["detected_keywords"]
 
         await db.flush()
         return result
