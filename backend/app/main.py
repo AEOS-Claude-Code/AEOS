@@ -104,6 +104,7 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS seo_keywords JSON DEFAULT '[]'::json",
                     "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS detected_team JSON DEFAULT '{}'::json",
                     "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS detected_services JSON DEFAULT '[]'::json",
+                    "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS detected_seo_health JSON DEFAULT '{}'::json",
                 ]
                 for sql in migrations:
                     await conn.execute(sa_text(sql))

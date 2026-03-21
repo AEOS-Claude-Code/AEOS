@@ -9,7 +9,8 @@ import {
   Globe, Loader2, CheckCircle2, XCircle, Phone, Mail, Share2,
   Sparkles, MessageCircle, ExternalLink, Building2, Bot, MapPin,
   ArrowRight, Check, Code2, Zap, Shield, Flag,
-  Users, Image, Trophy, Search, Briefcase, UserCircle,
+  Users, Image, Trophy, Search, Briefcase, ShieldCheck,
+  CheckSquare, XSquare, Linkedin,
 } from "lucide-react";
 
 /* ── Data ─────────────────────────────────────────────────────────── */
@@ -97,8 +98,20 @@ interface IntakeResult {
   detected_languages: string[];
   detected_competitors: { name: string; url: string; type: string }[];
   detected_keywords: string[];
-  detected_team: { team_page_url: string; members: { name: string; role: string }[]; count: number };
+  detected_team: { team_page_url: string; linkedin_search_url: string; members: { name: string; role: string }[]; count: number };
   detected_services: string[];
+  detected_seo_health: {
+    has_ssl: { status: boolean; detail: string };
+    has_sitemap: { status: boolean; detail: string };
+    has_robots: { status: boolean; detail: string };
+    has_meta_title: { status: boolean; detail: string };
+    has_meta_description: { status: boolean; detail: string };
+    has_h1: { status: boolean; detail: string };
+    has_canonical: { status: boolean; detail: string };
+    has_og_tags: { status: boolean; detail: string };
+    has_viewport: { status: boolean; detail: string };
+    score: number;
+  };
 }
 
 /* ── Social media brand SVG icons ──────────────────────────────────── */
@@ -750,35 +763,61 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* SEO Keywords */}
+          {/* SEO & Site Health */}
           <Card delay={0.35} className="h-full">
             <CardHeader
-              icon={Search}
+              icon={ShieldCheck}
               iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
-              title="SEO Keywords"
-              subtitle="Top keywords from your website"
-              badge={intake.detected_keywords?.length > 0 ? (
-                <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-2xs font-bold text-amber-600 ring-1 ring-amber-500/20">
-                  {intake.detected_keywords.length} found
+              title="SEO & Site Health"
+              subtitle="Website optimization checks"
+              badge={intake.detected_seo_health?.score != null ? (
+                <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
+                  intake.detected_seo_health.score >= 80
+                    ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
+                    : intake.detected_seo_health.score >= 50
+                    ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
+                    : "bg-red-500/10 text-red-500 ring-red-500/20"
+                }`}>
+                  {intake.detected_seo_health.score}%
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_keywords?.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {intake.detected_keywords.map((kw, i) => (
-                    <motion.span
-                      key={kw}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.35 + i * 0.03 }}
-                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                      className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-500/20 hover:ring-amber-500/40 transition-all cursor-default"
-                    >
-                      <Search size={10} />
-                      {kw}
-                    </motion.span>
-                  ))}
+              {intake.detected_seo_health?.score != null ? (
+                <div className="space-y-1.5">
+                  {[
+                    { key: "has_ssl", label: "SSL / HTTPS", icon: "🔒" },
+                    { key: "has_meta_title", label: "Meta Title", icon: "📄" },
+                    { key: "has_meta_description", label: "Meta Description", icon: "📝" },
+                    { key: "has_sitemap", label: "Sitemap.xml", icon: "🗺️" },
+                    { key: "has_robots", label: "Robots.txt", icon: "🤖" },
+                    { key: "has_h1", label: "H1 Heading", icon: "🔤" },
+                    { key: "has_viewport", label: "Mobile Ready", icon: "📱" },
+                    { key: "has_og_tags", label: "OG Tags", icon: "🏷️" },
+                    { key: "has_canonical", label: "Canonical URL", icon: "🔗" },
+                  ].map(({ key, label, icon }, i) => {
+                    const check = (intake.detected_seo_health as any)?.[key];
+                    const passed = check?.status === true;
+                    return (
+                      <motion.div
+                        key={key}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.35 + i * 0.03 }}
+                        className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
+                          passed ? "bg-emerald-500/[0.06]" : "bg-red-500/[0.06]"
+                        }`}
+                      >
+                        <span className="text-xs">{icon}</span>
+                        <span className="flex-1 font-medium text-fg">{label}</span>
+                        {passed ? (
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                        ) : (
+                          <XCircle size={13} className="text-red-400 shrink-0" />
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -787,10 +826,10 @@ export default function OnboardingCompany() {
                     transition={{ duration: 2, repeat: Infinity }}
                     className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
                   >
-                    <Search size={24} className="text-amber-500/50" />
+                    <ShieldCheck size={24} className="text-amber-500/50" />
                   </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Keyword extraction in progress</p>
+                  <p className="text-xs font-medium text-fg-hint">Checking...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Running SEO health checks</p>
                 </div>
               )}
             </div>
@@ -838,34 +877,58 @@ export default function OnboardingCompany() {
                       </div>
                     </motion.div>
                   ))}
-                  {intake.detected_team.team_page_url && (
-                    <a
-                      href={intake.detected_team.team_page_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-2xs font-semibold text-blue-500 hover:border-blue-500/30 transition-all"
-                    >
-                      <ExternalLink size={10} /> View team page
-                    </a>
-                  )}
+                  <div className="flex gap-2 mt-1">
+                    {intake.detected_team.linkedin_search_url && (
+                      <a
+                        href={intake.detected_team.linkedin_search_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[#0A66C2]/20 bg-[#0A66C2]/5 px-3 py-2 text-2xs font-semibold text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all"
+                      >
+                        <LinkedInIcon className="h-3 w-3" /> LinkedIn
+                      </a>
+                    )}
+                    {intake.detected_team.team_page_url && (
+                      <a
+                        href={intake.detected_team.team_page_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-2xs font-semibold text-blue-500 hover:border-blue-500/30 transition-all"
+                      >
+                        <ExternalLink size={10} /> Team page
+                      </a>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="flex flex-col items-center justify-center py-6 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3">
                     <Users size={24} className="text-violet-500/50" />
                   </div>
-                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">No team members found on the website</p>
-                  {intake.detected_team?.team_page_url && (
-                    <a
-                      href={intake.detected_team.team_page_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 text-2xs font-semibold text-blue-500 hover:underline"
-                    >
-                      Team page detected →
-                    </a>
-                  )}
+                  <p className="text-xs font-medium text-fg-hint">Not detected on website</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1 mb-3">Try searching on social platforms</p>
+                  <div className="flex flex-col gap-1.5 w-full">
+                    {intake.detected_team?.linkedin_search_url && (
+                      <a
+                        href={intake.detected_team.linkedin_search_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[#0A66C2]/20 bg-[#0A66C2]/5 px-3 py-2 text-2xs font-semibold text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all"
+                      >
+                        <LinkedInIcon className="h-3.5 w-3.5" /> Search on LinkedIn
+                      </a>
+                    )}
+                    {intake.detected_team?.team_page_url && (
+                      <a
+                        href={intake.detected_team.team_page_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-2xs font-semibold text-fg-hint hover:text-fg hover:border-violet-500/30 transition-all"
+                      >
+                        <ExternalLink size={10} /> View team page
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

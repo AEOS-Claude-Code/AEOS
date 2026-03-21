@@ -38,3 +38,4 @@ class IntakeFromUrlResponse(BaseModel):
     detected_keywords: list[str] = []
     detected_team: dict = {}
     detected_services: list[str] = []
+    detected_seo_health: dict = {}

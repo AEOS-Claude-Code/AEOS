@@ -118,32 +118,32 @@ async def get_intake_results(
         except Exception:
             fresh_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else []
 
-        # Backfill team, services, keywords if missing (new features on existing user)
+        # Backfill team, services, seo_health if missing (new features on existing user)
         team_data = profile.detected_team if isinstance(profile.detected_team, dict) and profile.detected_team.get("count") else {}
         services_data = profile.detected_services if isinstance(profile.detected_services, list) and profile.detected_services else []
-        keywords_data = profile.seo_keywords if isinstance(profile.seo_keywords, list) and profile.seo_keywords else []
+        seo_health = profile.detected_seo_health if isinstance(profile.detected_seo_health, dict) and profile.detected_seo_health.get("score") is not None else {}
 
-        if url and (not team_data or not services_data or not keywords_data):
+        if url and (not team_data or not services_data or not seo_health):
             try:
                 from .website_profile_collector import collect_website_profile
-                from .service import _extract_team_members, _extract_services, _extract_seo_keywords
+                from .service import _extract_team_members, _extract_services, _check_seo_health
                 wp = await collect_website_profile(url)
-                html = wp.get("html", "")
-                if html:
+                html_content = wp.get("html", "")
+                if html_content:
                     if not team_data:
-                        team_data = _extract_team_members(html, url)
+                        team_data = await _extract_team_members(html_content, url)
                         profile.detected_team = team_data
                     if not services_data:
-                        services_data = _extract_services(html, wp.get("headings", []))
+                        services_data = _extract_services(html_content, wp.get("headings", []))
                         profile.detected_services = services_data
-                    if not keywords_data:
-                        keywords_data = _extract_seo_keywords(
-                            html=html,
-                            title=wp.get("title", ""),
-                            description=wp.get("description", ""),
-                            headings=wp.get("headings", []),
-                        )
-                        profile.seo_keywords = keywords_data
+                    if not seo_health:
+                        seo_health = await _check_seo_health(html_content, url)
+                        profile.detected_seo_health = seo_health
+                    # Re-detect competitors with services context
+                    if services_data:
+                        from .service import _detect_competitors as _dc
+                        fresh_competitors = _dc(industry=industry, country=country, url=url, services=services_data)
+                        profile.detected_competitors_data = fresh_competitors
                     await db.flush()
             except Exception:
                 logger.info("Backfill extraction failed for workspace=%s", workspace.id)
@@ -169,9 +169,10 @@ async def get_intake_results(
             detected_business_hours=profile.business_hours if isinstance(profile.business_hours, list) else [],
             detected_languages=profile.content_languages if isinstance(profile.content_languages, list) else [],
             detected_competitors=fresh_competitors,
-            detected_keywords=keywords_data,
+            detected_keywords=profile.seo_keywords if isinstance(profile.seo_keywords, list) else [],
             detected_team=team_data,
             detected_services=services_data,
+            detected_seo_health=seo_health,
         )
 
     # No stored data — trigger fresh scan if URL available
@@ -236,6 +237,8 @@ async def get_intake_results(
             profile.detected_team = result["detected_team"]
         if result.get("detected_services"):
             profile.detected_services = result["detected_services"]
+        if result.get("detected_seo_health"):
+            profile.detected_seo_health = result["detected_seo_health"]
 
         await db.flush()
         return result

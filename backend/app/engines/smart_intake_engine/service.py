@@ -10,7 +10,9 @@ from __future__ import annotations
 import json
 import logging
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin, quote_plus
+
+import httpx
 
 from .website_profile_collector import collect_website_profile
 from .contact_extractor import extract_contacts
@@ -392,20 +394,117 @@ def _detect_business_hours(html: str) -> list[dict]:
     return hours
 
 
-def _detect_competitors(industry: str, country: str, url: str) -> list[dict]:
-    """Return well-known competitors for the given industry, preferring country-specific ones."""
+SERVICE_COMPETITORS: dict[str, list[dict]] = {
+    "bim": [
+        {"name": "Autodesk", "url": "https://autodesk.com", "type": "BIM software"},
+        {"name": "Graphisoft", "url": "https://graphisoft.com", "type": "BIM software"},
+        {"name": "Trimble", "url": "https://trimble.com", "type": "BIM solutions"},
+    ],
+    "digital twin": [
+        {"name": "Bentley Systems", "url": "https://bentley.com", "type": "Digital twin platform"},
+        {"name": "Siemens Xcelerator", "url": "https://siemens.com", "type": "Digital twin"},
+    ],
+    "vdc": [
+        {"name": "Procore", "url": "https://procore.com", "type": "Construction management"},
+    ],
+    "web design": [
+        {"name": "Wix", "url": "https://wix.com", "type": "Website builder"},
+        {"name": "Squarespace", "url": "https://squarespace.com", "type": "Website builder"},
+    ],
+    "graphic design": [
+        {"name": "Canva", "url": "https://canva.com", "type": "Design platform"},
+        {"name": "Adobe", "url": "https://adobe.com", "type": "Creative suite"},
+    ],
+    "seo": [
+        {"name": "Semrush", "url": "https://semrush.com", "type": "SEO platform"},
+        {"name": "Ahrefs", "url": "https://ahrefs.com", "type": "SEO tools"},
+    ],
+    "social media": [
+        {"name": "Hootsuite", "url": "https://hootsuite.com", "type": "Social management"},
+        {"name": "Buffer", "url": "https://buffer.com", "type": "Social scheduling"},
+    ],
+    "ecommerce": [
+        {"name": "Shopify", "url": "https://shopify.com", "type": "E-commerce platform"},
+        {"name": "WooCommerce", "url": "https://woocommerce.com", "type": "E-commerce plugin"},
+    ],
+    "crm": [
+        {"name": "Salesforce", "url": "https://salesforce.com", "type": "CRM platform"},
+        {"name": "HubSpot", "url": "https://hubspot.com", "type": "CRM & marketing"},
+    ],
+    "cloud": [
+        {"name": "AWS", "url": "https://aws.amazon.com", "type": "Cloud platform"},
+        {"name": "Azure", "url": "https://azure.microsoft.com", "type": "Cloud platform"},
+    ],
+    "erp": [
+        {"name": "SAP", "url": "https://sap.com", "type": "ERP platform"},
+        {"name": "Oracle", "url": "https://oracle.com", "type": "ERP solutions"},
+    ],
+    "mobile app": [
+        {"name": "Flutter", "url": "https://flutter.dev", "type": "App framework"},
+    ],
+    "cybersecurity": [
+        {"name": "CrowdStrike", "url": "https://crowdstrike.com", "type": "Security platform"},
+        {"name": "Palo Alto", "url": "https://paloaltonetworks.com", "type": "Network security"},
+    ],
+    "consulting": [
+        {"name": "McKinsey", "url": "https://mckinsey.com", "type": "Consulting firm"},
+        {"name": "Deloitte", "url": "https://deloitte.com", "type": "Consulting & audit"},
+    ],
+    "accounting": [
+        {"name": "QuickBooks", "url": "https://quickbooks.intuit.com", "type": "Accounting software"},
+        {"name": "Xero", "url": "https://xero.com", "type": "Accounting platform"},
+    ],
+    "marketing": [
+        {"name": "Mailchimp", "url": "https://mailchimp.com", "type": "Email marketing"},
+        {"name": "HubSpot", "url": "https://hubspot.com", "type": "Marketing platform"},
+    ],
+    "3d modeling": [
+        {"name": "SketchUp", "url": "https://sketchup.com", "type": "3D modeling"},
+        {"name": "Blender", "url": "https://blender.org", "type": "3D creation"},
+    ],
+    "interior design": [
+        {"name": "Havenly", "url": "https://havenly.com", "type": "Interior design"},
+        {"name": "Modsy", "url": "https://modsy.com", "type": "Virtual design"},
+    ],
+    "architecture": [
+        {"name": "ArchDaily", "url": "https://archdaily.com", "type": "Architecture platform"},
+        {"name": "Revit", "url": "https://autodesk.com/products/revit", "type": "Architecture BIM"},
+    ],
+    "logistics": [
+        {"name": "ShipBob", "url": "https://shipbob.com", "type": "Fulfillment"},
+        {"name": "Flexport", "url": "https://flexport.com", "type": "Freight forwarding"},
+    ],
+    "hr": [
+        {"name": "BambooHR", "url": "https://bamboohr.com", "type": "HR software"},
+        {"name": "Workday", "url": "https://workday.com", "type": "HR & finance"},
+    ],
+    "training": [
+        {"name": "Coursera", "url": "https://coursera.org", "type": "Online learning"},
+        {"name": "Udemy", "url": "https://udemy.com", "type": "Course platform"},
+    ],
+    "data analytics": [
+        {"name": "Tableau", "url": "https://tableau.com", "type": "Data visualization"},
+        {"name": "Power BI", "url": "https://powerbi.microsoft.com", "type": "Business intelligence"},
+    ],
+    "ai": [
+        {"name": "OpenAI", "url": "https://openai.com", "type": "AI platform"},
+        {"name": "Google AI", "url": "https://ai.google", "type": "AI solutions"},
+    ],
+}
+
+
+def _detect_competitors(industry: str, country: str, url: str, services: list[str] = None) -> list[dict]:
+    """Return well-known competitors for the given industry, preferring country-specific ones.
+    Also includes service-specific competitors based on the detected services."""
     # Try country-specific competitors first
     country_key = country.lower().strip() if country else ""
     country_comps = COUNTRY_COMPETITORS.get(country_key, {}).get(industry, [])
 
     # Fall back to global if no country-specific data
     if not country_comps:
-        competitors = INDUSTRY_COMPETITORS.get(industry, [])
+        competitors = list(INDUSTRY_COMPETITORS.get(industry, []))
     else:
-        competitors = country_comps
-
-    if not competitors:
-        return []
+        competitors = list(country_comps)
 
     # Filter out the scanned company's own domain
     try:
@@ -414,6 +513,7 @@ def _detect_competitors(industry: str, country: str, url: str) -> list[dict]:
         scanned_domain = ""
 
     result = []
+    seen_domains: set[str] = set()
     for comp in competitors:
         try:
             comp_domain = urlparse(comp["url"]).netloc.replace("www.", "").lower()
@@ -421,9 +521,32 @@ def _detect_competitors(industry: str, country: str, url: str) -> list[dict]:
             comp_domain = ""
         if comp_domain and scanned_domain and comp_domain == scanned_domain:
             continue
-        result.append(comp)
+        if comp_domain not in seen_domains:
+            result.append(comp)
+            seen_domains.add(comp_domain)
 
-    return result
+    # Add service-specific competitors
+    if services:
+        for service in services:
+            service_lower = service.lower()
+            for keyword, service_comps in SERVICE_COMPETITORS.items():
+                if keyword in service_lower:
+                    for comp in service_comps:
+                        if len(result) >= 6:
+                            break
+                        try:
+                            comp_domain = urlparse(comp["url"]).netloc.replace("www.", "").lower()
+                        except Exception:
+                            comp_domain = ""
+                        if comp_domain and scanned_domain and comp_domain == scanned_domain:
+                            continue
+                        if comp_domain not in seen_domains:
+                            result.append(comp)
+                            seen_domains.add(comp_domain)
+            if len(result) >= 6:
+                break
+
+    return result[:6]
 
 
 # ── Common English / HTML stop words to exclude from SEO keywords ──
@@ -517,12 +640,13 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
     return keywords[:20]
 
 
-def _extract_team_members(html: str, url: str) -> dict:
+async def _extract_team_members(html: str, url: str) -> dict:
     """
     Detect team page and extract team member names/roles.
-    Returns dict with: team_page_url, members: [{name, role}], count.
+    If a team page URL is found, fetches it and extracts members from it too.
+    Returns dict with: team_page_url, members: [{name, role}], count, linkedin_search_url.
     """
-    result: dict = {"team_page_url": "", "members": [], "count": 0}
+    result: dict = {"team_page_url": "", "members": [], "count": 0, "linkedin_search_url": ""}
 
     try:
         from bs4 import BeautifulSoup as _BS
@@ -547,60 +671,94 @@ def _extract_team_members(html: str, url: str) -> dict:
         if result["team_page_url"]:
             break
 
-    # 2. Extract team members from JSON-LD Person schema
-    for match in re.finditer(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, re.DOTALL | re.IGNORECASE):
-        try:
-            data = json.loads(match.group(1))
-            items = data if isinstance(data, list) else [data]
-            if isinstance(data, dict) and "@graph" in data:
-                items = data["@graph"]
-            for item in items:
-                if not isinstance(item, dict):
-                    continue
-                if item.get("@type") in ("Person", "Employee"):
-                    name = item.get("name", "")
-                    role = item.get("jobTitle", "") or item.get("description", "")
-                    if name:
-                        result["members"].append({"name": name.strip(), "role": role.strip()})
-        except Exception:
-            continue
+    # Helper to extract members from a soup object
+    def _extract_members_from_soup(page_soup, existing_members):
+        members = []
+        seen_names = {m["name"].lower() for m in existing_members}
 
-    # 3. Look for team sections in HTML (cards with name + job title patterns)
-    team_sections = soup.find_all(["section", "div"], class_=lambda c: c and any(
-        kw in str(c).lower() for kw in ["team", "staff", "people", "leadership", "founders"]
-    ))
-    if not team_sections:
-        # Try id-based
-        team_sections = soup.find_all(["section", "div"], id=lambda i: i and any(
-            kw in str(i).lower() for kw in ["team", "staff", "people", "leadership"]
+        # Extract team members from JSON-LD Person schema
+        page_html = str(page_soup)
+        for match in re.finditer(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', page_html, re.DOTALL | re.IGNORECASE):
+            try:
+                data = json.loads(match.group(1))
+                items = data if isinstance(data, list) else [data]
+                if isinstance(data, dict) and "@graph" in data:
+                    items = data["@graph"]
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    if item.get("@type") in ("Person", "Employee"):
+                        name = item.get("name", "")
+                        role = item.get("jobTitle", "") or item.get("description", "")
+                        if name and name.strip().lower() not in seen_names:
+                            members.append({"name": name.strip(), "role": role.strip()})
+                            seen_names.add(name.strip().lower())
+            except Exception:
+                continue
+
+        # Look for team sections in HTML (cards with name + job title patterns)
+        team_sections = page_soup.find_all(["section", "div"], class_=lambda c: c and any(
+            kw in str(c).lower() for kw in ["team", "staff", "people", "leadership", "founders"]
         ))
+        if not team_sections:
+            team_sections = page_soup.find_all(["section", "div"], id=lambda i: i and any(
+                kw in str(i).lower() for kw in ["team", "staff", "people", "leadership"]
+            ))
 
-    seen_names = {m["name"].lower() for m in result["members"]}
-    for section in team_sections[:3]:  # Limit to avoid scanning entire page
-        # Look for heading + subtitle patterns (name + role)
-        for card in section.find_all(["div", "li", "article"], recursive=True):
-            texts = [t.get_text(strip=True) for t in card.find_all(["h3", "h4", "h5", "strong", "b"], limit=2)]
-            subtexts = [t.get_text(strip=True) for t in card.find_all(["p", "span", "small"], limit=2)]
-            if texts:
-                name_candidate = texts[0]
-                role_candidate = subtexts[0] if subtexts else (texts[1] if len(texts) > 1 else "")
-                # Basic validation: name should be 2-50 chars, look like a name
-                if (2 < len(name_candidate) < 50
-                    and name_candidate.lower() not in seen_names
-                    and not name_candidate.startswith("http")
-                    and " " in name_candidate  # Real names usually have spaces
-                    and not any(c.isdigit() for c in name_candidate)):
-                    result["members"].append({
-                        "name": name_candidate,
-                        "role": role_candidate[:100] if role_candidate else "",
-                    })
-                    seen_names.add(name_candidate.lower())
-                    if len(result["members"]) >= 10:
-                        break
-        if len(result["members"]) >= 10:
-            break
+        for section in team_sections[:3]:
+            for card in section.find_all(["div", "li", "article"], recursive=True):
+                texts = [t.get_text(strip=True) for t in card.find_all(["h3", "h4", "h5", "strong", "b"], limit=2)]
+                subtexts = [t.get_text(strip=True) for t in card.find_all(["p", "span", "small"], limit=2)]
+                if texts:
+                    name_candidate = texts[0]
+                    role_candidate = subtexts[0] if subtexts else (texts[1] if len(texts) > 1 else "")
+                    if (2 < len(name_candidate) < 50
+                        and name_candidate.lower() not in seen_names
+                        and not name_candidate.startswith("http")
+                        and " " in name_candidate
+                        and not any(c.isdigit() for c in name_candidate)):
+                        members.append({
+                            "name": name_candidate,
+                            "role": role_candidate[:100] if role_candidate else "",
+                        })
+                        seen_names.add(name_candidate.lower())
+                        if len(existing_members) + len(members) >= 10:
+                            break
+            if len(existing_members) + len(members) >= 10:
+                break
+
+        return members
+
+    # 2. Extract team members from main page HTML
+    result["members"] = _extract_members_from_soup(soup, [])
+
+    # 3. If we found a team page URL, fetch it and extract more members
+    if result["team_page_url"] and len(result["members"]) < 10:
+        try:
+            logger.info("Following team page %s for team members", result["team_page_url"])
+            team_profile = await collect_website_profile(result["team_page_url"])
+            team_html = team_profile.get("html", "")
+            if team_html:
+                team_soup = _BS(team_html, "lxml")
+                extra_members = _extract_members_from_soup(team_soup, result["members"])
+                result["members"].extend(extra_members)
+                result["members"] = result["members"][:10]
+        except Exception as e:
+            logger.info("Team page follow failed: %s", str(e)[:100])
 
     result["count"] = len(result["members"])
+
+    # 4. Build LinkedIn search URL
+    # Check if we already have a LinkedIn URL from social links
+    # Derive company name from URL domain for the search
+    try:
+        domain = urlparse(url).netloc.replace("www.", "")
+        company_name = domain.split(".")[0]
+    except Exception:
+        company_name = ""
+
+    result["linkedin_search_url"] = f"https://www.linkedin.com/search/results/people/?keywords={quote_plus(company_name)}"
+
     return result
 
 
@@ -699,6 +857,112 @@ def _extract_services(html: str, headings: list[str]) -> list[str]:
     return services[:12]
 
 
+# ── SEO health check ────────────────────────────────────────────────
+
+async def _check_seo_health(html: str, url: str) -> dict:
+    """Check website SEO health indicators and return a summary dict."""
+    from html.parser import HTMLParser
+
+    results: dict[str, dict] = {}
+
+    # --- has_ssl ---
+    results["has_ssl"] = {
+        "status": url.startswith("https"),
+        "detail": "Site uses HTTPS" if url.startswith("https") else "Site does not use HTTPS",
+    }
+
+    # --- has_sitemap ---
+    base_url = urljoin(url, "/")
+    sitemap_url = urljoin(base_url, "sitemap.xml")
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=5) as client:
+            resp = await client.head(sitemap_url)
+            if resp.status_code >= 400:
+                resp = await client.get(sitemap_url)
+            sitemap_ok = resp.status_code < 400
+    except Exception:
+        sitemap_ok = False
+    results["has_sitemap"] = {
+        "status": sitemap_ok,
+        "detail": "sitemap.xml found" if sitemap_ok else "sitemap.xml not found",
+    }
+
+    # --- has_robots ---
+    robots_url = urljoin(base_url, "robots.txt")
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=5) as client:
+            resp = await client.head(robots_url)
+            if resp.status_code >= 400:
+                resp = await client.get(robots_url)
+            robots_ok = resp.status_code < 400
+    except Exception:
+        robots_ok = False
+    results["has_robots"] = {
+        "status": robots_ok,
+        "detail": "robots.txt found" if robots_ok else "robots.txt not found",
+    }
+
+    # --- HTML-based checks ---
+    html_lower = html.lower()
+
+    # has_meta_title
+    title_match = re.search(r"<title[^>]*>(.+?)</title>", html_lower, re.DOTALL)
+    has_title = bool(title_match and title_match.group(1).strip())
+    results["has_meta_title"] = {
+        "status": has_title,
+        "detail": "Title tag found" if has_title else "Title tag missing or empty",
+    }
+
+    # has_meta_description
+    desc_match = re.search(r'<meta\s[^>]*name=["\']description["\'][^>]*content=["\']([^"\']+)["\']', html_lower)
+    if not desc_match:
+        desc_match = re.search(r'<meta\s[^>]*content=["\']([^"\']+)["\'][^>]*name=["\']description["\']', html_lower)
+    has_desc = bool(desc_match and desc_match.group(1).strip())
+    results["has_meta_description"] = {
+        "status": has_desc,
+        "detail": "Meta description found" if has_desc else "Meta description missing",
+    }
+
+    # has_h1
+    has_h1 = bool(re.search(r"<h1[\s>]", html_lower))
+    results["has_h1"] = {
+        "status": has_h1,
+        "detail": "H1 tag found" if has_h1 else "No H1 tag found",
+    }
+
+    # has_canonical
+    has_canonical = bool(re.search(r'<link\s[^>]*rel=["\']canonical["\']', html_lower))
+    results["has_canonical"] = {
+        "status": has_canonical,
+        "detail": "Canonical link found" if has_canonical else "No canonical link found",
+    }
+
+    # has_og_tags
+    has_og = bool(
+        re.search(r'<meta\s[^>]*property=["\']og:title["\']', html_lower)
+        or re.search(r'<meta\s[^>]*property=["\']og:image["\']', html_lower)
+    )
+    results["has_og_tags"] = {
+        "status": has_og,
+        "detail": "Open Graph tags found" if has_og else "No Open Graph tags found",
+    }
+
+    # has_viewport
+    has_viewport = bool(re.search(r'<meta\s[^>]*name=["\']viewport["\']', html_lower))
+    results["has_viewport"] = {
+        "status": has_viewport,
+        "detail": "Viewport meta tag found" if has_viewport else "Viewport meta tag missing (not mobile-friendly)",
+    }
+
+    # --- Score ---
+    check_keys = [k for k in results if k != "score"]
+    passed = sum(1 for k in check_keys if results[k]["status"])
+    total = len(check_keys)
+    results["score"] = round((passed / total) * 100) if total else 0
+
+    return results
+
+
 async def intake_from_url(url: str) -> dict:
     """
     Main intake pipeline: fetch website and extract everything.
@@ -784,16 +1048,20 @@ async def intake_from_url(url: str) -> dict:
     )
 
     # 7c. Extract team members
-    team_data = _extract_team_members(html, url)
+    team_data = await _extract_team_members(html, url)
 
     # 7d. Extract services/products
     detected_services = _extract_services(html, profile.get("headings", []))
+
+    # 7e. Check SEO health
+    seo_health = await _check_seo_health(html, url)
 
     # 8. Detect competitors
     competitors = _detect_competitors(
         industry=industry_result["detected_industry"],
         country=location.get("country", ""),
         url=url,
+        services=detected_services,
     )
 
     logger.info(
@@ -832,6 +1100,7 @@ async def intake_from_url(url: str) -> dict:
         "detected_keywords": seo_keywords,
         "detected_team": team_data,
         "detected_services": detected_services,
+        "detected_seo_health": seo_health,
     }
 
 
