@@ -22,6 +22,186 @@ logger = logging.getLogger("aeos.engine.intake")
 
 # ── Industry competitor lookup ────────────────────────────────────────
 
+# Country-specific competitors: { "country_key": { "industry": [...] } }
+# country_key uses lowercase with underscores
+COUNTRY_COMPETITORS: dict[str, dict[str, list[dict]]] = {
+    "saudi arabia": {
+        "design_creative": [
+            {"name": "Tasmimak", "url": "https://tasmimak.com", "type": "Design platform (KSA)"},
+            {"name": "Lucidya", "url": "https://lucidya.com", "type": "Digital marketing (KSA)"},
+            {"name": "Crowd", "url": "https://crowd.sa", "type": "Creative agency (KSA)"},
+        ],
+        "ecommerce": [
+            {"name": "Noon", "url": "https://noon.com/saudi-en", "type": "Marketplace (KSA)"},
+            {"name": "Jarir", "url": "https://jarir.com", "type": "Retail & e-commerce (KSA)"},
+            {"name": "Extra", "url": "https://extra.com", "type": "Electronics retail (KSA)"},
+            {"name": "Namshi", "url": "https://namshi.com", "type": "Fashion e-commerce (KSA)"},
+        ],
+        "healthcare": [
+            {"name": "Seha", "url": "https://seha.sa", "type": "Healthcare platform (KSA)"},
+            {"name": "Nahdi Medical", "url": "https://nahdionline.com", "type": "Pharmacy chain (KSA)"},
+            {"name": "Vezeeta", "url": "https://vezeeta.com/ar-sa", "type": "Doctor booking (KSA)"},
+        ],
+        "travel": [
+            {"name": "Almosafer", "url": "https://almosafer.com", "type": "Travel booking (KSA)"},
+            {"name": "Flyin", "url": "https://flyin.com", "type": "Travel platform (KSA)"},
+            {"name": "Tajawal", "url": "https://tajawal.com", "type": "Travel booking (KSA)"},
+        ],
+        "restaurant": [
+            {"name": "HungerStation", "url": "https://hungerstation.com", "type": "Food delivery (KSA)"},
+            {"name": "Jahez", "url": "https://jahez.net", "type": "Food delivery (KSA)"},
+            {"name": "Talabat", "url": "https://talabat.com", "type": "Food delivery (KSA)"},
+            {"name": "The Chefz", "url": "https://thechefz.com", "type": "Premium delivery (KSA)"},
+        ],
+        "real_estate": [
+            {"name": "Bayut", "url": "https://bayut.sa", "type": "Property portal (KSA)"},
+            {"name": "Aqar", "url": "https://sa.aqar.fm", "type": "Property portal (KSA)"},
+            {"name": "Sakani", "url": "https://sakani.sa", "type": "Housing program (KSA)"},
+        ],
+        "engineering": [
+            {"name": "Dar Al-Handasah", "url": "https://dar.com", "type": "Engineering firm (KSA)"},
+            {"name": "Saudi Diyar", "url": "https://saudidiyar.com", "type": "Engineering consultancy (KSA)"},
+            {"name": "Nesma", "url": "https://nesma.com", "type": "Engineering & contracting (KSA)"},
+        ],
+        "construction": [
+            {"name": "Saudi Binladin Group", "url": "https://sbg.com.sa", "type": "Construction (KSA)"},
+            {"name": "Al Bawani", "url": "https://albawani.com", "type": "Construction (KSA)"},
+            {"name": "Nesma & Partners", "url": "https://nesma.com", "type": "Contracting (KSA)"},
+        ],
+        "technology": [
+            {"name": "STC Solutions", "url": "https://solutions.com.sa", "type": "IT solutions (KSA)"},
+            {"name": "Elm", "url": "https://elm.sa", "type": "Digital platform (KSA)"},
+            {"name": "Mozn", "url": "https://mozn.sa", "type": "AI company (KSA)"},
+        ],
+        "finance": [
+            {"name": "STC Pay (stcpay)", "url": "https://stcpay.com.sa", "type": "Digital wallet (KSA)"},
+            {"name": "Tamara", "url": "https://tamara.co", "type": "Buy now pay later (KSA)"},
+            {"name": "Tabby", "url": "https://tabby.ai", "type": "Payment platform (KSA)"},
+        ],
+        "retail": [
+            {"name": "Jarir Bookstore", "url": "https://jarir.com", "type": "Retail chain (KSA)"},
+            {"name": "Panda", "url": "https://pfrsa.com", "type": "Supermarket chain (KSA)"},
+            {"name": "Noon", "url": "https://noon.com/saudi-en", "type": "Online marketplace (KSA)"},
+        ],
+        "logistics": [
+            {"name": "SMSA Express", "url": "https://smsaexpress.com", "type": "Courier (KSA)"},
+            {"name": "Naqel Express", "url": "https://naqelexpress.com", "type": "Logistics (KSA)"},
+            {"name": "SAL Saudi Logistics", "url": "https://sal.sa", "type": "Logistics (KSA)"},
+        ],
+        "education": [
+            {"name": "Noon Academy", "url": "https://noonacademy.com", "type": "EdTech (KSA)"},
+            {"name": "Classera", "url": "https://classera.com", "type": "Education platform (KSA)"},
+            {"name": "Rwaq", "url": "https://rwaq.org", "type": "Online learning (KSA)"},
+        ],
+        "saas": [
+            {"name": "Foodics", "url": "https://foodics.com", "type": "Restaurant SaaS (KSA)"},
+            {"name": "Salla", "url": "https://salla.com", "type": "E-commerce SaaS (KSA)"},
+            {"name": "Moyasar", "url": "https://moyasar.com", "type": "Payment SaaS (KSA)"},
+        ],
+        "agency": [
+            {"name": "UTURN", "url": "https://uturn.me", "type": "Digital media (KSA)"},
+            {"name": "Netizency", "url": "https://netizency.com", "type": "Social media agency (KSA)"},
+        ],
+        "manufacturing": [
+            {"name": "SABIC", "url": "https://sabic.com", "type": "Manufacturing (KSA)"},
+            {"name": "Ma'aden", "url": "https://maaden.com.sa", "type": "Mining & manufacturing (KSA)"},
+        ],
+    },
+    "uae": {
+        "design_creative": [
+            {"name": "Crowd", "url": "https://crowd.ae", "type": "Creative agency (UAE)"},
+            {"name": "Traffic Digital", "url": "https://trafficdigital.ae", "type": "Digital agency (UAE)"},
+        ],
+        "ecommerce": [
+            {"name": "Noon", "url": "https://noon.com", "type": "Marketplace (UAE)"},
+            {"name": "Namshi", "url": "https://namshi.com", "type": "Fashion (UAE)"},
+            {"name": "Mumzworld", "url": "https://mumzworld.com", "type": "Family e-commerce (UAE)"},
+        ],
+        "real_estate": [
+            {"name": "Bayut", "url": "https://bayut.com", "type": "Property portal (UAE)"},
+            {"name": "Property Finder", "url": "https://propertyfinder.ae", "type": "Property portal (UAE)"},
+            {"name": "Dubizzle", "url": "https://dubizzle.com", "type": "Classifieds (UAE)"},
+        ],
+        "restaurant": [
+            {"name": "Talabat", "url": "https://talabat.com", "type": "Food delivery (UAE)"},
+            {"name": "Deliveroo", "url": "https://deliveroo.ae", "type": "Food delivery (UAE)"},
+            {"name": "Careem Food", "url": "https://careem.com", "type": "Food delivery (UAE)"},
+        ],
+        "travel": [
+            {"name": "Musafir", "url": "https://musafir.com", "type": "Travel (UAE)"},
+            {"name": "Dnata Travel", "url": "https://dnatatravel.com", "type": "Travel agency (UAE)"},
+        ],
+        "technology": [
+            {"name": "Careem", "url": "https://careem.com", "type": "Super app (UAE)"},
+            {"name": "G42", "url": "https://g42.ai", "type": "AI & cloud (UAE)"},
+        ],
+        "finance": [
+            {"name": "Tabby", "url": "https://tabby.ai", "type": "BNPL (UAE)"},
+            {"name": "Sarwa", "url": "https://sarwa.co", "type": "Investment platform (UAE)"},
+        ],
+        "logistics": [
+            {"name": "Aramex", "url": "https://aramex.com", "type": "Logistics (UAE)"},
+            {"name": "Fetchr", "url": "https://fetchr.us", "type": "Delivery (UAE)"},
+        ],
+    },
+    "jordan": {
+        "technology": [
+            {"name": "Mawdoo3", "url": "https://mawdoo3.com", "type": "AI & content (Jordan)"},
+            {"name": "Umniah", "url": "https://umniah.com", "type": "Telecom & tech (Jordan)"},
+        ],
+        "ecommerce": [
+            {"name": "OpenSooq", "url": "https://opensooq.com", "type": "Classifieds (Jordan)"},
+            {"name": "MarkaVIP", "url": "https://markavip.com", "type": "Flash sales (Jordan)"},
+        ],
+        "restaurant": [
+            {"name": "Talabat", "url": "https://talabat.com", "type": "Food delivery (Jordan)"},
+            {"name": "Careem Food", "url": "https://careem.com", "type": "Food delivery (Jordan)"},
+        ],
+        "education": [
+            {"name": "Abwaab", "url": "https://abwaab.com", "type": "EdTech (Jordan)"},
+            {"name": "Edraak", "url": "https://edraak.org", "type": "Online learning (Jordan)"},
+        ],
+    },
+    "egypt": {
+        "ecommerce": [
+            {"name": "Jumia", "url": "https://jumia.com.eg", "type": "Marketplace (Egypt)"},
+            {"name": "Amazon Egypt", "url": "https://amazon.eg", "type": "Marketplace (Egypt)"},
+            {"name": "Noon Egypt", "url": "https://noon.com/egypt-en", "type": "Marketplace (Egypt)"},
+        ],
+        "restaurant": [
+            {"name": "Talabat", "url": "https://talabat.com", "type": "Food delivery (Egypt)"},
+            {"name": "Elmenus", "url": "https://elmenus.com", "type": "Food discovery (Egypt)"},
+        ],
+        "technology": [
+            {"name": "Swvl", "url": "https://swvl.com", "type": "Transport tech (Egypt)"},
+            {"name": "Instabug", "url": "https://instabug.com", "type": "Mobile SDK (Egypt)"},
+        ],
+        "finance": [
+            {"name": "Fawry", "url": "https://fawry.com", "type": "Digital payments (Egypt)"},
+            {"name": "valU", "url": "https://valu.com.eg", "type": "BNPL (Egypt)"},
+        ],
+    },
+    "qatar": {
+        "ecommerce": [
+            {"name": "Snoonu", "url": "https://snoonu.com", "type": "Delivery platform (Qatar)"},
+            {"name": "Talabat", "url": "https://talabat.com/qatar", "type": "Food delivery (Qatar)"},
+        ],
+        "real_estate": [
+            {"name": "Property Finder Qatar", "url": "https://propertyfinder.qa", "type": "Property portal (Qatar)"},
+        ],
+    },
+    "kuwait": {
+        "restaurant": [
+            {"name": "Talabat", "url": "https://talabat.com/kuwait", "type": "Food delivery (Kuwait)"},
+            {"name": "Carriage", "url": "https://trycarriage.com", "type": "Delivery (Kuwait)"},
+        ],
+        "ecommerce": [
+            {"name": "Boutiqaat", "url": "https://boutiqaat.com", "type": "Beauty e-commerce (Kuwait)"},
+        ],
+    },
+}
+
+# Global fallback competitors (used when no country-specific data available)
 INDUSTRY_COMPETITORS: dict[str, list[dict]] = {
     "design_creative": [
         {"name": "99designs", "url": "https://99designs.com", "type": "Global platform"},
@@ -213,8 +393,17 @@ def _detect_business_hours(html: str) -> list[dict]:
 
 
 def _detect_competitors(industry: str, country: str, url: str) -> list[dict]:
-    """Return well-known competitors for the given industry, filtering out the scanned company."""
-    competitors = INDUSTRY_COMPETITORS.get(industry, [])
+    """Return well-known competitors for the given industry, preferring country-specific ones."""
+    # Try country-specific competitors first
+    country_key = country.lower().strip() if country else ""
+    country_comps = COUNTRY_COMPETITORS.get(country_key, {}).get(industry, [])
+
+    # Fall back to global if no country-specific data
+    if not country_comps:
+        competitors = INDUSTRY_COMPETITORS.get(industry, [])
+    else:
+        competitors = country_comps
+
     if not competitors:
         return []
 

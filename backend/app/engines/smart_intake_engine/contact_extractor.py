@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, unquote
 
 logger = logging.getLogger("aeos.engine.intake.contacts")
 
@@ -239,7 +239,7 @@ def _extract_from_footer(soup) -> dict:
                     if phone:
                         result["phones"].append(phone)
                 elif href.startswith("mailto:"):
-                    email = href[7:].strip().split("?")[0]
+                    email = unquote(href[7:]).strip().split("?")[0]
                     if "@" in email:
                         result["emails"].append(email.lower())
 
@@ -289,7 +289,8 @@ def extract_contacts(html: str, base_url: str) -> dict:
             result["phone_numbers"].append(raw.strip())
 
     def add_email(email: str) -> None:
-        email = email.lower().strip()
+        # URL-decode (handles %20, %40, etc. from mailto: links)
+        email = unquote(email).strip().lower()
         if email in seen_emails:
             return
         domain = email.split("@")[1] if "@" in email else ""

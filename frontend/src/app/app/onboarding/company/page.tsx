@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Globe, Loader2, CheckCircle2, XCircle, Phone, Mail, Share2,
   Sparkles, MessageCircle, ExternalLink, Building2, Bot, MapPin,
-  ArrowRight, Check, Code2, Zap, Shield, Flag, Clock, Languages,
+  ArrowRight, Check, Code2, Zap, Shield, Flag, Languages,
   Users, Image, Trophy,
 } from "lucide-react";
 
@@ -273,7 +273,7 @@ function Card({ children, delay = 0, className = "" }: { children: React.ReactNo
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.5, ease: "easeOut" }}
-      className={`rounded-2xl border border-border bg-surface shadow-lg hover:shadow-xl transition-shadow duration-300 ${className}`}
+      className={`flex flex-col rounded-2xl border border-border bg-surface shadow-lg hover:shadow-xl transition-shadow duration-300 ${className}`}
     >
       {children}
     </motion.div>
@@ -331,6 +331,12 @@ export default function OnboardingCompany() {
   }
 
   function applyIntake(data: IntakeResult) {
+    // Clean URL-encoded values in emails (e.g. %20hr@ → hr@)
+    if (data.detected_emails) {
+      data.detected_emails = data.detected_emails.map(e => {
+        try { return decodeURIComponent(e).trim(); } catch { return e.trim(); }
+      }).filter(e => e.includes("@") && !e.includes("%"));
+    }
     setIntake(data);
     setCompanyName(data.detected_company_name || workspace?.name || "");
     setIndustry(data.detected_industry || "other");
@@ -357,7 +363,7 @@ export default function OnboardingCompany() {
   }
 
   const socialCount = intake ? Object.values(intake.detected_social_links).filter(u => u.length > 0).length : 0;
-  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length + (intake.og_image ? 1 : 0) + (intake.detected_business_hours?.length > 0 ? 1 : 0) + (intake.detected_languages?.length || 0) + (intake.detected_competitors?.length || 0) : 0;
+  const totalDetected = intake ? (intake.detected_company_name ? 1 : 0) + (intake.detected_industry !== "other" ? 1 : 0) + intake.detected_phone_numbers.length + intake.detected_emails.length + socialCount + intake.detected_whatsapp_links.length + intake.detected_contact_pages.length + intake.detected_tech_stack.length + (intake.og_image ? 1 : 0) + (intake.detected_languages?.length || 0) + (intake.detected_competitors?.length || 0) : 0;
   const contactsFound = intake ? [
     intake.detected_phone_numbers.length > 0,
     intake.detected_emails.length > 0,
@@ -438,7 +444,7 @@ export default function OnboardingCompany() {
       {/* ══════════ ROW 1: Company Identity + Contact Info + Social ══════════ */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Company Identity */}
-        <Card delay={0.1} className="h-fit">
+        <Card delay={0.1} className="h-full">
           <CardHeader
             icon={Building2}
             iconGradient="from-blue-500 to-cyan-500 shadow-blue-500/25"
@@ -451,7 +457,7 @@ export default function OnboardingCompany() {
               </motion.span>
             ) : undefined}
           />
-          <div className="p-5">
+          <div className="flex-1 p-5">
             <div className="space-y-3.5">
               <div>
                 <label className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wider text-fg-muted">
@@ -500,7 +506,7 @@ export default function OnboardingCompany() {
 
         {/* Contact Information */}
         {intake && (
-          <Card delay={0.15} className="h-fit">
+          <Card delay={0.15} className="h-full">
             <CardHeader
               icon={Phone}
               iconGradient="from-emerald-500 to-teal-600 shadow-emerald-500/25"
@@ -512,7 +518,7 @@ export default function OnboardingCompany() {
                 </span>
               ) : undefined}
             />
-            <div className="p-5">
+            <div className="flex-1 p-5">
               <div className="space-y-2">
                 {[
                   {
@@ -590,7 +596,7 @@ export default function OnboardingCompany() {
 
         {/* Social Media Profiles */}
         {intake && (
-          <Card delay={0.2} className="h-fit">
+          <Card delay={0.2} className="h-full">
             <CardHeader
               icon={Share2}
               iconGradient="from-pink-500 to-rose-600 shadow-pink-500/25"
@@ -602,7 +608,7 @@ export default function OnboardingCompany() {
                 </span>
               ) : undefined}
             />
-            <div className="p-5">
+            <div className="flex-1 p-5">
               <div className="grid grid-cols-2 gap-2">
                 {SOCIAL_PLATFORMS.map((platform, i) => {
                   const found = (intake.detected_social_links[platform.key] || []).length > 0;
@@ -646,18 +652,18 @@ export default function OnboardingCompany() {
         )}
       </div>
 
-      {/* ══════════ ROW 2: Website Preview + Location Map + Business Hours ══════════ */}
+      {/* ══════════ ROW 2: Website Preview + Location Map ══════════ */}
       {intake && (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2">
           {/* Website Preview */}
-          <Card delay={0.25} className="h-fit">
+          <Card delay={0.25}>
             <CardHeader
               icon={Image}
               iconGradient="from-indigo-500 to-purple-600 shadow-indigo-500/25"
               title="Website Preview"
               subtitle="Open Graph & meta info"
             />
-            <div className="p-5 space-y-3">
+            <div className="flex-1 p-5 space-y-3">
               {intake.og_image ? (
                 <div className="overflow-hidden rounded-xl border border-border">
                   <img
@@ -690,14 +696,14 @@ export default function OnboardingCompany() {
 
           {/* Location Map */}
           {country && (
-            <Card delay={0.3} className="h-fit">
+            <Card delay={0.3}>
               <CardHeader
                 icon={MapPin}
                 iconGradient="from-emerald-500 to-green-600 shadow-emerald-500/25"
                 title="Location"
                 subtitle="Detected headquarters"
               />
-              <div className="p-5">
+              <div className="flex-1 p-5">
                 <div className="relative overflow-hidden rounded-xl border border-border">
                   {/* Animated gradient map background */}
                   <div className="relative flex flex-col items-center justify-center py-10">
@@ -732,48 +738,6 @@ export default function OnboardingCompany() {
             </Card>
           )}
 
-          {/* Business Hours */}
-          <Card delay={0.35} className="h-fit">
-            <CardHeader
-              icon={Clock}
-              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
-              title="Business Hours"
-              subtitle="Detected operating schedule"
-            />
-            <div className="p-5">
-              {intake.detected_business_hours?.length > 0 ? (
-                <div className="space-y-1.5">
-                  {intake.detected_business_hours.map((h, i) => {
-                    const isClosed = h.open === "Closed" || h.close === "Closed" || (!h.open && !h.close);
-                    return (
-                      <motion.div
-                        key={h.day}
-                        initial={{ opacity: 0, x: -8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.35 + i * 0.04 }}
-                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs ${
-                          isClosed ? "bg-surface-secondary/50 text-fg-hint/50" : "bg-surface-secondary text-fg"
-                        }`}
-                      >
-                        <span className="font-semibold">{h.day}</span>
-                        <span className={isClosed ? "italic" : "font-bold"}>
-                          {isClosed ? "Closed" : `${h.open} – ${h.close}`}
-                        </span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3">
-                    <Clock size={24} className="text-amber-500/50" />
-                  </div>
-                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Business hours were not found on your website</p>
-                </div>
-              )}
-            </div>
-          </Card>
         </div>
       )}
 
@@ -781,7 +745,7 @@ export default function OnboardingCompany() {
       {intake && (
         <div className={`grid gap-4 ${intake.detected_tech_stack?.length > 0 ? "lg:grid-cols-2" : "lg:grid-cols-2"}`}>
           {/* Content Languages */}
-          <Card delay={0.4} className="h-fit">
+          <Card delay={0.4} className="h-full">
             <CardHeader
               icon={Languages}
               iconGradient="from-violet-500 to-purple-600 shadow-violet-500/25"
@@ -793,7 +757,7 @@ export default function OnboardingCompany() {
                 </span>
               ) : undefined}
             />
-            <div className="p-5">
+            <div className="flex-1 p-5">
               {intake.detected_languages?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {intake.detected_languages.map((lang, i) => (
@@ -827,7 +791,7 @@ export default function OnboardingCompany() {
           </Card>
 
           {/* Competitors */}
-          <Card delay={0.45} className="h-fit">
+          <Card delay={0.45} className="h-full">
             <CardHeader
               icon={Trophy}
               iconGradient="from-red-500 to-rose-600 shadow-red-500/25"
@@ -839,7 +803,7 @@ export default function OnboardingCompany() {
                 </span>
               ) : undefined}
             />
-            <div className="p-5">
+            <div className="flex-1 p-5">
               {intake.detected_competitors?.length > 0 ? (
                 <div className="space-y-2">
                   {intake.detected_competitors.map((comp, i) => (
