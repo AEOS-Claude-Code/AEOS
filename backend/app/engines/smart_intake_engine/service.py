@@ -544,6 +544,74 @@ def _detect_competitors_static(industry: str, country: str, url: str, services: 
     return result[:6]
 
 
+async def _search_web(query: str, max_results: int = 10) -> list[dict]:
+    """
+    Search the web using DuckDuckGo HTML search (no API key needed).
+    Returns list of {title, url, snippet} dicts.
+    """
+    results: list[dict] = []
+    search_url = "https://html.duckduckgo.com/html/"
+
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            resp = await client.post(
+                search_url,
+                data={"q": query, "b": ""},
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Referer": "https://html.duckduckgo.com/",
+                },
+            )
+            if resp.status_code != 200:
+                logger.warning("DuckDuckGo search returned %d for query: %s", resp.status_code, query[:80])
+                return results
+
+            html = resp.text
+
+            from bs4 import BeautifulSoup as _BS
+            soup = _BS(html, "lxml")
+
+            for result_div in soup.select(".result"):
+                title_el = result_div.select_one(".result__title a, .result__a")
+                snippet_el = result_div.select_one(".result__snippet")
+                url_el = result_div.select_one(".result__url")
+
+                if not title_el:
+                    continue
+
+                title = title_el.get_text(strip=True)
+                snippet = snippet_el.get_text(strip=True) if snippet_el else ""
+
+                # Extract actual URL from DuckDuckGo redirect
+                href = title_el.get("href", "")
+                if "uddg=" in href:
+                    from urllib.parse import parse_qs, urlparse as _up
+                    parsed = _up(href)
+                    qs = parse_qs(parsed.query)
+                    actual_url = qs.get("uddg", [""])[0]
+                elif href.startswith("http"):
+                    actual_url = href
+                elif url_el:
+                    raw_url = url_el.get_text(strip=True)
+                    actual_url = f"https://{raw_url}" if not raw_url.startswith("http") else raw_url
+                else:
+                    continue
+
+                if actual_url:
+                    results.append({
+                        "title": title,
+                        "url": actual_url,
+                        "snippet": snippet,
+                    })
+                    if len(results) >= max_results:
+                        break
+
+    except Exception as e:
+        logger.warning("Web search failed for query '%s': %s", query[:60], str(e)[:100])
+
+    return results
+
+
 async def _discover_competitors_ai(
     company_name: str,
     industry: str,
@@ -553,57 +621,127 @@ async def _discover_competitors_ai(
     services: list[str] = None,
 ) -> list[dict]:
     """
-    AI-powered competitor discovery using Claude API.
+    AI-powered competitor discovery: Web Search + Claude Analysis.
 
-    Uses the AEOS Competitor Intelligence Engine approach:
-    1. Builds a rich context prompt from company profile data
-    2. Asks Claude to identify real local competitors in the same market
-    3. Parses structured JSON response with competitor names, URLs, and types
-    4. Falls back to static data if AI is unavailable
+    Pipeline:
+    1. Build targeted search queries from detected services + location
+    2. Search DuckDuckGo for real companies matching each service
+    3. Feed all search results to Claude for intelligent filtering & ranking
+    4. Claude selects the 6 best competitors that match the company's services
+    5. Falls back to static data if search + AI both fail
     """
     from app.core.config import settings
-
-    api_key = settings.ANTHROPIC_API_KEY
-    if not api_key:
-        logger.info("No Anthropic API key — falling back to static competitor detection")
-        return _detect_competitors_static(industry, country, url, services)
 
     try:
         scanned_domain = urlparse(url).netloc.replace("www.", "").lower()
     except Exception:
         scanned_domain = ""
 
-    # Build the context for AI
-    services_text = ", ".join(services[:10]) if services else "not detected"
     country_text = country or "unknown"
     city_text = city or ""
     location_text = f"{city_text}, {country_text}".strip(", ") if city_text else country_text
+    services_text = ", ".join(services[:10]) if services else ""
+
+    # ── Step 1: Build search queries based on services + location ──
+    search_queries: list[str] = []
+
+    if services:
+        # Group services into max 3 search queries (2-3 services each)
+        for i in range(0, min(len(services), 9), 3):
+            service_group = " ".join(services[i:i + 3])
+            query = f"{service_group} companies in {location_text}"
+            search_queries.append(query)
+
+        # Add a broader industry + services query
+        top_services = " ".join(services[:3])
+        search_queries.append(f"{top_services} competitors {country_text}")
+    else:
+        # No services detected — search by industry
+        search_queries.append(f"{industry} companies in {location_text}")
+        search_queries.append(f"top {industry} firms {country_text}")
+
+    # ── Step 2: Execute web searches in parallel ──
+    import asyncio
+    all_search_results: list[dict] = []
+
+    search_tasks = [_search_web(q, max_results=8) for q in search_queries[:4]]
+    search_outputs = await asyncio.gather(*search_tasks, return_exceptions=True)
+
+    for output in search_outputs:
+        if isinstance(output, list):
+            all_search_results.extend(output)
+
+    logger.info(
+        "Web search returned %d results across %d queries for %s",
+        len(all_search_results), len(search_queries), company_name or scanned_domain,
+    )
+
+    # Deduplicate by domain
+    seen_search_domains: set[str] = set()
+    unique_results: list[dict] = []
+    for sr in all_search_results:
+        try:
+            sr_domain = urlparse(sr["url"]).netloc.replace("www.", "").lower()
+        except Exception:
+            continue
+        # Skip self and search engines/social media
+        skip_domains = {"google.com", "facebook.com", "linkedin.com", "twitter.com", "x.com",
+                        "youtube.com", "instagram.com", "wikipedia.org", "duckduckgo.com",
+                        "reddit.com", "pinterest.com", "tiktok.com", "amazon.com"}
+        if sr_domain == scanned_domain:
+            continue
+        if any(skip in sr_domain for skip in skip_domains):
+            continue
+        if sr_domain not in seen_search_domains:
+            unique_results.append(sr)
+            seen_search_domains.add(sr_domain)
+
+    # ── Step 3: Use Claude to analyze search results and pick competitors ──
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key:
+        # No AI available — pick top results that look like companies
+        logger.info("No Anthropic API key — returning top search results as competitors")
+        if unique_results:
+            return _pick_best_from_search(unique_results, scanned_domain, industry, 6)
+        return _detect_competitors_static(industry, country, url, services)
+
+    if not unique_results:
+        logger.info("No search results found — Claude will use its own knowledge")
+
+    # Format search results for Claude
+    search_context = ""
+    for i, sr in enumerate(unique_results[:25], 1):
+        search_context += f"{i}. {sr['title']}\n   URL: {sr['url']}\n   {sr['snippet'][:150]}\n\n"
+
+    if not search_context:
+        search_context = "(No search results available — use your knowledge of the market)\n"
 
     prompt = (
-        f"You are an AI-powered competitor intelligence engine for the MENA region and global markets.\n\n"
+        f"You are the AEOS Competitor Intelligence Engine. Your task is to identify the best "
+        f"competitors for a company based on REAL web search results.\n\n"
+        f"═══ TARGET COMPANY ═══\n"
         f"Company: {company_name or scanned_domain}\n"
         f"Website: {url}\n"
         f"Industry: {industry}\n"
         f"Location: {location_text}\n"
-        f"Services/Products: {services_text}\n\n"
-        f"Identify exactly 6 real competitors for this company. Focus on:\n"
-        f"1. LOCAL competitors in {country_text} that offer similar services/products\n"
-        f"2. Regional competitors in the same market (MENA/GCC if applicable)\n"
-        f"3. Only include companies that ACTUALLY EXIST with real, working websites\n"
-        f"4. Match competitors to the specific services: {services_text}\n"
-        f"5. Do NOT include the company itself ({scanned_domain})\n"
-        f"6. Prefer direct competitors (same services/industry) over indirect ones\n\n"
+        f"Services/Products: {services_text or 'not detected'}\n\n"
+        f"═══ WEB SEARCH RESULTS ═══\n"
+        f"{search_context}\n"
+        f"═══ INSTRUCTIONS ═══\n"
+        f"From the search results above, select exactly 6 companies that are the BEST competitors.\n\n"
+        f"FILTERING RULES (STRICT):\n"
+        f"- ONLY select companies that provide THE SAME or very similar services/products: {services_text or industry}\n"
+        f"- MUST be from {country_text} or the same region\n"
+        f"- MUST be real operating companies (not directories, blogs, news sites, or marketplaces)\n"
+        f"- Do NOT include {scanned_domain}\n"
+        f"- If search results don't have 6 good matches, supplement with your knowledge of real "
+        f"  companies in {country_text} that offer: {services_text or industry}\n\n"
         f"Return ONLY a JSON array with exactly 6 objects. No markdown, no explanation:\n"
-        f'[{{"name": "Company Name", "url": "https://example.com", "type": "Brief description of what they do"}}]\n\n'
-        f"Requirements:\n"
-        f"- Each URL must be a real, valid website (https://...)\n"
-        f"- Each name must be the actual company name\n"
-        f"- Each type should be a short description (under 50 chars) mentioning their market\n"
-        f"- Prioritize competitors from {country_text} first, then regional, then global\n"
+        f'[{{"name": "Company Name", "url": "https://example.com", "type": "Brief description (what services they offer)"}}]\n'
     )
 
     try:
-        async with httpx.AsyncClient(timeout=25) as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={
@@ -613,13 +751,13 @@ async def _discover_competitors_ai(
                 },
                 json={
                     "model": "claude-sonnet-4-20250514",
-                    "max_tokens": 800,
+                    "max_tokens": 1000,
                     "system": (
                         "You are the AEOS Competitor Intelligence Engine. "
-                        "You identify real, verified competitors for businesses based on their industry, "
-                        "location, and services. You ONLY return real companies with real websites. "
-                        "You focus on local and regional competitors first. "
-                        "You respond with ONLY valid JSON arrays, no markdown, no explanation."
+                        "You analyze web search results to identify real, verified competitors. "
+                        "You ONLY select companies that offer the SAME services/products as the target company. "
+                        "You prioritize local competitors from the same country. "
+                        "You respond with ONLY valid JSON arrays, no markdown, no explanation, no preamble."
                     ),
                     "messages": [
                         {"role": "user", "content": prompt},
@@ -628,11 +766,15 @@ async def _discover_competitors_ai(
             )
 
             if resp.status_code != 200:
-                logger.warning("Claude API returned %d for competitor discovery", resp.status_code)
+                logger.warning("Claude API returned %d for competitor analysis", resp.status_code)
+                if unique_results:
+                    return _pick_best_from_search(unique_results, scanned_domain, industry, 6)
                 return _detect_competitors_static(industry, country, url, services)
 
             data = resp.json()
             if not data.get("content") or not data["content"][0].get("text"):
+                if unique_results:
+                    return _pick_best_from_search(unique_results, scanned_domain, industry, 6)
                 return _detect_competitors_static(industry, country, url, services)
 
             ai_text = data["content"][0]["text"].strip()
@@ -644,6 +786,8 @@ async def _discover_competitors_ai(
 
             competitors = json.loads(ai_text)
             if not isinstance(competitors, list):
+                if unique_results:
+                    return _pick_best_from_search(unique_results, scanned_domain, industry, 6)
                 return _detect_competitors_static(industry, country, url, services)
 
             # Validate and filter
@@ -666,10 +810,8 @@ async def _discover_competitors_ai(
                 except Exception:
                     continue
 
-                # Skip self
                 if comp_domain and scanned_domain and comp_domain == scanned_domain:
                     continue
-                # Skip duplicates
                 if comp_domain in seen_domains:
                     continue
 
@@ -685,18 +827,51 @@ async def _discover_competitors_ai(
 
             if result:
                 logger.info(
-                    "AI competitor discovery found %d competitors for %s (%s, %s)",
+                    "AI+Search competitor discovery found %d competitors for %s (%s, %s)",
                     len(result), company_name or scanned_domain, industry, country_text,
                 )
                 return result
 
-            # AI returned empty/invalid — fall back
-            logger.info("AI competitor discovery returned no valid results — using static fallback")
+            logger.info("AI analysis returned no valid competitors — using search fallback")
+            if unique_results:
+                return _pick_best_from_search(unique_results, scanned_domain, industry, 6)
             return _detect_competitors_static(industry, country, url, services)
 
     except Exception as e:
-        logger.warning("AI competitor discovery failed: %s — using static fallback", str(e)[:100])
+        logger.warning("AI competitor analysis failed: %s", str(e)[:100])
+        if unique_results:
+            return _pick_best_from_search(unique_results, scanned_domain, industry, 6)
         return _detect_competitors_static(industry, country, url, services)
+
+
+def _pick_best_from_search(
+    search_results: list[dict], scanned_domain: str, industry: str, limit: int = 6
+) -> list[dict]:
+    """Pick the best competitor candidates from raw search results (no AI)."""
+    result = []
+    seen: set[str] = set()
+    for sr in search_results:
+        try:
+            domain = urlparse(sr["url"]).netloc.replace("www.", "").lower()
+        except Exception:
+            continue
+        if domain == scanned_domain or domain in seen:
+            continue
+        # Derive company name from title (take first part before separators)
+        title = sr.get("title", "")
+        name = re.split(r"\s*[|–—-]\s*", title)[0].strip()
+        if not name or len(name) > 60:
+            name = domain.split(".")[0].replace("-", " ").title()
+
+        result.append({
+            "name": name[:60],
+            "url": sr["url"],
+            "type": sr.get("snippet", "")[:80] or f"{industry} company",
+        })
+        seen.add(domain)
+        if len(result) >= limit:
+            break
+    return result
 
 
 # Keep sync wrapper for backward compatibility
