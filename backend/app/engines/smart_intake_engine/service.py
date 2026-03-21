@@ -671,14 +671,45 @@ async def _extract_team_members(html: str, url: str) -> dict:
         if result["team_page_url"]:
             break
 
+    # Helper: validate a name candidate
+    def _is_valid_name(name: str, seen: set) -> bool:
+        if not name or len(name) <= 2 or len(name) > 60:
+            return False
+        if name.lower() in seen:
+            return False
+        if name.startswith("http") or name.startswith("www."):
+            return False
+        if any(c.isdigit() for c in name):
+            return False
+        # Must have at least 2 words (first + last name)
+        if " " not in name.strip():
+            return False
+        # Skip common non-name phrases
+        skip_phrases = ["read more", "learn more", "view profile", "our team", "about us",
+                        "get in touch", "contact us", "see all", "view all", "click here",
+                        "load more", "show more", "all rights", "privacy policy",
+                        "terms of", "follow us", "connect with", "join our"]
+        if name.lower().strip() in skip_phrases or any(p in name.lower() for p in skip_phrases):
+            return False
+        # Must contain letters only (plus spaces, hyphens, apostrophes, dots)
+        if not re.match(r"^[A-Za-z\u0600-\u06FF\u0750-\u077F\s\.\-']+$", name):
+            return False
+        return True
+
     # Helper to extract members from a soup object
-    def _extract_members_from_soup(page_soup, existing_members):
+    def _extract_members_from_soup(page_soup, existing_members, is_about_page=False):
         members = []
         seen_names = {m["name"].lower() for m in existing_members}
+        max_members = 10
 
-        # Extract team members from JSON-LD Person schema
+        def _at_limit():
+            return len(existing_members) + len(members) >= max_members
+
+        # ---- Strategy 1: JSON-LD Person/Employee schema ----
         page_html = str(page_soup)
         for match in re.finditer(r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', page_html, re.DOTALL | re.IGNORECASE):
+            if _at_limit():
+                break
             try:
                 data = json.loads(match.group(1))
                 items = data if isinstance(data, list) else [data]
@@ -690,61 +721,193 @@ async def _extract_team_members(html: str, url: str) -> dict:
                     if item.get("@type") in ("Person", "Employee"):
                         name = item.get("name", "")
                         role = item.get("jobTitle", "") or item.get("description", "")
-                        if name and name.strip().lower() not in seen_names:
+                        if _is_valid_name(name.strip(), seen_names):
                             members.append({"name": name.strip(), "role": role.strip()})
                             seen_names.add(name.strip().lower())
             except Exception:
                 continue
 
-        # Look for team sections in HTML (cards with name + job title patterns)
+        if _at_limit():
+            return members
+
+        # ---- Strategy 2: CSS class/id based team sections ----
+        section_kws = ["team", "staff", "people", "leadership", "founders", "management",
+                       "directors", "executives", "partners", "members"]
         team_sections = page_soup.find_all(["section", "div"], class_=lambda c: c and any(
-            kw in str(c).lower() for kw in ["team", "staff", "people", "leadership", "founders"]
+            kw in str(c).lower() for kw in section_kws
         ))
         if not team_sections:
             team_sections = page_soup.find_all(["section", "div"], id=lambda i: i and any(
-                kw in str(i).lower() for kw in ["team", "staff", "people", "leadership"]
+                kw in str(i).lower() for kw in section_kws
             ))
 
-        for section in team_sections[:3]:
-            for card in section.find_all(["div", "li", "article"], recursive=True):
-                texts = [t.get_text(strip=True) for t in card.find_all(["h3", "h4", "h5", "strong", "b"], limit=2)]
-                subtexts = [t.get_text(strip=True) for t in card.find_all(["p", "span", "small"], limit=2)]
+        # ---- Strategy 3: Heading-text based sections ----
+        # Find sections that contain headings with team-related text
+        heading_kws = ["team", "people", "leadership", "management", "founders",
+                       "who we are", "our experts", "meet the", "our people",
+                       "board of", "directors", "partners"]
+        if not team_sections or is_about_page:
+            for heading in page_soup.find_all(["h1", "h2", "h3"], limit=20):
+                h_text = heading.get_text(strip=True).lower()
+                if any(kw in h_text for kw in heading_kws):
+                    # Get the parent section/div of this heading
+                    parent = heading.find_parent(["section", "div"])
+                    if parent and parent not in team_sections:
+                        team_sections.append(parent)
+
+        def _extract_from_cards(section):
+            found = []
+            for card in section.find_all(["div", "li", "article", "figure"], recursive=True):
+                if _at_limit():
+                    break
+                # Look for heading tags (name) + paragraph/span (role)
+                texts = [t.get_text(strip=True) for t in card.find_all(["h2", "h3", "h4", "h5", "h6", "strong", "b", "dt"], limit=3)]
+                subtexts = [t.get_text(strip=True) for t in card.find_all(["p", "span", "small", "dd", "em"], limit=3)]
                 if texts:
                     name_candidate = texts[0]
-                    role_candidate = subtexts[0] if subtexts else (texts[1] if len(texts) > 1 else "")
-                    if (2 < len(name_candidate) < 50
-                        and name_candidate.lower() not in seen_names
-                        and not name_candidate.startswith("http")
-                        and " " in name_candidate
-                        and not any(c.isdigit() for c in name_candidate)):
-                        members.append({
+                    role_candidate = ""
+                    # Try subtexts first, then secondary heading text
+                    for st in subtexts:
+                        if st and st != name_candidate and len(st) < 100:
+                            role_candidate = st
+                            break
+                    if not role_candidate and len(texts) > 1:
+                        role_candidate = texts[1]
+                    if _is_valid_name(name_candidate, seen_names):
+                        found.append({
                             "name": name_candidate,
                             "role": role_candidate[:100] if role_candidate else "",
                         })
                         seen_names.add(name_candidate.lower())
-                        if len(existing_members) + len(members) >= 10:
-                            break
-            if len(existing_members) + len(members) >= 10:
+            return found
+
+        for section in team_sections[:5]:
+            members.extend(_extract_from_cards(section))
+            if _at_limit():
                 break
+
+        if _at_limit():
+            return members
+
+        # ---- Strategy 4: Image-card pattern detection ----
+        # Many about/team pages show people as: <div><img/><h3>Name</h3><p>Role</p></div>
+        # Find divs that contain exactly one image + heading text (likely a person card)
+        if not members or is_about_page:
+            candidate_cards = []
+            for card in page_soup.find_all(["div", "li", "article", "figure"], recursive=True):
+                imgs = card.find_all("img", limit=2)
+                headings = card.find_all(["h2", "h3", "h4", "h5", "h6", "strong"], limit=3)
+                # Card with exactly 1 image and 1-2 headings is likely a person card
+                if len(imgs) == 1 and 1 <= len(headings) <= 2:
+                    img = imgs[0]
+                    img_src = img.get("src", "") or img.get("data-src", "")
+                    img_alt = img.get("alt", "")
+                    # Check if image alt text looks like a name
+                    heading_text = headings[0].get_text(strip=True)
+                    # Skip cards where heading is too long (probably not a name)
+                    if len(heading_text) > 60:
+                        continue
+                    candidate_cards.append(card)
+
+            # If we found multiple similar cards, they're likely team member cards
+            if len(candidate_cards) >= 2:
+                for card in candidate_cards:
+                    if _at_limit():
+                        break
+                    headings = card.find_all(["h2", "h3", "h4", "h5", "h6", "strong"], limit=3)
+                    subtexts = [t.get_text(strip=True) for t in card.find_all(["p", "span", "small", "em"], limit=3)]
+                    if headings:
+                        name_candidate = headings[0].get_text(strip=True)
+                        role_candidate = ""
+                        for st in subtexts:
+                            if st and st != name_candidate and len(st) < 100:
+                                role_candidate = st
+                                break
+                        if not role_candidate and len(headings) > 1:
+                            role_candidate = headings[1].get_text(strip=True)
+                        if _is_valid_name(name_candidate, seen_names):
+                            members.append({
+                                "name": name_candidate,
+                                "role": role_candidate[:100] if role_candidate else "",
+                            })
+                            seen_names.add(name_candidate.lower())
+
+        if _at_limit():
+            return members
+
+        # ---- Strategy 5: About page full scan (broader) ----
+        # On about pages, look for any repeated heading+subtext pattern that looks like names
+        if is_about_page and not members:
+            all_headings = page_soup.find_all(["h3", "h4", "h5"], limit=30)
+            name_candidates = []
+            for h in all_headings:
+                text = h.get_text(strip=True)
+                if _is_valid_name(text, seen_names):
+                    # Get the next sibling or parent text for role
+                    role = ""
+                    next_el = h.find_next_sibling(["p", "span", "small", "div"])
+                    if next_el:
+                        role = next_el.get_text(strip=True)[:100]
+                    name_candidates.append({"name": text, "role": role})
+
+            # Only add if we found at least 2 (pattern of people, not random headings)
+            if len(name_candidates) >= 2:
+                for nc in name_candidates:
+                    if _at_limit():
+                        break
+                    members.append(nc)
+                    seen_names.add(nc["name"].lower())
 
         return members
 
     # 2. Extract team members from main page HTML
     result["members"] = _extract_members_from_soup(soup, [])
 
-    # 3. If we found a team page URL, fetch it and extract more members
+    # 3. If we found a team/about page URL, fetch it and extract more members
     if result["team_page_url"] and len(result["members"]) < 10:
         try:
-            logger.info("Following team page %s for team members", result["team_page_url"])
-            team_profile = await collect_website_profile(result["team_page_url"])
+            team_url = result["team_page_url"]
+            is_about = any(kw in team_url.lower() for kw in ["about", "who-we-are", "who_we_are"])
+            logger.info("Following team/about page %s for team members (is_about=%s)", team_url, is_about)
+            team_profile = await collect_website_profile(team_url)
             team_html = team_profile.get("html", "")
             if team_html:
                 team_soup = _BS(team_html, "lxml")
-                extra_members = _extract_members_from_soup(team_soup, result["members"])
+                extra_members = _extract_members_from_soup(team_soup, result["members"], is_about_page=is_about)
                 result["members"].extend(extra_members)
                 result["members"] = result["members"][:10]
         except Exception as e:
             logger.info("Team page follow failed: %s", str(e)[:100])
+
+    # 3b. If still no members, try common about/team URL patterns
+    if len(result["members"]) < 1:
+        from urllib.parse import urljoin as _urljoin
+        base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+        about_paths = ["/about-us", "/about", "/about-us/", "/about/",
+                       "/team", "/our-team", "/team/", "/our-team/",
+                       "/people", "/leadership", "/who-we-are"]
+        for path in about_paths:
+            candidate_url = _urljoin(base_url, path)
+            # Skip if we already tried this URL
+            if candidate_url == result.get("team_page_url"):
+                continue
+            try:
+                logger.info("Trying common about/team path: %s", candidate_url)
+                about_profile = await collect_website_profile(candidate_url)
+                about_html = about_profile.get("html", "")
+                if about_html and len(about_html) > 500:
+                    about_soup = _BS(about_html, "lxml")
+                    is_about = "about" in path
+                    extra = _extract_members_from_soup(about_soup, result["members"], is_about_page=is_about)
+                    if extra:
+                        if not result["team_page_url"]:
+                            result["team_page_url"] = candidate_url
+                        result["members"].extend(extra)
+                        result["members"] = result["members"][:10]
+                        logger.info("Found %d members from %s", len(extra), candidate_url)
+                        break  # Found members, stop trying more paths
+            except Exception:
+                continue
 
     result["count"] = len(result["members"])
 
