@@ -137,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <AdminContext.Provider value={{ token, admin, logout }}>
       <div className="flex min-h-screen bg-slate-900">
         {/* Sidebar */}
-        <aside className="flex w-64 flex-col border-r border-slate-700/50 bg-slate-800/50">
+        <aside className="sticky top-0 flex h-screen w-64 flex-col border-r border-slate-700/50 bg-slate-800/50">
           <div className="flex items-center gap-3 border-b border-slate-700/50 px-5 py-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-red-700">
               <ShieldCheck size={18} className="text-white" />
@@ -148,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
 
-          <nav className="flex-1 space-y-1 p-3">
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3">
             {NAV.map(n => {
               const active = pathname === n.href || (n.href !== "/admin" && pathname.startsWith(n.href));
               return (
