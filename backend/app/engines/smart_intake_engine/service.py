@@ -947,10 +947,28 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
                 return True  # Too few common English bigrams = likely gibberish
         return False
 
+    # CMS/platform internal variable names that leak into keyword extraction
+    _CMS_JUNK_WORDS = {
+        "listid", "siteurl", "itemurl", "itemid", "weburl", "siteid",
+        "rootfolder", "viewid", "pageid", "templateurl", "contenttype",
+        "contentid", "formdigest", "requestdigest", "webpartid",
+        "splistid", "spweburl", "ctx", "wpq", "listtitle",
+        "dispform", "editform", "newform", "allitems", "viewallitems",
+        "source", "rootdir", "basetype", "serverurl", "relativepath",
+        "fldurl", "listguid", "viewguid", "aspx", "ascx",
+        "onclick", "onload", "onchange", "onsubmit", "classname",
+        "stylesheet", "javascript", "innerhtml", "classid",
+        "arrow", "item", "icon", "button", "wrapper", "container",
+        "modal", "dropdown", "tooltip", "carousel", "slider",
+        "sidebar", "navbar", "breadcrumb", "pagination",
+    }
+
     def _add(kw: str):
         kw = kw.strip().lower()
         if kw and kw not in seen and len(kw) >= 3 and kw not in _STOP_WORDS:
             if _is_gibberish(kw):
+                return
+            if kw in _CMS_JUNK_WORDS:
                 return
             seen.add(kw)
             keywords.append(kw.title())
@@ -2110,6 +2128,11 @@ async def intake_from_url(url: str) -> dict:
             "menu", "sitemap", "copyright", "all rights", "privacy",
             "delivers", "shipment", "operations", "project cargo",
             "read more", "download", "upload", "submit", "contact us",
+            # Common non-person "team" entries
+            "media center", "site information", "customer care", "customer service",
+            "services", "support", "help desk", "helpdesk", "info center",
+            "مكاتب", "خدمة العملاء", "مركز", "المعلومات", "الخدمة",
+            "office", "department", "division", "branch", "center",
         ]
         clean_members = []
         for m in team_data["members"]:
