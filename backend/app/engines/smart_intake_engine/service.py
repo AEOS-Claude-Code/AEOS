@@ -1293,13 +1293,7 @@ async def _extract_team_members(html: str, url: str) -> dict:
     if len(result["members"]) < 1:
         from urllib.parse import urljoin as _urljoin
         base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
-        about_paths = ["/about-us", "/about", "/about-us/", "/about/",
-                       "/team", "/our-team", "/team/", "/our-team/",
-                       "/people", "/leadership", "/who-we-are",
-                       "/en/about-us", "/en/about", "/en/team", "/en/our-team",
-                       "/ar/about-us", "/ar/about", "/ar/team",
-                       "/company", "/company/team", "/about/team",
-                       "/about-us/team", "/staff", "/management"]
+        about_paths = ["/about-us", "/about", "/team", "/our-team", "/people"]
         for path in about_paths:
             candidate_url = _urljoin(base_url, path)
             # Skip if we already tried this URL
@@ -1624,8 +1618,13 @@ async def intake_from_url(url: str) -> dict:
         headings=profile.get("headings", []),
     )
 
-    # 7c. Extract team members
-    team_data = await _extract_team_members(html, url)
+    # 7c. Extract team members (with timeout to avoid slow page fetches)
+    try:
+        import asyncio as _aio
+        team_data = await _aio.wait_for(_extract_team_members(html, url), timeout=15)
+    except Exception:
+        logger.info("Team extraction timed out for %s", url)
+        team_data = {"team_page_url": "", "members": [], "count": 0, "linkedin_search_url": ""}
 
     # 7d. Extract services/products
     detected_services = _extract_services(html, profile.get("headings", []))
@@ -1634,14 +1633,27 @@ async def intake_from_url(url: str) -> dict:
     seo_health = await _check_seo_health(html, url)
 
     # 8. Discover competitors (AI-powered with static fallback)
-    competitors = await _discover_competitors_ai(
-        company_name=profile.get("detected_company_name", ""),
-        industry=industry_result["detected_industry"],
-        country=location.get("country", ""),
-        city=location.get("city", ""),
-        url=url,
-        services=detected_services,
-    )
+    try:
+        import asyncio as _aio
+        competitors = await _aio.wait_for(
+            _discover_competitors_ai(
+                company_name=profile.get("detected_company_name", ""),
+                industry=industry_result["detected_industry"],
+                country=location.get("country", ""),
+                city=location.get("city", ""),
+                url=url,
+                services=detected_services,
+            ),
+            timeout=25,
+        )
+    except Exception as e:
+        logger.warning("Competitor discovery failed in intake: %s — using static", str(e)[:100])
+        competitors = _detect_competitors_static(
+            industry_result["detected_industry"],
+            location.get("country", ""),
+            url,
+            detected_services,
+        )
 
     logger.info(
         "Intake complete for %s: company=%s, industry=%s (%.0f%%), country=%s, city=%s",
