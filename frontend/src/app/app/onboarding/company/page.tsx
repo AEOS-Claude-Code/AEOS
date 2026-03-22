@@ -1207,7 +1207,7 @@ export default function OnboardingCompany() {
           ) : (
             <>
               <Sparkles size={20} />
-              Continue to Org Chart
+              Continue to Competitors
               <ArrowRight size={18} className="transition-transform group-hover:translate-x-1.5" />
             </>
           )}
