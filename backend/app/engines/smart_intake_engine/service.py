@@ -2138,6 +2138,11 @@ async def intake_from_url(url: str) -> dict:
             "خدمات", "نظام", "إلكترونية", "البيانات", "المفتوحة", "إخطارات",
             "منصة", "تكنولوجيا", "برنامج", "خريطة", "تفاعلية",
             "قائمة", "الشركات", "المعتمدة", "التأهيل", "إدارة",
+            # Tour/product names that get mistaken for team members
+            "tour", "tours", "trip", "trips", "package", "wonders",
+            "adventure", "excursion", "safari", "cruise", "experience",
+            "journey", "day trip", "in depth", "steps of", "touch of",
+            "featured", "popular", "best seller", "top rated",
         ]
         clean_members = []
         for m in team_data["members"]:
@@ -2159,6 +2164,11 @@ async def intake_from_url(url: str) -> dict:
                 continue
             # Skip if name doesn't contain any letters
             if not re.search(r'[a-zA-Z\u0600-\u06FF]', name):
+                continue
+            # Skip if role is a product/listing indicator (not a job title)
+            _product_roles = {"featured", "popular", "new", "sale", "best seller",
+                             "top rated", "recommended", "hot", "trending", "special"}
+            if role.lower().strip() in _product_roles:
                 continue
             clean_members.append(m)
         team_data["members"] = clean_members
