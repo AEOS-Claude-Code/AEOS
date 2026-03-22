@@ -1534,6 +1534,75 @@ async def _check_seo_health(html: str, url: str) -> dict:
     return results
 
 
+async def _search_social_profiles(company_name: str, domain: str) -> dict[str, list[str]]:
+    """
+    Search DuckDuckGo for company social media profiles.
+    This bypasses bot-blocked sites by finding indexed social links.
+    """
+    result: dict[str, list[str]] = {
+        "linkedin": [], "facebook": [], "instagram": [],
+        "twitter": [], "youtube": [], "tiktok": [],
+        "pinterest": [], "snapchat": [],
+    }
+
+    if not company_name and not domain:
+        return result
+
+    search_term = company_name or domain.split(".")[0]
+    queries = [
+        f'site:linkedin.com/company "{search_term}"',
+        f'"{search_term}" site:instagram.com OR site:facebook.com OR site:x.com',
+    ]
+
+    import asyncio
+
+    async def _do_search(query: str) -> list[dict]:
+        try:
+            return await _search_web(query, max_results=5)
+        except Exception:
+            return []
+
+    all_results = await asyncio.gather(*[_do_search(q) for q in queries], return_exceptions=True)
+
+    social_patterns = {
+        "linkedin": ["linkedin.com/company/", "linkedin.com/in/"],
+        "facebook": ["facebook.com/"],
+        "instagram": ["instagram.com/"],
+        "twitter": ["twitter.com/", "x.com/"],
+        "youtube": ["youtube.com/channel/", "youtube.com/c/", "youtube.com/@"],
+        "tiktok": ["tiktok.com/@"],
+    }
+
+    skip_paths = {"/login", "/signup", "/help", "/about", "/search", "/explore",
+                  "/settings", "/p/", "/reel/", "/stories"}
+
+    for batch in all_results:
+        if isinstance(batch, Exception) or not isinstance(batch, list):
+            continue
+        for sr in batch:
+            sr_url = sr.get("url", "").lower().rstrip("/")
+            for platform, patterns in social_patterns.items():
+                for pattern in patterns:
+                    if pattern in sr_url:
+                        # Validate it's a real profile URL (not a generic platform page)
+                        path_part = sr_url.split(pattern)[-1].strip("/")
+                        if path_part and len(path_part) > 1 and not any(sp in sr_url for sp in skip_paths):
+                            full_url = sr.get("url", "").rstrip("/")
+                            if full_url not in result[platform]:
+                                result[platform].append(full_url)
+                        break
+
+    # Cap at 1 per platform
+    for p in result:
+        result[p] = result[p][:1]
+
+    found = sum(1 for v in result.values() if v)
+    if found:
+        logger.info("Social profile search found %d platforms for '%s'", found, search_term)
+
+    return result
+
+
 def _merge_social(target: dict[str, list[str]], source: dict[str, list[str]]) -> None:
     """Merge social links from source into target, avoiding duplicates."""
     for platform, urls in source.items():
@@ -1684,6 +1753,22 @@ async def intake_from_url(url: str) -> dict:
             len(contacts["phone_numbers"]),
             len(contacts["emails"]),
         )
+
+    # 5d. Social profile search fallback — if still no social links, search the web
+    if not any(urls for urls in social.values()):
+        try:
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.replace("www.", "")
+            company = profile.get("detected_company_name", "") or domain.split(".")[0]
+            search_social = await _aio.wait_for(
+                _search_social_profiles(company, domain),
+                timeout=15,
+            )
+            _merge_social(social, search_social)
+            if any(urls for urls in social.values()):
+                logger.info("Social profile search succeeded — found profiles via web search")
+        except Exception as e:
+            logger.info("Social profile search failed: %s", str(e)[:100])
 
     # 6. Detect country/city
     corpus = " ".join([
