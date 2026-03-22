@@ -646,8 +646,12 @@ export default function OnboardingCompany() {
             <div className="flex-1 p-5">
               <div className="grid grid-cols-2 gap-2">
                 {SOCIAL_PLATFORMS.map((platform, i) => {
-                  const found = (intake.detected_social_links[platform.key] || []).length > 0;
+                  const urls = intake.detected_social_links[platform.key] || [];
+                  const found = urls.length > 0;
+                  const profileUrl = found ? urls[0] : null;
                   const SocialIcon = platform.icon;
+                  const Wrapper = found && profileUrl ? "a" : "div";
+                  const wrapperProps = found && profileUrl ? { href: profileUrl, target: "_blank", rel: "noopener noreferrer" } : {};
                   return (
                     <motion.div
                       key={platform.key}
@@ -655,29 +659,34 @@ export default function OnboardingCompany() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.3 + i * 0.04 }}
                       whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-                      className={`group flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all duration-300 cursor-default ${
-                        found
-                          ? "border-border bg-surface hover:shadow-md hover:border-blue-500/20"
-                          : "border-dashed border-border/60 bg-surface-secondary/30"
-                      }`}
                     >
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300 ${
-                        found ? platform.bgColor : "bg-surface-secondary"
-                      }`}>
-                        <SocialIcon className={`h-4 w-4 transition-all duration-300 ${
-                          found ? platform.brandColor : "text-fg-hint/30"
-                        }`} />
-                      </div>
-                      <p className={`text-xs font-semibold transition-colors flex-1 ${found ? "text-fg" : "text-fg-hint/40"}`}>
-                        {platform.label}
-                      </p>
-                      {found ? (
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.4 + i * 0.04 }}>
-                          <CheckCircle2 size={13} className="text-emerald-500" />
-                        </motion.div>
-                      ) : (
-                        <XCircle size={12} className="text-fg-hint/20" />
-                      )}
+                      <Wrapper
+                        {...wrapperProps}
+                        className={`group flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all duration-300 ${
+                          found
+                            ? "border-border bg-surface hover:shadow-md hover:border-blue-500/20 cursor-pointer"
+                            : "border-dashed border-border/60 bg-surface-secondary/30 cursor-default"
+                        }`}
+                      >
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-300 ${
+                          found ? platform.bgColor : "bg-surface-secondary"
+                        }`}>
+                          <SocialIcon className={`h-4 w-4 transition-all duration-300 ${
+                            found ? platform.brandColor : "text-fg-hint/30"
+                          }`} />
+                        </div>
+                        <p className={`text-xs font-semibold transition-colors flex-1 ${found ? "text-fg" : "text-fg-hint/40"}`}>
+                          {platform.label}
+                        </p>
+                        {found ? (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.4 + i * 0.04 }} className="flex items-center gap-1">
+                            <ExternalLink size={11} className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <CheckCircle2 size={13} className="text-emerald-500" />
+                          </motion.div>
+                        ) : (
+                          <XCircle size={12} className="text-fg-hint/20" />
+                        )}
+                      </Wrapper>
                     </motion.div>
                   );
                 })}
@@ -894,16 +903,16 @@ export default function OnboardingCompany() {
             />
             <div className="flex-1 p-5 space-y-3">
               {intake.og_image ? (
-                <div className="overflow-hidden rounded-xl border border-border">
+                <a href={intake.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-border hover:border-indigo-500/30 transition-colors group">
                   <img
                     src={intake.og_image}
                     alt="Website preview"
-                    className="h-36 w-full object-cover"
+                    className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
-                </div>
+                </a>
               ) : (
-                <div className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-surface-secondary/50 px-4 py-6">
+                <a href={intake.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-surface-secondary/50 px-4 py-6 hover:border-indigo-500/30 hover:bg-surface-secondary/80 transition-all group">
                   {intake.favicon_url ? (
                     <img src={intake.favicon_url} alt="" className="h-8 w-8 rounded-lg" />
                   ) : (
@@ -911,14 +920,29 @@ export default function OnboardingCompany() {
                       <Globe size={16} className="text-indigo-400" />
                     </div>
                   )}
-                  <span className="text-xs font-medium text-fg-hint truncate">{intake.url || "No preview available"}</span>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-fg-hint truncate block">{intake.url || "No preview available"}</span>
+                    <span className="text-2xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">Open website →</span>
+                  </div>
+                  <ExternalLink size={14} className="text-fg-hint/30 group-hover:text-blue-400 transition-colors shrink-0" />
+                </a>
               )}
               {intake.page_title && (
                 <p className="text-sm font-bold text-fg leading-snug">{intake.page_title}</p>
               )}
               {intake.meta_description && (
-                <p className="text-xs text-fg-hint leading-relaxed line-clamp-2">{intake.meta_description}</p>
+                <p className="text-xs text-fg-hint leading-relaxed line-clamp-3">{intake.meta_description}</p>
+              )}
+              {/* Show detected languages and tech as mini badges */}
+              {intake.detected_languages?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-2xs text-fg-hint/60 font-medium">Languages:</span>
+                  {intake.detected_languages.map((lang: string) => (
+                    <span key={lang} className="rounded-md bg-indigo-500/10 px-1.5 py-0.5 text-2xs font-medium text-indigo-400">
+                      {lang.toUpperCase()}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </Card>

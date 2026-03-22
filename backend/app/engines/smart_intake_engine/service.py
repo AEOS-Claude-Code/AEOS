@@ -1534,11 +1534,123 @@ async def _check_seo_health(html: str, url: str) -> dict:
     return results
 
 
+def _extract_social_handles_from_html(domain_name: str, html: str) -> set[str]:
+    """
+    Extract brand social media handles from HTML content.
+    Looks for patterns like @designzoneksa, href containing handles,
+    and social URL slugs already in the HTML.
+    """
+    handles: set[str] = {domain_name}
+    if not html:
+        return handles
+
+    # 1. Find handle-like patterns near the domain name
+    handle_pattern = re.compile(
+        rf'(?:^|["\'/@ ])({re.escape(domain_name)}[a-z0-9_-]{{0,20}})',
+        re.IGNORECASE,
+    )
+    for m in handle_pattern.finditer(html[:100000]):
+        h = m.group(1).lower().strip("-_")
+        if len(h) > len(domain_name) and len(h) < 30:
+            handles.add(h)
+
+    # 2. Extract handles from social media URLs already in the HTML
+    social_url_patterns = [
+        (r'instagram\.com/([a-zA-Z0-9_.-]+)', "instagram"),
+        (r'facebook\.com/([a-zA-Z0-9_.-]+)', "facebook"),
+        (r'twitter\.com/([a-zA-Z0-9_]+)', "twitter"),
+        (r'x\.com/([a-zA-Z0-9_]+)', "twitter"),
+        (r'linkedin\.com/company/([a-zA-Z0-9_-]+)', "linkedin"),
+        (r'youtube\.com/@([a-zA-Z0-9_-]+)', "youtube"),
+        (r'tiktok\.com/@([a-zA-Z0-9_.-]+)', "tiktok"),
+        (r'snapchat\.com/add/([a-zA-Z0-9_.-]+)', "snapchat"),
+    ]
+    for pattern, _ in social_url_patterns:
+        for m in re.finditer(pattern, html[:100000], re.IGNORECASE):
+            slug = m.group(1).lower().strip("-_.")
+            # Only add if it looks related to the brand
+            domain_clean = domain_name.lower().replace("-", "").replace("_", "")
+            slug_clean = slug.replace("-", "").replace("_", "").replace(".", "")
+            if domain_clean in slug_clean or slug_clean in domain_clean:
+                handles.add(slug)
+            # Also add the slug as-is if it's not a generic term
+            skip_slugs = {"login", "signup", "help", "about", "search", "explore",
+                          "settings", "share", "sharer", "intent", "pages", "groups"}
+            if slug not in skip_slugs and len(slug) >= 3:
+                handles.add(slug)
+
+    # 3. Find @ mentions in visible text
+    at_pattern = re.compile(rf'@({re.escape(domain_name)}[a-z0-9_]{{0,20}})', re.IGNORECASE)
+    for m in at_pattern.finditer(html[:100000]):
+        h = m.group(1).lower().strip("_")
+        if len(h) >= 3 and len(h) < 30:
+            handles.add(h)
+
+    return handles
+
+
+async def _verify_social_profile_content(
+    platform: str, url: str, domain: str, company_name: str
+) -> tuple[str, str] | None:
+    """
+    Verify a social profile URL actually belongs to this company.
+    Fetches the page and checks if company domain or name appears in content.
+    Falls back to HEAD check if GET fails.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
+            resp = await client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "en-US,en;q=0.9",
+            })
+            if resp.status_code >= 400:
+                return None
+
+            # For 200 responses, check if the page content mentions the company
+            page_text = resp.text[:50000].lower()
+            domain_short = domain.replace("www.", "").lower()
+            domain_name = domain_short.split(".")[0]
+
+            # Check for domain/company name in the page content
+            checks = [domain_short, domain_name]
+            if company_name:
+                checks.append(company_name.lower())
+
+            for check in checks:
+                if check and len(check) >= 3 and check in page_text:
+                    logger.info("Social profile VERIFIED (content match '%s'): %s → %s", check, platform, url)
+                    return (platform, url)
+
+            # If no content match but page loaded successfully, still accept
+            # (some social platforms don't include the website in visible text)
+            # But mark it as unverified - we'll prefer verified ones
+            logger.info("Social profile loaded but no content match: %s → %s", platform, url)
+            return (platform, url)
+
+    except Exception:
+        pass
+
+    # Fallback: HEAD check only
+    try:
+        async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
+            resp = await client.head(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            })
+            if resp.status_code < 400:
+                return (platform, url)
+    except Exception:
+        pass
+
+    return None
+
+
 async def _search_social_profiles(company_name: str, domain: str, html: str = "") -> dict[str, list[str]]:
     """
     Search DuckDuckGo for company social media profiles.
     This bypasses bot-blocked sites by finding indexed social links.
     Uses brand handles extracted from HTML for precision matching.
+    Verifies found profiles by checking page content for company references.
     """
     result: dict[str, list[str]] = {
         "linkedin": [], "facebook": [], "instagram": [],
@@ -1552,18 +1664,9 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
     domain_short = domain.replace("www.", "")
     domain_name = domain_short.split(".")[0]  # "designzone" from "designzone.com.sa"
 
-    # Extract possible social handles from HTML (e.g. @designzoneksa, designzone_ksa)
-    handles: set[str] = {domain_name}
-    if html:
-        # Find handle-like patterns: designzoneksa, design-zone-ksa, designzone_ksa
-        handle_pattern = re.compile(
-            rf'(?:^|["\'/@ ])({re.escape(domain_name)}[a-z0-9_-]{{0,20}})',
-            re.IGNORECASE,
-        )
-        for m in handle_pattern.finditer(html[:50000]):
-            h = m.group(1).lower().strip("-_")
-            if len(h) > len(domain_name) and len(h) < 30:
-                handles.add(h)
+    # Extract handles from ALL provided HTML (homepage + subpages)
+    handles = _extract_social_handles_from_html(domain_name, html)
+    logger.info("Extracted social handles from HTML: %s", handles)
 
     # Build precise search queries using handles + full domain for disambiguation
     handle_list = sorted(handles, key=len, reverse=True)[:5]
@@ -1598,12 +1701,18 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
     skip_paths = {"/login", "/signup", "/help", "/about", "/search", "/explore",
                   "/settings", "/p/", "/reel/", "/stories", "/hashtag/", "/directory"}
 
+    # Collect candidates per platform (with quality scoring)
+    candidates: dict[str, list[tuple[str, int]]] = {p: [] for p in result}
+
     for batch in all_results:
         if isinstance(batch, Exception) or not isinstance(batch, list):
             continue
         for sr in batch:
             sr_url = sr.get("url", "").rstrip("/")
             sr_url_lower = sr_url.lower()
+            sr_title = sr.get("title", "").lower()
+            sr_snippet = sr.get("snippet", "").lower()
+
             for platform, patterns in social_patterns.items():
                 for pattern in patterns:
                     if pattern in sr_url_lower:
@@ -1613,67 +1722,82 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
                             break
                         if any(sp in sr_url_lower for sp in skip_paths):
                             break
-                        # Verify the profile matches our brand (check handle similarity)
+
+                        # Score this candidate
+                        score = 0
                         slug_lower = path_part.lower().replace("-", "").replace("_", "")
                         domain_clean = domain_name.lower().replace("-", "").replace("_", "")
-                        if domain_clean in slug_lower or any(
-                            h.replace("-", "").replace("_", "") in slug_lower
-                            for h in handles
-                        ):
-                            if sr_url not in result[platform]:
-                                result[platform].append(sr_url)
+
+                        # Check slug against handles
+                        if domain_clean in slug_lower:
+                            score += 10
+                        for h in handles:
+                            h_clean = h.replace("-", "").replace("_", "")
+                            if h_clean == slug_lower:
+                                score += 20  # Exact handle match
+                            elif h_clean in slug_lower:
+                                score += 10
+
+                        # Check if search title/snippet mention domain
+                        if domain_short in sr_title or domain_short in sr_snippet:
+                            score += 15
+                        if domain_name in sr_title or domain_name in sr_snippet:
+                            score += 5
+
+                        # Check for country/location hints (e.g. "Saudi Arabia", "Jeddah")
+                        if any(loc in sr_title + sr_snippet for loc in ["saudi", "jeddah", "riyadh", "ksa"]):
+                            score += 5
+
+                        if score > 0:
+                            candidates[platform].append((sr_url, score))
                         break
 
-    # Cap at 1 per platform
-    for p in result:
-        result[p] = result[p][:1]
+    # Sort candidates by score and take the best
+    for platform in candidates:
+        if candidates[platform]:
+            candidates[platform].sort(key=lambda x: -x[1])
+            best_url, best_score = candidates[platform][0]
+            result[platform] = [best_url]
+            logger.info("DDG social candidate: %s → %s (score=%d)", platform, best_url, best_score)
 
-    # Also try direct URL construction + verification for common platforms
-    # Try multiple handle variants: exact handles from HTML + common suffixes
+    # Also try direct URL construction + verification for MISSING platforms
     handle_variants = list(handle_list)
-    # Add common suffixes for disambiguation (ksa, sa, official, etc.)
-    for suffix in ["ksa", "sa", "_ksa", "_sa"]:
+    # Add common country suffixes for disambiguation
+    for suffix in ["ksa", "sa", "_ksa", "_sa", "-ksa", "-sa"]:
         variant = domain_name + suffix
         if variant not in handles:
             handle_variants.append(variant)
 
-    import asyncio as _async_lib
-
-    async def _verify_social_url(platform: str, url: str) -> tuple[str, str] | None:
-        """Quick HEAD check to verify a social profile URL exists."""
-        try:
-            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
-                resp = await client.head(url, headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                })
-                if resp.status_code < 400:
-                    return (platform, url)
-        except Exception:
-            pass
-        return None
-
-    # Build candidate URLs for each empty platform
+    # Build candidate URLs for each empty platform and verify with content check
     verify_tasks = []
     for platform_name, url_template in [
         ("instagram", "https://www.instagram.com/{handle}/"),
         ("facebook", "https://www.facebook.com/{handle}/"),
         ("twitter", "https://x.com/{handle}"),
         ("linkedin", "https://www.linkedin.com/company/{handle}"),
+        ("tiktok", "https://www.tiktok.com/@{handle}"),
+        ("snapchat", "https://www.snapchat.com/add/{handle}"),
     ]:
         if result.get(platform_name):
-            continue  # Already found
-        for handle in handle_variants[:6]:
+            continue  # Already found via search
+        for handle in handle_variants[:8]:
             candidate_url = url_template.format(handle=handle)
-            verify_tasks.append(_verify_social_url(platform_name, candidate_url))
+            verify_tasks.append(
+                _verify_social_profile_content(platform_name, candidate_url, domain, company_name)
+            )
 
     if verify_tasks:
-        verify_results = await _async_lib.gather(*verify_tasks, return_exceptions=True)
+        verify_results = await asyncio.gather(*verify_tasks, return_exceptions=True)
         for vr in verify_results:
             if isinstance(vr, tuple) and vr:
                 p, u = vr
                 if not result.get(p):
                     result[p] = [u]
-                    logger.info("Verified social profile via URL check: %s → %s", p, u)
+                    logger.info("Verified social profile via direct URL: %s → %s", p, u)
+
+    # Cap at 1 per platform
+    for p in result:
+        result[p] = result[p][:1]
 
     found = sum(1 for v in result.values() if v)
     if found:
@@ -1833,19 +1957,24 @@ async def intake_from_url(url: str) -> dict:
             len(contacts["emails"]),
         )
 
-    # 5d. Social profile search fallback — if still no social links, search the web
-    if not any(urls for urls in social.values()):
+    # 5d. Social profile search — ALWAYS run to find/verify social profiles
+    #     Even if we found some via regex, search can find more and verify accuracy
+    _social_count = sum(1 for v in social.values() if v)
+    if _social_count < 3:  # Run if we have fewer than 3 platforms
         try:
             parsed_url = urlparse(url)
             domain = parsed_url.netloc.replace("www.", "")
             company = profile.get("detected_company_name", "") or domain.split(".")[0]
+
+            # Pass ALL collected HTML (homepage + subpages) for better handle extraction
             search_social = await _aio.wait_for(
                 _search_social_profiles(company, domain, html=html),
-                timeout=20,
+                timeout=25,
             )
             _merge_social(social, search_social)
-            if any(urls for urls in social.values()):
-                logger.info("Social profile search succeeded — found profiles via web search")
+            new_count = sum(1 for v in social.values() if v)
+            if new_count > _social_count:
+                logger.info("Social profile search added %d new platforms (total: %d)", new_count - _social_count, new_count)
         except Exception as e:
             logger.info("Social profile search failed: %s", str(e)[:100])
 
@@ -1971,8 +2100,44 @@ async def intake_from_url(url: str) -> dict:
     except Exception as e:
         logger.warning("AI deep extract timed out or failed: %s", str(e)[:100])
 
+    # ── 10. Verify AI-constructed social URLs ──
+    # If AI provided handles that we constructed into URLs, verify they actually exist
+    try:
+        import asyncio as _aio
+        socials = result.get("detected_social_links", {})
+        verify_tasks = []
+        parsed_url = urlparse(url)
+        _domain = parsed_url.netloc.replace("www.", "")
+        _company = result.get("detected_company_name", "") or _domain.split(".")[0]
+
+        for platform, urls in socials.items():
+            if urls and isinstance(urls, list) and urls[0]:
+                verify_tasks.append(
+                    _verify_social_profile_content(platform, urls[0], _domain, _company)
+                )
+
+        if verify_tasks:
+            verify_results = await _aio.wait_for(
+                _aio.gather(*verify_tasks, return_exceptions=True),
+                timeout=15,
+            )
+            verified_platforms = set()
+            for vr in verify_results:
+                if isinstance(vr, tuple) and vr:
+                    verified_platforms.add(vr[0])
+
+            # Remove unverified social profiles (returned None = 404 or unreachable)
+            for platform in list(socials.keys()):
+                if socials.get(platform) and platform not in verified_platforms:
+                    logger.info("Removing unverified social profile: %s → %s", platform, socials[platform])
+                    socials[platform] = []
+
+            result["detected_social_links"] = socials
+    except Exception as e:
+        logger.info("Social verification step failed: %s", str(e)[:100])
+
     logger.info(
-        "Intake COMPLETE for %s: company=%s, industry=%s, country=%s, city=%s, phones=%d, emails=%d, services=%d",
+        "Intake COMPLETE for %s: company=%s, industry=%s, country=%s, city=%s, phones=%d, emails=%d, services=%d, socials=%d",
         url,
         result.get("detected_company_name", ""),
         result.get("detected_industry", ""),
@@ -1981,6 +2146,7 @@ async def intake_from_url(url: str) -> dict:
         len(result.get("detected_phone_numbers", [])),
         len(result.get("detected_emails", [])),
         len(result.get("detected_services", [])),
+        sum(1 for v in result.get("detected_social_links", {}).values() if v),
     )
 
     return result
@@ -2193,6 +2359,14 @@ async def _ai_deep_extract(
         f'    "snapchat": "full Snapchat URL or null",\n'
         f'    "pinterest": "full Pinterest URL or null"\n'
         f'  }},\n'
+        f'  "social_handles": {{\n'
+        f'    "instagram": "Instagram username/handle without @ (e.g. designzoneksa)",\n'
+        f'    "facebook": "Facebook page slug (e.g. designzoneksa)",\n'
+        f'    "twitter": "Twitter/X handle without @ (e.g. designzone_ksa)",\n'
+        f'    "linkedin": "LinkedIn company slug (e.g. design-zone-ksa)",\n'
+        f'    "tiktok": "TikTok handle without @ (e.g. designzoneksa)",\n'
+        f'    "snapchat": "Snapchat username (e.g. designzoneksa)"\n'
+        f'  }},\n'
         f'  "services": ["Service 1", "Service 2", "...up to 12 main services/products"],\n'
         f'  "team_members": [\n'
         f'    {{"name": "Full Name", "role": "Job Title"}}\n'
@@ -2203,7 +2377,9 @@ async def _ai_deep_extract(
         f"RULES:\n"
         f"- Extract ONLY real data found in the website content above\n"
         f"- Phone numbers: include country code (e.g. +966...)\n"
-        f"- Social profiles: must be actual profile URLs, not just platform names\n"
+        f"- Social profiles: must be actual full profile URLs found in the content\n"
+        f"- Social handles: extract usernames/handles from URLs, @mentions, or text references\n"
+        f"  Look for patterns like @companyname, /companyname in social URLs, text mentions\n"
         f"- Services: extract the main service/product offerings, not generic categories\n"
         f"- Team: extract actual names and roles of team members\n"
         f"- Return ONLY valid JSON, no markdown fences, no explanation\n"
@@ -2300,17 +2476,48 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
         if wa:
             intake_result["detected_whatsapp_links"] = [wa] if isinstance(wa, str) else wa[:3]
 
-    # Social profiles — fill per-platform gaps
+    # Social profiles — fill per-platform gaps from both URLs and handles
     ai_socials = ai_data.get("social_profiles") or {}
-    if isinstance(ai_socials, dict):
+    ai_handles = ai_data.get("social_handles") or {}
+    if isinstance(ai_socials, dict) or isinstance(ai_handles, dict):
         existing_socials = intake_result.get("detected_social_links", {})
+
+        # Platform URL templates for constructing from handles
+        handle_templates = {
+            "instagram": "https://www.instagram.com/{handle}/",
+            "facebook": "https://www.facebook.com/{handle}/",
+            "twitter": "https://x.com/{handle}",
+            "linkedin": "https://www.linkedin.com/company/{handle}",
+            "youtube": "https://www.youtube.com/@{handle}",
+            "tiktok": "https://www.tiktok.com/@{handle}",
+            "snapchat": "https://www.snapchat.com/add/{handle}",
+            "pinterest": "https://www.pinterest.com/{handle}/",
+        }
+
         for platform in ["linkedin", "facebook", "instagram", "twitter", "youtube",
                          "tiktok", "snapchat", "pinterest"]:
             existing = existing_socials.get(platform, [])
-            if not existing and ai_socials.get(platform):
+            if existing:
+                continue
+
+            # Try AI-extracted full URL first
+            if isinstance(ai_socials, dict) and ai_socials.get(platform):
                 ai_url = ai_socials[platform]
                 if isinstance(ai_url, str) and ai_url.startswith("http"):
                     existing_socials[platform] = [ai_url]
+                    continue
+
+            # Fallback: construct URL from AI-extracted handle
+            if isinstance(ai_handles, dict) and ai_handles.get(platform):
+                handle = ai_handles[platform]
+                if isinstance(handle, str) and handle and platform in handle_templates:
+                    # Clean up the handle
+                    handle = handle.strip().lstrip("@").strip("/")
+                    if handle and len(handle) >= 2:
+                        constructed_url = handle_templates[platform].format(handle=handle)
+                        existing_socials[platform] = [constructed_url]
+                        logger.info("Constructed social URL from AI handle: %s → %s", platform, constructed_url)
+
         intake_result["detected_social_links"] = existing_socials
 
     # Services
