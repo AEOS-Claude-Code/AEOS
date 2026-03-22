@@ -1771,6 +1771,33 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
     handles = _extract_social_handles_from_html(domain_name, html)
     logger.info("Extracted social handles from HTML: %s", handles)
 
+    # Pre-populate result with full social URLs found directly in HTML
+    if html:
+        _html_social_patterns = [
+            ("facebook",  re.compile(r'https?://(?:www\.)?facebook\.com/([a-zA-Z0-9_./-]+)', re.IGNORECASE)),
+            ("instagram", re.compile(r'https?://(?:www\.)?instagram\.com/([a-zA-Z0-9_./-]+)', re.IGNORECASE)),
+            ("twitter",   re.compile(r'https?://(?:www\.)?(?:twitter|x)\.com/([a-zA-Z0-9_]+)', re.IGNORECASE)),
+            ("linkedin",  re.compile(r'https?://(?:www\.)?linkedin\.com/(?:company|in)/([a-zA-Z0-9_.&/-]+)', re.IGNORECASE)),
+            ("youtube",   re.compile(r'https?://(?:www\.)?youtube\.com/(?:@|channel/|c/)([a-zA-Z0-9_.-]+)', re.IGNORECASE)),
+            ("tiktok",    re.compile(r'https?://(?:www\.)?tiktok\.com/@([a-zA-Z0-9_.]+)', re.IGNORECASE)),
+            ("pinterest", re.compile(r'https?://(?:www\.)?pinterest\.com/([a-zA-Z0-9_.-]+)', re.IGNORECASE)),
+            ("snapchat",  re.compile(r'https?://(?:www\.)?snapchat\.com/add/([a-zA-Z0-9_.-]+)', re.IGNORECASE)),
+        ]
+        _skip_slugs = {"login", "signup", "help", "about", "search", "explore",
+                       "settings", "share", "sharer", "sharer.php", "intent", "pages",
+                       "groups", "p", "reel", "stories", "hashtag", "directory", "watch"}
+        for platform, pattern in _html_social_patterns:
+            if result.get(platform):
+                continue
+            for m in pattern.finditer(html[:200000]):
+                slug = m.group(1).strip("/").split("/")[0].split("?")[0].lower()
+                if slug in _skip_slugs or len(slug) < 2:
+                    continue
+                full_url = m.group(0).split("?")[0].rstrip("/")
+                result[platform] = [full_url]
+                logger.info("Social from HTML direct: %s → %s", platform, full_url)
+                break
+
     # Build precise search queries using handles + full domain for disambiguation
     handle_list = sorted(handles, key=len, reverse=True)[:5]
     handle_query = " OR ".join(f'"{h}"' for h in handle_list)
