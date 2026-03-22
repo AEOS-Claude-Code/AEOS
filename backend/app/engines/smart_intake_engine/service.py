@@ -1189,6 +1189,85 @@ async def _extract_team_members(html: str, url: str) -> dict:
                     members.append(nc)
                     seen_names.add(nc["name"].lower())
 
+        if _at_limit():
+            return members
+
+        # ---- Strategy 6: Broad text-pattern scan for name + role pairs ----
+        # Search ALL divs/lis for elements that look like "Name\nTitle/Role" patterns
+        # This catches custom layouts where team members aren't in typical sections
+        if not members:
+            # Look for containers with multiple child items that each have a name-like heading
+            for container in page_soup.find_all(["div", "ul", "section"], recursive=True):
+                children = container.find_all(["div", "li", "article"], recursive=False)
+                if len(children) < 2 or len(children) > 30:
+                    continue
+
+                found_in_container = []
+                for child in children:
+                    if _at_limit():
+                        break
+                    # Get all text nodes with some structure
+                    all_text_els = child.find_all(["h2", "h3", "h4", "h5", "h6", "strong", "b", "a", "span", "p"], limit=6)
+                    if not all_text_els:
+                        continue
+                    # First text element could be name
+                    name_el = all_text_els[0]
+                    name_text = name_el.get_text(strip=True)
+                    if not _is_valid_name(name_text, seen_names):
+                        continue
+                    # Remaining text elements - look for role
+                    role_text = ""
+                    for el in all_text_els[1:]:
+                        t = el.get_text(strip=True)
+                        if t and t != name_text and len(t) < 100 and len(t) > 2:
+                            role_text = t
+                            break
+                    found_in_container.append({"name": name_text, "role": role_text})
+
+                # If container has 2+ people, it's likely a team section
+                if len(found_in_container) >= 2:
+                    for fc in found_in_container:
+                        if _at_limit():
+                            break
+                        if fc["name"].lower() not in seen_names:
+                            members.append(fc)
+                            seen_names.add(fc["name"].lower())
+                    if members:
+                        break  # Found team section
+
+        if _at_limit():
+            return members
+
+        # ---- Strategy 7: LinkedIn/social profile links as people indicators ----
+        # If the page has LinkedIn profile links (not company pages), extract names from link text or alt
+        if not members:
+            linkedin_links = page_soup.find_all("a", href=re.compile(r"linkedin\.com/in/", re.I))
+            for link in linkedin_links[:max_members]:
+                if _at_limit():
+                    break
+                # Get name from link text, adjacent heading, or parent container
+                name = link.get_text(strip=True)
+                if not _is_valid_name(name, seen_names):
+                    # Try parent container
+                    parent = link.find_parent(["div", "li", "article", "figure"])
+                    if parent:
+                        headings = parent.find_all(["h2", "h3", "h4", "h5", "h6", "strong", "b"], limit=2)
+                        for h in headings:
+                            name = h.get_text(strip=True)
+                            if _is_valid_name(name, seen_names):
+                                break
+                if _is_valid_name(name, seen_names):
+                    role = ""
+                    parent = link.find_parent(["div", "li", "article", "figure"])
+                    if parent:
+                        for el in parent.find_all(["p", "span", "small", "em"], limit=3):
+                            t = el.get_text(strip=True)
+                            if t and t != name and len(t) < 100:
+                                role = t
+                                break
+                    members.append({"name": name, "role": role})
+                    seen_names.add(name.lower())
+
         return members
 
     # 2. Extract team members from main page HTML
@@ -1216,7 +1295,11 @@ async def _extract_team_members(html: str, url: str) -> dict:
         base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
         about_paths = ["/about-us", "/about", "/about-us/", "/about/",
                        "/team", "/our-team", "/team/", "/our-team/",
-                       "/people", "/leadership", "/who-we-are"]
+                       "/people", "/leadership", "/who-we-are",
+                       "/en/about-us", "/en/about", "/en/team", "/en/our-team",
+                       "/ar/about-us", "/ar/about", "/ar/team",
+                       "/company", "/company/team", "/about/team",
+                       "/about-us/team", "/staff", "/management"]
         for path in about_paths:
             candidate_url = _urljoin(base_url, path)
             # Skip if we already tried this URL
