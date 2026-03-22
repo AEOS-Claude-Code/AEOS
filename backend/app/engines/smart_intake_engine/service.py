@@ -908,18 +908,21 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
     seen = set()
 
     def _is_gibberish(word: str) -> bool:
-        """Detect CloudFlare-obfuscated nonsense words (e.g. Whqm, Ybbq, Ldkz)."""
+        """Detect CloudFlare-obfuscated nonsense words (e.g. Whqm, Ybbq, Ldkz, Lvem)."""
         if len(word) < 3:
             return True
+        w = word.lower()
         # Count vowels — real English words have ~35-45% vowels
-        vowels = sum(1 for c in word.lower() if c in "aeiou")
-        ratio = vowels / len(word) if word else 0
-        if ratio < 0.1 and len(word) > 3:
-            return True  # No vowels in 4+ char word = gibberish
+        vowels = sum(1 for c in w if c in "aeiou")
+        ratio = vowels / len(w) if w else 0
+        if ratio < 0.15 and len(w) > 3:
+            return True  # Too few vowels for a real word
+        if ratio > 0.8 and len(w) > 3:
+            return True  # Too many vowels
         # Check for uncommon consonant clusters
         consonant_run = 0
         max_consonant_run = 0
-        for c in word.lower():
+        for c in w:
             if c not in "aeiou":
                 consonant_run += 1
                 max_consonant_run = max(max_consonant_run, consonant_run)
@@ -927,6 +930,17 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
                 consonant_run = 0
         if max_consonant_run >= 4:
             return True  # 4+ consecutive consonants = likely gibberish
+        # Check against common English bigrams — real words contain these
+        common_bigrams = {"th", "he", "in", "er", "an", "re", "on", "at", "en", "nd",
+                          "ti", "es", "or", "te", "of", "ed", "is", "it", "al", "ar",
+                          "st", "to", "nt", "ng", "se", "ha", "as", "ou", "io", "le",
+                          "ve", "co", "me", "de", "hi", "ri", "ro", "ic", "ne", "ea",
+                          "ra", "ce", "li", "ch", "ll", "be", "ma", "si", "om", "ur"}
+        if len(w) >= 4:
+            bigrams = {w[i:i+2] for i in range(len(w) - 1)}
+            common_count = len(bigrams & common_bigrams)
+            if common_count == 0:
+                return True  # No common English bigrams = likely gibberish
         return False
 
     def _add(kw: str):
@@ -1639,20 +1653,36 @@ async def _verify_social_profile_content(
             domain_short = domain.replace("www.", "").lower()
             domain_name = domain_short.split(".")[0]
 
-            # Check for domain/company name in the page content
-            checks = [domain_short]
-            if company_name and len(company_name) >= 3:
-                checks.append(company_name.lower())
-            # Also check domain with common suffixes
+            # Priority checks: full domain first (most reliable), then shorter forms
+            # Full domain match is the strongest signal (e.g. "designzone.com.sa")
+            checks_strong = [domain_short]
             if "." in domain_short:
-                # e.g. "designzone.com.sa" → also check "designzone.com"
                 parts = domain_short.split(".")
                 if len(parts) >= 2:
-                    checks.append(".".join(parts[:2]))
+                    checks_strong.append(".".join(parts[:2]))  # designzone.com
 
-            for check in checks:
-                if check and len(check) >= 3 and check in page_text:
-                    logger.info("Social profile VERIFIED (content match '%s'): %s → %s", check, platform, url)
+            for check in checks_strong:
+                if check and len(check) >= 5 and check in page_text:
+                    logger.info("Social profile VERIFIED (strong domain match '%s'): %s → %s", check, platform, url)
+                    return (platform, url, True)
+
+            # Weaker checks: company name or domain name alone
+            # These may match wrong companies with the same name
+            checks_weak = []
+            if company_name and len(company_name) >= 5:
+                checks_weak.append(company_name.lower())
+
+            for check in checks_weak:
+                if check and check in page_text:
+                    # Also verify it's not just matching the URL slug itself
+                    # The social profile URL contains the company name, so we need
+                    # to check the page body, not just any text
+                    # Remove common social platform boilerplate from check
+                    slug = url.rstrip("/").split("/")[-1].lower()
+                    # If check equals the URL slug, it's not a real content match
+                    if check.replace(" ", "") == slug.replace("-", "").replace("_", ""):
+                        continue
+                    logger.info("Social profile VERIFIED (weak company name '%s'): %s → %s", check, platform, url)
                     return (platform, url, True)
 
             if strict:
