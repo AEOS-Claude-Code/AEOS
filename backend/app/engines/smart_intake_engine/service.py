@@ -1565,15 +1565,15 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
             if len(h) > len(domain_name) and len(h) < 30:
                 handles.add(h)
 
-    # Build precise search queries using handles
+    # Build precise search queries using handles + full domain for disambiguation
     handle_list = sorted(handles, key=len, reverse=True)[:5]
     handle_query = " OR ".join(f'"{h}"' for h in handle_list)
 
     queries = [
-        f'site:linkedin.com/company {handle_query}',
-        f'site:instagram.com {handle_query}',
-        f'site:facebook.com {handle_query}',
-        f'(site:x.com OR site:twitter.com) {handle_query}',
+        f'site:linkedin.com/company "{domain_short}" OR {handle_query}',
+        f'site:instagram.com "{domain_short}" OR {handle_query}',
+        f'site:facebook.com "{domain_short}" OR {handle_query}',
+        f'(site:x.com OR site:twitter.com) "{domain_short}" OR {handle_query}',
     ]
 
     import asyncio
@@ -1628,28 +1628,52 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
     for p in result:
         result[p] = result[p][:1]
 
-    # Also try direct URL construction for common platforms
-    # Many companies use consistent handles across platforms
-    if handle_list:
-        best_handle = handle_list[0]  # Longest handle, most specific
-        platform_urls = {
-            "instagram": f"https://www.instagram.com/{best_handle}/",
-            "facebook": f"https://www.facebook.com/{best_handle}/",
-            "twitter": f"https://x.com/{best_handle}",
-        }
-        for platform, constructed_url in platform_urls.items():
-            if not result.get(platform):
-                # Quick HEAD check to verify the URL exists
-                try:
-                    async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
-                        resp = await client.head(constructed_url, headers={
-                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                        })
-                        if resp.status_code < 400:
-                            result[platform] = [constructed_url]
-                            logger.info("Verified social profile: %s → %s", platform, constructed_url)
-                except Exception:
-                    pass
+    # Also try direct URL construction + verification for common platforms
+    # Try multiple handle variants: exact handles from HTML + common suffixes
+    handle_variants = list(handle_list)
+    # Add common suffixes for disambiguation (ksa, sa, official, etc.)
+    for suffix in ["ksa", "sa", "_ksa", "_sa"]:
+        variant = domain_name + suffix
+        if variant not in handles:
+            handle_variants.append(variant)
+
+    import asyncio as _async_lib
+
+    async def _verify_social_url(platform: str, url: str) -> tuple[str, str] | None:
+        """Quick HEAD check to verify a social profile URL exists."""
+        try:
+            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
+                resp = await client.head(url, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                })
+                if resp.status_code < 400:
+                    return (platform, url)
+        except Exception:
+            pass
+        return None
+
+    # Build candidate URLs for each empty platform
+    verify_tasks = []
+    for platform_name, url_template in [
+        ("instagram", "https://www.instagram.com/{handle}/"),
+        ("facebook", "https://www.facebook.com/{handle}/"),
+        ("twitter", "https://x.com/{handle}"),
+        ("linkedin", "https://www.linkedin.com/company/{handle}"),
+    ]:
+        if result.get(platform_name):
+            continue  # Already found
+        for handle in handle_variants[:6]:
+            candidate_url = url_template.format(handle=handle)
+            verify_tasks.append(_verify_social_url(platform_name, candidate_url))
+
+    if verify_tasks:
+        verify_results = await _async_lib.gather(*verify_tasks, return_exceptions=True)
+        for vr in verify_results:
+            if isinstance(vr, tuple) and vr:
+                p, u = vr
+                if not result.get(p):
+                    result[p] = [u]
+                    logger.info("Verified social profile via URL check: %s → %s", p, u)
 
     found = sum(1 for v in result.values() if v)
     if found:
