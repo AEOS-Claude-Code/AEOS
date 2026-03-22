@@ -1438,7 +1438,20 @@ def _extract_services(html: str, headings: list[str]) -> list[str]:
 
     # 2. Look for services/products sections
     service_keywords = ["service", "product", "solution", "offering", "what-we-do",
-                        "what_we_do", "capabilities", "expertise"]
+                        "what_we_do", "capabilities", "expertise",
+                        # Travel & tourism
+                        "tour", "package", "destination", "itinerar", "excursion",
+                        # Restaurant & food
+                        "menu", "dish", "cuisine",
+                        # Education
+                        "program", "degree", "course", "major",
+                        # Healthcare
+                        "treatment", "specialt", "clinic",
+                        # Real estate
+                        "listing", "propert", "development",
+                        # Finance
+                        "account", "loan", "invest",
+                        ]
     service_sections = soup.find_all(["section", "div"], class_=lambda c: c and any(
         kw in str(c).lower() for kw in service_keywords
     ))
@@ -1465,7 +1478,7 @@ def _extract_services(html: str, headings: list[str]) -> list[str]:
         for a in nav.find_all("a", href=True):
             text = a.get_text(strip=True).lower()
             href = a["href"].lower()
-            if any(kw in text or kw in href for kw in ["service", "product", "solution"]):
+            if any(kw in text or kw in href for kw in ["service", "product", "solution", "tour", "package", "destination"]):
                 # This link's siblings or children might list services
                 parent = a.parent
                 if parent:
@@ -1480,7 +1493,9 @@ def _extract_services(html: str, headings: list[str]) -> list[str]:
         for heading in headings:
             heading_lower = heading.lower()
             if any(kw in heading_lower for kw in ["service", "product", "solution", "what we",
-                                                    "our expertise", "we offer", "we provide", "we do"]):
+                                                    "our expertise", "we offer", "we provide", "we do",
+                                                    "tour", "package", "destination", "trip",
+                                                    "our menu", "our program", "our treatment"]):
                 # The heading itself might describe a service category
                 if len(heading) < 80:
                     _add(heading)
@@ -2297,7 +2312,16 @@ async def intake_from_url(url: str) -> dict:
             logger.info("Known domain company name: %s → %s", existing_name, known_name)
         logger.info("Known domain match: %s → industry=%s, country=%s", domain_for_lookup, tld_industry, tld_country)
 
-    # ── Pre-build: Validate phone numbers ──
+    # ── Pre-build: URL-decode and validate phone numbers ──
+    from urllib.parse import unquote as _url_unquote
+
+    def _clean_phone_display(phone: str) -> str:
+        """URL-decode and clean phone numbers for display."""
+        phone = _url_unquote(phone).strip()
+        # Remove extra whitespace
+        phone = re.sub(r'\s+', ' ', phone)
+        return phone
+
     def _is_valid_phone(phone: str) -> bool:
         digits = re.sub(r"[^\d]", "", phone)
         if len(digits) < 7 or len(digits) > 15:
@@ -2319,7 +2343,7 @@ async def intake_from_url(url: str) -> dict:
             return False
         return True
 
-    valid_phones = [p for p in contacts["phone_numbers"] if _is_valid_phone(p)]
+    valid_phones = [_clean_phone_display(p) for p in contacts["phone_numbers"] if _is_valid_phone(p)]
 
     # ── Pre-build: Clean emails ──
     def _clean_email(email: str) -> str:
