@@ -8,10 +8,9 @@ import { RequireAuth } from "@/lib/auth/AuthProvider";
 const STEPS = [
   { path: "/app/onboarding/company", label: "Company", num: 1 },
   { path: "/app/onboarding/org-chart", label: "Org Chart", num: 2 },
-  { path: "/app/onboarding/presence", label: "Presence", num: 3 },
-  { path: "/app/onboarding/competitors", label: "Competitors", num: 4 },
-  { path: "/app/onboarding/integrations", label: "Integrations", num: 5 },
-  { path: "/app/onboarding/complete", label: "Ready", num: 6 },
+  { path: "/app/onboarding/competitors", label: "Competitors", num: 3 },
+  { path: "/app/onboarding/integrations", label: "Integrations", num: 4 },
+  { path: "/app/onboarding/complete", label: "Ready", num: 5 },
 ];
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
@@ -81,7 +80,7 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <span className="text-2xs text-fg-hint sm:hidden">
-          Step {(currentIdx >= 0 ? currentIdx : 0) + 1}/6
+          Step {(currentIdx >= 0 ? currentIdx : 0) + 1}/5
         </span>
       </header>
 
