@@ -1656,7 +1656,7 @@ async def intake_from_url(url: str) -> dict:
         )
 
     logger.info(
-        "Intake complete for %s: company=%s, industry=%s (%.0f%%), country=%s, city=%s",
+        "Intake regex phase complete for %s: company=%s, industry=%s (%.0f%%), country=%s, city=%s",
         url,
         profile.get("detected_company_name", ""),
         industry_result["detected_industry"],
@@ -1665,7 +1665,8 @@ async def intake_from_url(url: str) -> dict:
         location.get("city", ""),
     )
 
-    return {
+    # Build initial result dict
+    result = {
         "url": url,
         "detected_company_name": profile.get("detected_company_name", ""),
         "detected_industry": industry_result["detected_industry"],
@@ -1694,6 +1695,41 @@ async def intake_from_url(url: str) -> dict:
         "detected_seo_health": seo_health,
     }
 
+    # ── 9. AI Deep Extraction — fill gaps with Claude ──
+    # Crawls subpages in parallel and uses AI to extract missing data
+    try:
+        import asyncio as _aio
+        ai_data = await _aio.wait_for(
+            _ai_deep_extract(url, html, result),
+            timeout=45,
+        )
+        if ai_data:
+            result = _merge_ai_results(result, ai_data)
+            logger.info(
+                "AI deep extract merged — city=%s, phones=%d, emails=%d, services=%d, socials=%d",
+                result.get("detected_city", ""),
+                len(result.get("detected_phone_numbers", [])),
+                len(result.get("detected_emails", [])),
+                len(result.get("detected_services", [])),
+                sum(1 for v in result.get("detected_social_links", {}).values() if v),
+            )
+    except Exception as e:
+        logger.warning("AI deep extract timed out or failed: %s", str(e)[:100])
+
+    logger.info(
+        "Intake COMPLETE for %s: company=%s, industry=%s, country=%s, city=%s, phones=%d, emails=%d, services=%d",
+        url,
+        result.get("detected_company_name", ""),
+        result.get("detected_industry", ""),
+        result.get("detected_country", ""),
+        result.get("detected_city", ""),
+        len(result.get("detected_phone_numbers", [])),
+        len(result.get("detected_emails", [])),
+        len(result.get("detected_services", [])),
+    )
+
+    return result
+
 
 def _detect_tech_stack(html: str, url: str) -> list[str]:
     """Reuse scanner's tech detection."""
@@ -1708,3 +1744,349 @@ def _detect_tech_stack(html: str, url: str) -> list[str]:
         return merge_tech(html_tech, url_tech)
     except Exception:
         return []
+
+
+# ── AI Deep Extraction ─────────────────────────────────────────────
+# Crawls multiple subpages in parallel, then sends combined text to
+# Claude for intelligent extraction of ALL company data in one call.
+
+async def _fetch_subpages(url: str) -> dict[str, str]:
+    """
+    Fetch key subpages (about, contact, services, team) in parallel.
+    Returns dict mapping page_type -> visible_text.
+    """
+    import asyncio
+    from urllib.parse import urljoin as _uj
+
+    parsed = urlparse(url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+
+    # Common subpage paths to try (ordered by priority)
+    page_map: dict[str, list[str]] = {
+        "about": ["/about", "/about-us", "/about_us", "/who-we-are", "/company"],
+        "contact": ["/contact", "/contact-us", "/contact_us", "/get-in-touch", "/reach-us"],
+        "services": ["/services", "/our-services", "/what-we-do", "/solutions", "/products"],
+        "team": ["/team", "/our-team", "/people", "/leadership", "/staff"],
+    }
+
+    async def _try_fetch_page(page_type: str, paths: list[str]) -> tuple[str, str]:
+        """Try paths in order, return first successful page text."""
+        for path in paths:
+            page_url = _uj(base, path)
+            try:
+                html = await _fetch_subpage_html(page_url)
+                if html and len(html) > 500:
+                    text = _html_to_text(html)
+                    if text and len(text) > 100:
+                        return (page_type, text[:8000])
+            except Exception:
+                continue
+        return (page_type, "")
+
+    tasks = [_try_fetch_page(pt, paths) for pt, paths in page_map.items()]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    page_texts: dict[str, str] = {}
+    for r in results:
+        if isinstance(r, tuple):
+            ptype, text = r
+            if text:
+                page_texts[ptype] = text
+
+    return page_texts
+
+
+async def _fetch_subpage_html(url: str, timeout: int = 10) -> str | None:
+    """Quick fetch of a subpage HTML."""
+    try:
+        async with httpx.AsyncClient(
+            timeout=timeout,
+            follow_redirects=True,
+            limits=httpx.Limits(max_connections=5, max_keepalive_connections=2),
+        ) as client:
+            resp = await client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+            })
+            if resp.status_code < 400:
+                return resp.text
+    except Exception:
+        pass
+    return None
+
+
+def _html_to_text(html: str) -> str:
+    """Convert HTML to clean visible text, removing scripts/styles/nav."""
+    try:
+        from bs4 import BeautifulSoup as _BS
+        soup = _BS(html, "lxml")
+        # Remove non-content elements
+        for tag in soup.find_all(["script", "style", "noscript", "svg", "iframe"]):
+            tag.decompose()
+        text = soup.get_text(separator="\n", strip=True)
+        # Collapse multiple blank lines
+        lines = [line.strip() for line in text.split("\n") if line.strip()]
+        return "\n".join(lines)
+    except Exception:
+        # Regex fallback
+        text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        return re.sub(r'\s+', ' ', text).strip()
+
+
+async def _ai_deep_extract(
+    url: str,
+    homepage_html: str,
+    existing_data: dict,
+) -> dict:
+    """
+    AI-powered deep extraction: crawl subpages + use Claude to extract
+    all company data that regex-based extractors missed.
+
+    Only calls Claude if there are significant gaps in the data.
+    Returns a dict with fields to merge into the intake result.
+    """
+    import asyncio
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key:
+        logger.info("AI deep extract skipped — no ANTHROPIC_API_KEY")
+        return {}
+
+    # Check what data is missing
+    has_city = bool(existing_data.get("detected_city"))
+    has_phone = bool(existing_data.get("detected_phone_numbers"))
+    has_email = bool(existing_data.get("detected_emails"))
+    has_services = bool(existing_data.get("detected_services"))
+    has_team = bool(existing_data.get("detected_team", {}).get("members"))
+    has_socials = any(
+        urls for urls in existing_data.get("detected_social_links", {}).values()
+    )
+    has_whatsapp = bool(existing_data.get("detected_whatsapp_links"))
+
+    gaps = []
+    if not has_city: gaps.append("city")
+    if not has_phone: gaps.append("phone")
+    if not has_email: gaps.append("email")
+    if not has_services: gaps.append("services")
+    if not has_team: gaps.append("team")
+    if not has_socials: gaps.append("social_profiles")
+    if not has_whatsapp: gaps.append("whatsapp")
+
+    if len(gaps) < 2:
+        logger.info("AI deep extract skipped — only %d gaps: %s", len(gaps), gaps)
+        return {}
+
+    logger.info("AI deep extract starting for %s — gaps: %s", url, gaps)
+
+    # ── Step 1: Fetch subpages in parallel ──
+    try:
+        subpages = await asyncio.wait_for(_fetch_subpages(url), timeout=20)
+    except Exception as e:
+        logger.warning("Subpage fetch failed: %s", str(e)[:100])
+        subpages = {}
+
+    logger.info("Fetched %d subpages: %s", len(subpages), list(subpages.keys()))
+
+    # ── Step 2: Build combined text corpus ──
+    homepage_text = _html_to_text(homepage_html)
+
+    sections: list[str] = []
+    sections.append(f"=== HOMEPAGE ({url}) ===\n{homepage_text[:6000]}")
+    for page_type, text in subpages.items():
+        sections.append(f"=== {page_type.upper()} PAGE ===\n{text[:6000]}")
+
+    combined_text = "\n\n".join(sections)
+
+    # Truncate to fit in context window (keep it efficient)
+    if len(combined_text) > 25000:
+        combined_text = combined_text[:25000]
+
+    # ── Step 3: Build targeted extraction prompt ──
+    company_name = existing_data.get("detected_company_name", "")
+    country = existing_data.get("detected_country", "")
+
+    prompt = (
+        f"You are the AEOS Company Intelligence Engine. Analyze the following website content "
+        f"and extract all available company information.\n\n"
+        f"══ KNOWN DATA ══\n"
+        f"Company: {company_name}\n"
+        f"Website: {url}\n"
+        f"Country: {country or 'unknown'}\n"
+        f"Industry: {existing_data.get('detected_industry', 'unknown')}\n\n"
+        f"══ WEBSITE CONTENT ══\n"
+        f"{combined_text}\n\n"
+        f"══ EXTRACT THE FOLLOWING (JSON) ══\n"
+        f"Return a JSON object with these fields. Use null for anything not found.\n"
+        f"Do NOT guess or fabricate data — only extract what's explicitly on the website.\n\n"
+        f'{{\n'
+        f'  "city": "City name where company is headquartered",\n'
+        f'  "phone_numbers": ["phone1", "phone2"],\n'
+        f'  "emails": ["email1@example.com"],\n'
+        f'  "whatsapp": "WhatsApp number or wa.me link if found",\n'
+        f'  "social_profiles": {{\n'
+        f'    "linkedin": "full LinkedIn URL or null",\n'
+        f'    "facebook": "full Facebook URL or null",\n'
+        f'    "instagram": "full Instagram URL or null",\n'
+        f'    "twitter": "full Twitter/X URL or null",\n'
+        f'    "youtube": "full YouTube URL or null",\n'
+        f'    "tiktok": "full TikTok URL or null",\n'
+        f'    "snapchat": "full Snapchat URL or null",\n'
+        f'    "pinterest": "full Pinterest URL or null"\n'
+        f'  }},\n'
+        f'  "services": ["Service 1", "Service 2", "...up to 12 main services/products"],\n'
+        f'  "team_members": [\n'
+        f'    {{"name": "Full Name", "role": "Job Title"}}\n'
+        f'  ],\n'
+        f'  "company_description": "One-sentence company description",\n'
+        f'  "address": "Full physical address if found"\n'
+        f'}}\n\n'
+        f"RULES:\n"
+        f"- Extract ONLY real data found in the website content above\n"
+        f"- Phone numbers: include country code (e.g. +966...)\n"
+        f"- Social profiles: must be actual profile URLs, not just platform names\n"
+        f"- Services: extract the main service/product offerings, not generic categories\n"
+        f"- Team: extract actual names and roles of team members\n"
+        f"- Return ONLY valid JSON, no markdown fences, no explanation\n"
+    )
+
+    # ── Step 4: Call Claude API ──
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 2000,
+                    "system": (
+                        "You are the AEOS Company Intelligence Engine. You extract structured "
+                        "company data from website content. You ONLY return facts explicitly "
+                        "found in the provided text. You respond with ONLY valid JSON, "
+                        "no markdown, no explanation, no preamble."
+                    ),
+                    "messages": [{"role": "user", "content": prompt}],
+                },
+            )
+
+            if resp.status_code != 200:
+                logger.warning("AI deep extract: Claude returned %d", resp.status_code)
+                return {}
+
+            data = resp.json()
+            ai_text = data.get("content", [{}])[0].get("text", "").strip()
+            if not ai_text:
+                return {}
+
+            # Parse JSON (handle markdown wrapping)
+            if ai_text.startswith("```"):
+                ai_text = re.sub(r"^```(?:json)?\s*", "", ai_text)
+                ai_text = re.sub(r"\s*```$", "", ai_text)
+
+            extracted = json.loads(ai_text)
+            if not isinstance(extracted, dict):
+                return {}
+
+            logger.info(
+                "AI deep extract success: city=%s, phones=%d, emails=%d, services=%d, team=%d, socials=%d",
+                extracted.get("city", ""),
+                len(extracted.get("phone_numbers") or []),
+                len(extracted.get("emails") or []),
+                len(extracted.get("services") or []),
+                len(extracted.get("team_members") or []),
+                sum(1 for v in (extracted.get("social_profiles") or {}).values() if v),
+            )
+
+            return extracted
+
+    except json.JSONDecodeError as e:
+        logger.warning("AI deep extract: JSON parse error: %s", str(e)[:100])
+        return {}
+    except Exception as e:
+        logger.warning("AI deep extract failed: %s", str(e)[:100])
+        return {}
+
+
+def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
+    """
+    Merge AI-extracted data into the intake result, filling gaps only.
+    AI data does NOT overwrite existing regex-detected data.
+    """
+    if not ai_data:
+        return intake_result
+
+    # City
+    if not intake_result.get("detected_city") and ai_data.get("city"):
+        intake_result["detected_city"] = ai_data["city"]
+
+    # Phone numbers
+    if not intake_result.get("detected_phone_numbers") and ai_data.get("phone_numbers"):
+        phones = ai_data["phone_numbers"]
+        if isinstance(phones, list):
+            intake_result["detected_phone_numbers"] = [p for p in phones if p][:5]
+
+    # Emails
+    if not intake_result.get("detected_emails") and ai_data.get("emails"):
+        emails = ai_data["emails"]
+        if isinstance(emails, list):
+            intake_result["detected_emails"] = [e for e in emails if e and "@" in e][:10]
+
+    # WhatsApp
+    if not intake_result.get("detected_whatsapp_links") and ai_data.get("whatsapp"):
+        wa = ai_data["whatsapp"]
+        if wa:
+            intake_result["detected_whatsapp_links"] = [wa] if isinstance(wa, str) else wa[:3]
+
+    # Social profiles — fill per-platform gaps
+    ai_socials = ai_data.get("social_profiles") or {}
+    if isinstance(ai_socials, dict):
+        existing_socials = intake_result.get("detected_social_links", {})
+        for platform in ["linkedin", "facebook", "instagram", "twitter", "youtube",
+                         "tiktok", "snapchat", "pinterest"]:
+            existing = existing_socials.get(platform, [])
+            if not existing and ai_socials.get(platform):
+                ai_url = ai_socials[platform]
+                if isinstance(ai_url, str) and ai_url.startswith("http"):
+                    existing_socials[platform] = [ai_url]
+        intake_result["detected_social_links"] = existing_socials
+
+    # Services
+    if not intake_result.get("detected_services") and ai_data.get("services"):
+        services = ai_data["services"]
+        if isinstance(services, list):
+            intake_result["detected_services"] = [s for s in services if s][:12]
+
+    # Team members
+    existing_team = intake_result.get("detected_team", {})
+    if not existing_team.get("members") and ai_data.get("team_members"):
+        members = ai_data["team_members"]
+        if isinstance(members, list):
+            valid_members = []
+            for m in members:
+                if isinstance(m, dict) and m.get("name"):
+                    valid_members.append({
+                        "name": m["name"],
+                        "role": m.get("role", ""),
+                    })
+            if valid_members:
+                existing_team["members"] = valid_members[:10]
+                existing_team["count"] = len(valid_members[:10])
+                intake_result["detected_team"] = existing_team
+
+    # Address (store as extra metadata)
+    if ai_data.get("address"):
+        intake_result["detected_address"] = ai_data["address"]
+
+    # Company description
+    if ai_data.get("company_description"):
+        intake_result["detected_description"] = ai_data["company_description"]
+
+    return intake_result
