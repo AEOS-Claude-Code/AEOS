@@ -2105,7 +2105,11 @@ async def intake_from_url(url: str) -> dict:
             "cart", "basket", "checkout", "newsletter", "subscribe", "cookie",
             "الخدمات", "طلبات", "عرض", "تصفح", "اختر", "ادخل", "حسابك",
             "world of", "est.", "discover", "explore", "learn more", "click",
-            "view all", "see more", "load more", "show more",
+            "view all", "see more", "load more", "show more", "main links",
+            "quick links", "useful links", "footer", "header", "navigation",
+            "menu", "sitemap", "copyright", "all rights", "privacy",
+            "delivers", "shipment", "operations", "project cargo",
+            "read more", "download", "upload", "submit", "contact us",
         ]
         clean_members = []
         for m in team_data["members"]:
@@ -2116,12 +2120,18 @@ async def intake_from_url(url: str) -> dict:
             if any(ui in text for ui in _ui_indicators):
                 continue
             # Skip if name is too long (likely a sentence, not a person's name)
-            if len(name) > 50:
+            if len(name) > 40:
                 continue
-            # Skip if name doesn't have at least 2 words (first + last)
-            if " " not in name.strip() and not any(c in name for c in "\u0600\u06FF"):
-                # Allow Arabic names without space detection
-                pass
+            # Skip if name has too many words (> 5 = likely a headline/sentence)
+            word_count = len(name.split())
+            if word_count > 5:
+                continue
+            # Skip if name is all lowercase (likely nav text, not a proper name)
+            if name == name.lower() and not any(ord(c) > 0x600 for c in name):
+                continue
+            # Skip if name doesn't contain any letters
+            if not re.search(r'[a-zA-Z\u0600-\u06FF]', name):
+                continue
             clean_members.append(m)
         team_data["members"] = clean_members
         team_data["count"] = len(clean_members)
@@ -2210,6 +2220,44 @@ async def intake_from_url(url: str) -> dict:
                 tld_country = tld_country_map[tld_key]
                 logger.info("TLD-based country: %s → %s", url, tld_country)
                 break
+
+    # ── Known domain lookup for major bot-blocked companies ──
+    domain_for_lookup = parsed_for_tld.netloc.replace("www.", "").lower()
+    # Strip path for domains like zain.com/en
+    domain_for_lookup = domain_for_lookup.split("/")[0]
+    _KNOWN_DOMAINS: dict[str, dict] = {
+        "kudu.com.sa": {"company": "Kudu Restaurant", "industry": "restaurant", "country": "Saudi Arabia", "city": "Riyadh"},
+        "zain.com": {"company": "Zain Group", "industry": "telecom", "country": "Kuwait", "city": "Kuwait City"},
+        "flydubai.com": {"company": "flydubai", "industry": "travel", "country": "UAE", "city": "Dubai"},
+        "qnb.com": {"company": "Qatar National Bank (QNB)", "industry": "finance", "country": "Qatar", "city": "Doha"},
+        "aramex.com": {"company": "Aramex", "industry": "logistics", "country": "UAE", "city": "Dubai"},
+        "salla.com": {"company": "Salla E-commerce Platform", "industry": "saas", "country": "Saudi Arabia", "city": "Riyadh"},
+        "jarir.com": {"company": "Jarir Bookstore", "industry": "retail", "country": "Saudi Arabia", "city": "Riyadh"},
+        "foodics.com": {"company": "Foodics", "industry": "saas", "country": "Saudi Arabia", "city": "Riyadh"},
+        "stc.com.sa": {"company": "Saudi Telecom Company (STC)", "industry": "telecom", "country": "Saudi Arabia", "city": "Riyadh"},
+        "sabic.com": {"company": "SABIC", "industry": "manufacturing", "country": "Saudi Arabia", "city": "Riyadh"},
+        "almarai.com": {"company": "Almarai", "industry": "manufacturing", "country": "Saudi Arabia", "city": "Riyadh"},
+        "emirates.com": {"company": "Emirates Airlines", "industry": "travel", "country": "UAE", "city": "Dubai"},
+        "etisalat.ae": {"company": "Etisalat (e&)", "industry": "telecom", "country": "UAE", "city": "Abu Dhabi"},
+        "careem.com": {"company": "Careem", "industry": "technology", "country": "UAE", "city": "Dubai"},
+        "noon.com": {"company": "Noon.com", "industry": "ecommerce", "country": "UAE", "city": "Dubai"},
+    }
+    known = _KNOWN_DOMAINS.get(domain_for_lookup, {})
+    if known:
+        if tld_industry == "other" or tld_confidence < 0.3:
+            tld_industry = known.get("industry", tld_industry)
+            tld_confidence = max(tld_confidence, 0.7)
+        if not tld_country:
+            tld_country = known.get("country", tld_country)
+        if not location.get("city") and known.get("city"):
+            location["city"] = known["city"]
+        # Upgrade company name from domain prefix to real name
+        existing_name = profile.get("detected_company_name", "")
+        known_name = known.get("company", "")
+        if known_name and len(known_name) > len(existing_name):
+            profile["detected_company_name"] = known_name
+            logger.info("Known domain company name: %s → %s", existing_name, known_name)
+        logger.info("Known domain match: %s → industry=%s, country=%s", domain_for_lookup, tld_industry, tld_country)
 
     # ── Pre-build: Validate phone numbers ──
     def _is_valid_phone(phone: str) -> bool:
@@ -2557,6 +2605,65 @@ def _html_to_text(html: str) -> str:
         return re.sub(r'\s+', ' ', text).strip()
 
 
+async def _search_company_info(url: str, company_name: str) -> str:
+    """
+    When a website is bot-blocked, use DuckDuckGo to gather company info.
+    Searches for the company and collects snippet text to feed to AI.
+    """
+    parsed = urlparse(url)
+    domain = parsed.netloc.replace("www.", "")
+    name = company_name or domain.split(".")[0]
+
+    queries = [
+        f'"{domain}" company about',
+        f'"{name}" "{domain}" phone email contact',
+        f'"{name}" services products what they do',
+    ]
+
+    all_snippets: list[str] = []
+
+    for query in queries:
+        try:
+            search_url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+                resp = await client.get(search_url, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                })
+                if resp.status_code == 200:
+                    # Extract snippets from DuckDuckGo HTML results
+                    html_text = resp.text
+                    # Find result snippets
+                    snippet_matches = re.findall(
+                        r'class="result__snippet"[^>]*>(.*?)</[aA]?',
+                        html_text, re.DOTALL
+                    )
+                    if not snippet_matches:
+                        snippet_matches = re.findall(
+                            r'class="result__snippet"[^>]*>(.*?)</(?:td|div|span)',
+                            html_text, re.DOTALL
+                        )
+                    for snippet in snippet_matches[:5]:
+                        clean = re.sub(r'<[^>]+>', '', snippet).strip()
+                        if clean and len(clean) > 20:
+                            all_snippets.append(clean)
+
+                    # Also extract result titles for context
+                    title_matches = re.findall(
+                        r'class="result__a"[^>]*>(.*?)</a>',
+                        html_text, re.DOTALL
+                    )
+                    for title in title_matches[:5]:
+                        clean = re.sub(r'<[^>]+>', '', title).strip()
+                        if clean:
+                            all_snippets.append(f"[Title: {clean}]")
+        except Exception:
+            continue
+
+    if all_snippets:
+        return "\n".join(all_snippets)
+    return ""
+
+
 async def _ai_deep_extract(
     url: str,
     homepage_html: str,
@@ -2622,6 +2729,27 @@ async def _ai_deep_extract(
         sections.append(f"=== {page_type.upper()} PAGE ===\n{text[:6000]}")
 
     combined_text = "\n\n".join(sections)
+
+    # ── Step 2b: Detect bot-blocking and use DuckDuckGo as fallback ──
+    # If homepage has very little useful text (<300 chars) and subpages are empty,
+    # the site is likely bot-blocked. Use search engine results as data source.
+    useful_text_len = len(homepage_text.strip())
+    is_bot_blocked = useful_text_len < 300 and len(subpages) < 2
+
+    if is_bot_blocked:
+        logger.info("Bot-blocked detected for %s (text=%d chars, subpages=%d) — using search fallback",
+                     url, useful_text_len, len(subpages))
+        try:
+            search_text = await asyncio.wait_for(
+                _search_company_info(url, existing_data.get("detected_company_name", "")),
+                timeout=15,
+            )
+            if search_text:
+                sections.append(f"=== SEARCH ENGINE RESULTS ===\n{search_text[:10000]}")
+                combined_text = "\n\n".join(sections)
+                logger.info("Added search fallback data: %d chars", len(search_text))
+        except Exception as e:
+            logger.info("Search fallback failed: %s", str(e)[:100])
 
     # Truncate to fit in context window (keep it efficient)
     if len(combined_text) > 25000:
@@ -2769,10 +2897,20 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
     # Company name — AI provides much better names than domain prefix
     ai_company = ai_data.get("company_name", "").strip()
     existing_company = intake_result.get("detected_company_name", "")
-    if ai_company and len(ai_company) > len(existing_company):
-        # AI name is longer/better (e.g. "American University of Sharjah" vs "Aus")
-        intake_result["detected_company_name"] = ai_company
-        logger.info("AI company name upgrade: '%s' → '%s'", existing_company, ai_company)
+    if ai_company:
+        # Reject AI names that look like page titles/slogans (too long, contain common title words)
+        title_indicators = ["developer company", "leading", "official website", "welcome to",
+                           "home page", "best in", "top rated", "#1", "number one"]
+        is_page_title = (
+            len(ai_company) > 60 or
+            any(ind in ai_company.lower() for ind in title_indicators)
+        )
+        if not is_page_title and len(ai_company) > len(existing_company):
+            # AI name is longer/better (e.g. "American University of Sharjah" vs "Aus")
+            intake_result["detected_company_name"] = ai_company
+            logger.info("AI company name upgrade: '%s' → '%s'", existing_company, ai_company)
+        elif is_page_title:
+            logger.info("AI company name rejected (looks like page title): '%s'", ai_company)
 
     # Industry — override if regex got "other" and AI found something
     ai_industry = ai_data.get("industry", "").strip().lower()
@@ -2793,10 +2931,33 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
 
     # Country — fill or fix wrong detection
     ai_country = ai_data.get("country", "").strip()
-    if ai_country and (not intake_result.get("detected_country") or
-                       intake_result.get("detected_country") == "Brazil"):  # Known misdetection
-        intake_result["detected_country"] = ai_country
-        logger.info("AI country: %s", ai_country)
+    current_country = intake_result.get("detected_country", "")
+    if ai_country:
+        # Always fill if empty
+        if not current_country:
+            intake_result["detected_country"] = ai_country
+            logger.info("AI country fill: %s", ai_country)
+        # Override known misdetections (e.g. .edu → Australia, random keyword → Brazil)
+        elif current_country.lower() != ai_country.lower():
+            # Check if AI country is more plausible based on city or phone codes
+            ai_city = ai_data.get("city", "").lower()
+            current_city = intake_result.get("detected_city", "").lower()
+            # If we have a city that doesn't match current country, AI is likely right
+            known_city_country = {
+                "sharjah": "UAE", "dubai": "UAE", "abu dhabi": "UAE",
+                "riyadh": "Saudi Arabia", "jeddah": "Saudi Arabia", "dammam": "Saudi Arabia",
+                "amman": "Jordan", "irbid": "Jordan",
+                "doha": "Qatar", "cairo": "Egypt",
+            }
+            city_to_check = ai_city or current_city
+            expected_country = known_city_country.get(city_to_check, "")
+            if expected_country and expected_country.lower() == ai_country.lower():
+                intake_result["detected_country"] = ai_country
+                logger.info("AI country override (city match): %s → %s", current_country, ai_country)
+            elif current_country in ("Brazil", "Australia", "Indonesia", "India") and ai_country:
+                # These are common misdetections for MENA companies
+                intake_result["detected_country"] = ai_country
+                logger.info("AI country override (misdetection fix): %s → %s", current_country, ai_country)
 
     # City
     if not intake_result.get("detected_city") and ai_data.get("city"):
