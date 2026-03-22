@@ -23,7 +23,7 @@ import app.modules.integrations.models  # noqa
 
 settings = get_settings()
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.sync_database_url)
+config.set_main_option("sqlalchemy.url", settings.async_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -51,7 +51,7 @@ def do_run_migrations(connection):
 
 async def run_async_migrations() -> None:
     cfg = config.get_section(config.config_ini_section, {})
-    cfg["sqlalchemy.url"] = settings.sync_database_url
+    cfg["sqlalchemy.url"] = settings.async_database_url
     connectable = async_engine_from_config(
         cfg,
         prefix="sqlalchemy.",
