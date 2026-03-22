@@ -5,6 +5,7 @@ WORKDIR /app
 # Ensure Python output is sent straight to logs (no buffering)
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app
 
 # System deps (minimal — no Chromium/Playwright)
 RUN apt-get update && \
