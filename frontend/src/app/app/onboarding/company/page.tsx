@@ -203,7 +203,7 @@ const SCAN_STEPS = [
 function LoadingScreen() {
   const [step, setStep] = useState(0);
   useEffect(() => {
-    const timers = [800, 1800, 2800, 3800].map((ms, i) => setTimeout(() => setStep(i + 1), ms));
+    const timers = [600, 1200, 1800, 2400].map((ms, i) => setTimeout(() => setStep(i + 1), ms));
     return () => timers.forEach(clearTimeout);
   }, []);
 
@@ -212,65 +212,66 @@ function LoadingScreen() {
   return (
     <div className="flex items-center justify-center py-16">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg rounded-3xl border border-border bg-surface p-10 shadow-2xl">
-        {/* Animated icon */}
-        <div className="mb-8 flex justify-center">
+        className="w-full max-w-3xl rounded-3xl border border-border bg-surface p-8 shadow-2xl">
+        {/* Top: Icon + title row */}
+        <div className="mb-6 flex items-center justify-center gap-4">
           <div className="relative">
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className="absolute -inset-4 rounded-full bg-gradient-to-r from-blue-400/15 via-violet-400/15 to-cyan-400/15 blur-lg" />
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-xl shadow-blue-500/25">
-              <Globe size={44} className="text-white" />
+              className="absolute -inset-3 rounded-full bg-gradient-to-r from-blue-400/15 via-violet-400/15 to-cyan-400/15 blur-lg" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 shadow-xl shadow-blue-500/25">
+              <Globe size={28} className="text-white" />
             </div>
             <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-surface shadow-lg ring-2 ring-blue-500/30">
-              <Loader2 size={18} className="animate-spin text-blue-500" />
+              className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-surface shadow-lg ring-2 ring-blue-500/30">
+              <Loader2 size={12} className="animate-spin text-blue-500" />
             </motion.div>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-fg">Analyzing your website</h2>
+            <p className="text-xs text-fg-hint">Building your AI-powered company profile</p>
           </div>
         </div>
 
-        <h2 className="mb-1.5 text-center text-xl font-bold text-fg">Analyzing your website</h2>
-        <p className="mb-8 text-center text-sm text-fg-hint">Building your AI-powered company profile</p>
-
         {/* Progress bar */}
-        <div className="mb-8 h-2.5 w-full overflow-hidden rounded-full bg-surface-secondary">
+        <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-surface-secondary">
           <motion.div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400"
             initial={{ width: "5%" }} animate={{ width: `${Math.max(5, progress)}%` }}
-            transition={{ duration: 0.6, ease: "easeOut" }} />
+            transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
 
-        {/* Steps */}
-        <div className="space-y-3">
+        {/* Steps — horizontal row */}
+        <div className="grid grid-cols-4 gap-3">
           {SCAN_STEPS.map((s, i) => {
             const Icon = s.icon;
             const done = i < step;
             const active = i === step;
             return (
-              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.15 }}
-                className={`flex items-center gap-3.5 rounded-xl px-4 py-3 transition-all duration-300 ${
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className={`flex flex-col items-center gap-2.5 rounded-xl px-3 py-4 transition-all duration-300 ${
                   active ? "bg-surface-secondary ring-1 ring-border shadow-sm" :
                   done ? "bg-blue-500/[0.06]" : "opacity-30"
                 }`}>
                 {done ? (
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500 shadow-md shadow-blue-500/30">
-                    <Check size={16} className="text-white" />
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500 shadow-md shadow-blue-500/30">
+                    <Check size={18} className="text-white" />
                   </motion.div>
                 ) : active ? (
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-md`}>
-                    <Loader2 size={16} className="animate-spin text-white" />
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${s.color} shadow-md`}>
+                    <Loader2 size={18} className="animate-spin text-white" />
                   </div>
                 ) : (
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-secondary">
-                    <Icon size={16} className="text-fg-hint" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-secondary">
+                    <Icon size={18} className="text-fg-hint" />
                   </div>
                 )}
-                <span className={`text-sm ${done ? "font-semibold text-blue-500" : active ? "font-bold text-fg" : "text-fg-hint"}`}>
+                <span className={`text-center text-xs leading-tight ${done ? "font-semibold text-blue-500" : active ? "font-bold text-fg" : "text-fg-hint"}`}>
                   {s.label}
                 </span>
                 {active && (
                   <motion.div animate={{ opacity: [0.3, 0.8, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}
-                    className="ml-auto rounded-full bg-blue-500/10 px-2.5 py-0.5 text-2xs font-medium text-blue-500">Processing...</motion.div>
+                    className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-500">Processing...</motion.div>
                 )}
               </motion.div>
             );
@@ -343,7 +344,7 @@ export default function OnboardingCompany() {
         try { const res = await api.post("/api/v1/onboarding/intake-from-url", { url: workspace.website_url }); applyIntake(res.data); }
         catch { setError("Could not analyze website."); setCompanyName(workspace?.name || ""); }
       } else { setCompanyName(workspace?.name || ""); }
-    } finally { setTimeout(() => setLoading(false), 4200); }
+    } finally { setLoading(false); }
   }
 
   function applyIntake(data: IntakeResult) {

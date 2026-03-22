@@ -113,41 +113,53 @@ async def get_intake_results(
         seo_health = profile.detected_seo_health if isinstance(profile.detected_seo_health, dict) and profile.detected_seo_health.get("score") is not None else {}
 
         if url and (not team_data or not services_data or not seo_health):
+            import asyncio
             try:
                 from .website_profile_collector import collect_website_profile
                 from .service import _extract_team_members, _extract_services, _check_seo_health
-                wp = await collect_website_profile(url)
+                wp = await asyncio.wait_for(collect_website_profile(url), timeout=10)
                 html_content = wp.get("html", "")
                 if html_content:
-                    if not team_data:
-                        team_data = await _extract_team_members(html_content, url)
-                        profile.detected_team = team_data
                     if not services_data:
                         services_data = _extract_services(html_content, wp.get("headings", []))
                         profile.detected_services = services_data
                     if not seo_health:
-                        seo_health = await _check_seo_health(html_content, url)
+                        seo_health = await asyncio.wait_for(_check_seo_health(html_content, url), timeout=8)
                         profile.detected_seo_health = seo_health
+                    if not team_data:
+                        team_data = await asyncio.wait_for(_extract_team_members(html_content, url), timeout=12)
+                        profile.detected_team = team_data
                     await db.flush()
+            except asyncio.TimeoutError:
+                logger.info("Backfill timed out for workspace=%s — saving partial results", workspace.id)
+                await db.flush()
             except Exception:
                 logger.info("Backfill extraction failed for workspace=%s", workspace.id)
 
-        # AI-powered competitor discovery (uses Claude to find real local competitors)
-        try:
-            from .service import _discover_competitors_ai
-            fresh_competitors = await _discover_competitors_ai(
-                company_name=workspace.name or "",
-                industry=industry,
-                country=country,
-                city=city,
-                url=url,
-                services=services_data if services_data else None,
-            )
-            if fresh_competitors:
-                profile.detected_competitors_data = fresh_competitors
-                await db.flush()
-        except Exception:
-            fresh_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) else []
+        # Use stored competitors if available; only discover if empty
+        stored_competitors = profile.detected_competitors_data if isinstance(profile.detected_competitors_data, list) and profile.detected_competitors_data else []
+        if stored_competitors:
+            fresh_competitors = stored_competitors
+        else:
+            try:
+                from .service import _discover_competitors_ai
+                fresh_competitors = await asyncio.wait_for(
+                    _discover_competitors_ai(
+                        company_name=workspace.name or "",
+                        industry=industry,
+                        country=country,
+                        city=city,
+                        url=url,
+                        services=services_data if services_data else None,
+                    ),
+                    timeout=20,
+                )
+                if fresh_competitors:
+                    profile.detected_competitors_data = fresh_competitors
+                    await db.flush()
+            except (asyncio.TimeoutError, Exception):
+                logger.info("Competitor discovery skipped/timed out for workspace=%s", workspace.id)
+                fresh_competitors = []
 
         return IntakeFromUrlResponse(
             url=url,
