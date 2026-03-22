@@ -334,11 +334,18 @@ export default function OnboardingCompany() {
 
   useEffect(() => { fetchIntakeResults(); }, []); // eslint-disable-line
 
-  async function fetchIntakeResults() {
+  async function fetchIntakeResults(forceRescan = false) {
     setLoading(true);
     try {
-      const res = await api.get("/api/v1/onboarding/intake-results");
-      applyIntake(res.data);
+      if (forceRescan && workspace?.website_url) {
+        // Force fresh scan — bypass all caching
+        const res = await api.post("/api/v1/onboarding/intake-from-url", { url: workspace.website_url });
+        applyIntake(res.data);
+      } else {
+        // Try cached results first (with smart cache validation)
+        const res = await api.get("/api/v1/onboarding/intake-results");
+        applyIntake(res.data);
+      }
     } catch {
       if (workspace?.website_url) {
         try { const res = await api.post("/api/v1/onboarding/intake-from-url", { url: workspace.website_url }); applyIntake(res.data); }
@@ -441,13 +448,24 @@ export default function OnboardingCompany() {
                   We scanned your website and built your company profile. Review the details below, then continue.
                 </p>
               </div>
-              <motion.div
-                initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }}
-                className="hidden lg:flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-2.5 border border-emerald-500/20 shadow-sm"
-              >
-                <CheckCircle2 size={18} className="text-emerald-500" />
-                <span className="text-sm font-bold text-emerald-500">Analysis complete</span>
-              </motion.div>
+              <div className="hidden lg:flex items-center gap-2">
+                <motion.button
+                  initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }}
+                  onClick={() => fetchIntakeResults(true)}
+                  disabled={loading}
+                  className="flex items-center gap-2 rounded-full bg-blue-500/10 px-4 py-2.5 border border-blue-500/20 shadow-sm text-sm font-bold text-blue-500 hover:bg-blue-500/20 hover:border-blue-500/30 transition-all disabled:opacity-50"
+                >
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+                  Re-scan
+                </motion.button>
+                <motion.div
+                  initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }}
+                  className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-2.5 border border-emerald-500/20 shadow-sm"
+                >
+                  <CheckCircle2 size={18} className="text-emerald-500" />
+                  <span className="text-sm font-bold text-emerald-500">Analysis complete</span>
+                </motion.div>
+              </div>
             </div>
           </motion.div>
         )}

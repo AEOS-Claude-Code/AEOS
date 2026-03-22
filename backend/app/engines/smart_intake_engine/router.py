@@ -28,12 +28,88 @@ router = APIRouter(prefix="/v1/onboarding", tags=["Smart Intake"])
 async def intake_from_url(
     body: IntakeFromUrlRequest,
     user=Depends(get_current_user),
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Scan a URL and auto-detect company info for onboarding.
     Returns detected company name, industry, contacts, social links, etc.
+    Also saves results to workspace profile for future retrieval.
     """
     result = await service.intake_from_url(body.url)
+
+    # Save results to workspace profile
+    try:
+        profile = workspace.profile
+        if not profile:
+            profile = WorkspaceProfile(workspace_id=workspace.id, website_url=body.url)
+            db.add(profile)
+
+        profile.website_url = body.url
+
+        if result.get("detected_company_name"):
+            workspace.name = result["detected_company_name"]
+        if result.get("detected_industry"):
+            profile.industry = result["detected_industry"]
+
+        social_raw = result.get("detected_social_links", {})
+        social_flat = {}
+        for platform, urls in social_raw.items():
+            if urls:
+                social_flat[platform] = urls[0]
+        if social_flat:
+            profile.social_links = social_flat
+
+        phones = result.get("detected_phone_numbers", [])
+        if phones:
+            profile.phone = phones[0]
+
+        whatsapp = result.get("detected_whatsapp_links", [])
+        if whatsapp:
+            profile.whatsapp_link = whatsapp[0]
+
+        contacts = result.get("detected_contact_pages", [])
+        if contacts:
+            profile.contact_page = contacts[0]
+
+        if result.get("detected_country"):
+            profile.country = result["detected_country"]
+        if result.get("detected_city"):
+            profile.city = result["detected_city"]
+
+        tech = result.get("detected_tech_stack", [])
+        if tech:
+            profile.tech_stack = tech
+
+        emails = result.get("detected_emails", [])
+        if emails:
+            profile.emails = emails
+
+        if result.get("og_image"):
+            profile.og_image = result["og_image"]
+        if result.get("favicon_url"):
+            profile.favicon_url = result["favicon_url"]
+        if result.get("detected_business_hours"):
+            profile.business_hours = result["detected_business_hours"]
+        if result.get("detected_languages"):
+            profile.content_languages = result["detected_languages"]
+        if result.get("detected_competitors"):
+            profile.detected_competitors_data = result["detected_competitors"]
+        if result.get("detected_keywords"):
+            profile.seo_keywords = result["detected_keywords"]
+        if result.get("detected_team"):
+            profile.detected_team = result["detected_team"]
+        if result.get("detected_services"):
+            profile.detected_services = result["detected_services"]
+        if result.get("detected_seo_health"):
+            profile.detected_seo_health = result["detected_seo_health"]
+
+        await db.flush()
+        await db.commit()
+        logger.info("Intake results saved to workspace profile for %s", body.url)
+    except Exception:
+        logger.exception("Failed to save intake results to profile")
+
     return result
 
 
@@ -59,12 +135,14 @@ async def get_org_chart(
 
 @router.get("/intake-results", response_model=IntakeFromUrlResponse)
 async def get_intake_results(
+    force: bool = False,
     workspace: Workspace = Depends(get_current_workspace),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get stored intake results for the current workspace.
     If no data exists but workspace has a website_url, triggers a fresh scan.
+    Pass ?force=true to bypass cache and re-scan the website.
     """
     profile = workspace.profile
     if not profile:
@@ -72,12 +150,19 @@ async def get_intake_results(
 
     url = profile.website_url or ""
 
-    # Check if we have meaningful detected data already
-    has_data = bool(
-        profile.industry and profile.industry != "general"
-        or profile.social_links
-        or profile.phone
-    )
+    # Check if we have COMPREHENSIVE detected data (not just industry)
+    # Require at least industry + (phone OR social_links) to consider cached
+    has_industry = bool(profile.industry and profile.industry != "general")
+    has_contacts = bool(profile.phone or (isinstance(profile.emails, list) and profile.emails))
+    has_socials = bool(profile.social_links and isinstance(profile.social_links, dict) and any(profile.social_links.values()))
+    has_services = bool(isinstance(profile.detected_services, list) and profile.detected_services)
+
+    has_data = has_industry and (has_contacts or has_socials or has_services)
+
+    # Force re-scan bypasses all caching
+    if force:
+        has_data = False
+        logger.info("Force re-scan requested for workspace=%s", workspace.id)
 
     if has_data:
         # Build response from stored profile data
