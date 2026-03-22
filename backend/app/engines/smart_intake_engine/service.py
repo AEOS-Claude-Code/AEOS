@@ -939,8 +939,9 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
         if len(w) >= 4:
             bigrams = {w[i:i+2] for i in range(len(w) - 1)}
             common_count = len(bigrams & common_bigrams)
-            if common_count == 0:
-                return True  # No common English bigrams = likely gibberish
+            min_required = max(1, len(bigrams) // 2)  # At least half of bigrams should be common
+            if common_count < min_required:
+                return True  # Too few common English bigrams = likely gibberish
         return False
 
     def _add(kw: str):
@@ -1831,7 +1832,18 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
     # Add common country suffixes for disambiguation
     for suffix in ["ksa", "sa", "_ksa", "_sa", "-ksa", "-sa"]:
         variant = domain_name + suffix
-        if variant not in handles:
+        if variant not in handle_variants:
+            handle_variants.append(variant)
+    # Add hyphenated variants for LinkedIn (e.g. design-zone-ksa from designzone)
+    for suffix in ["-ksa", "-sa"]:
+        # Try hyphen before suffix
+        variant = domain_name + suffix
+        if variant not in handle_variants:
+            handle_variants.append(variant)
+    # Also add underscore variants for Twitter (e.g. designzone_ksa)
+    for suffix in ["_ksa", "_sa"]:
+        variant = domain_name + suffix
+        if variant not in handle_variants:
             handle_variants.append(variant)
 
     # Build candidate URLs for each empty platform and verify with content check
@@ -2173,22 +2185,53 @@ async def intake_from_url(url: str) -> dict:
     except Exception as e:
         logger.warning("AI deep extract timed out or failed: %s", str(e)[:100])
 
-    # ── 10. Verify social URLs with strict content matching ──
-    # Check each social URL and only keep those where the profile page
-    # actually mentions the company domain (eliminates wrong-company profiles)
+    # ── 10. Verify social URLs ──
+    # For each social URL, check if it belongs to this company.
+    # Use strict mode for generic slugs (just company name) but lenient for
+    # location-specific slugs (e.g. designzoneksa) which are likely correct.
     try:
         import asyncio as _aio
         socials = result.get("detected_social_links", {})
         verify_tasks = []
         parsed_url = urlparse(url)
         _domain = parsed_url.netloc.replace("www.", "")
-        _company = result.get("detected_company_name", "") or _domain.split(".")[0]
+        _domain_name = _domain.split(".")[0]
+        _company = result.get("detected_company_name", "") or _domain_name
+        _country_code = ""
+        _country = result.get("detected_country", "").lower()
+        # Map country to common social media suffixes
+        country_suffixes = {
+            "saudi arabia": ["ksa", "sa", "saudi"],
+            "uae": ["uae", "dubai", "abudhabi"],
+            "jordan": ["jo", "jordan"],
+            "egypt": ["eg", "egypt"],
+            "qatar": ["qa", "qatar"],
+            "kuwait": ["kw", "kuwait"],
+            "bahrain": ["bh", "bahrain"],
+            "oman": ["om", "oman"],
+        }
+        _suffixes = country_suffixes.get(_country, [])
 
         for platform, urls in socials.items():
             if urls and isinstance(urls, list) and urls[0]:
+                profile_url = urls[0]
+                # Extract slug from the profile URL
+                slug = profile_url.rstrip("/").split("/")[-1].lower().replace("-", "").replace("_", "")
+                domain_clean = _domain_name.lower().replace("-", "").replace("_", "")
+
+                # Check if slug contains location-specific suffix
+                has_location_suffix = any(
+                    suffix in slug and suffix not in domain_clean
+                    for suffix in _suffixes
+                )
+
+                # If slug is just the generic domain name (e.g. "designzone"),
+                # use strict verification (may match wrong company)
+                # If slug has location suffix (e.g. "designzoneksa"), be lenient
+                use_strict = not has_location_suffix
                 verify_tasks.append(
                     _verify_social_profile_content(
-                        platform, urls[0], _domain, _company, strict=True
+                        platform, profile_url, _domain, _company, strict=use_strict
                     )
                 )
 
@@ -2202,7 +2245,7 @@ async def intake_from_url(url: str) -> dict:
                 if isinstance(vr, tuple) and len(vr) >= 2:
                     verified_platforms.add(vr[0])
 
-            # Remove profiles that failed strict verification (wrong company)
+            # Remove profiles that failed verification
             removed = []
             for platform in list(socials.keys()):
                 if socials.get(platform) and platform not in verified_platforms:
@@ -2213,6 +2256,54 @@ async def intake_from_url(url: str) -> dict:
                 logger.info("Removed %d unverified social profiles: %s", len(removed), ", ".join(removed))
 
             result["detected_social_links"] = socials
+
+            # ── 11. Backfill empty social slots with location-specific handles ──
+            # After removing wrong-company profiles, try constructing URLs with
+            # country-specific handles (e.g. designzoneksa, designzone_ksa)
+            empty_platforms = [p for p in socials if not socials.get(p)]
+            if empty_platforms and _suffixes:
+                backfill_handles = []
+                for sfx in _suffixes[:2]:  # Use top 2 country suffixes
+                    backfill_handles.append(f"{_domain_name}{sfx}")
+                    backfill_handles.append(f"{_domain_name}_{sfx}")
+
+                backfill_templates = {
+                    "instagram": "https://www.instagram.com/{handle}/",
+                    "facebook": "https://www.facebook.com/{handle}/",
+                    "twitter": "https://x.com/{handle}",
+                    "linkedin": "https://www.linkedin.com/company/{handle}",
+                    "tiktok": "https://www.tiktok.com/@{handle}",
+                }
+
+                backfill_tasks = []
+                for platform in empty_platforms:
+                    template = backfill_templates.get(platform)
+                    if not template:
+                        continue
+                    for handle in backfill_handles:
+                        candidate_url = template.format(handle=handle)
+                        backfill_tasks.append(
+                            _verify_social_profile_content(
+                                platform, candidate_url, _domain, _company, strict=False
+                            )
+                        )
+
+                if backfill_tasks:
+                    try:
+                        backfill_results = await _aio.wait_for(
+                            _aio.gather(*backfill_tasks, return_exceptions=True),
+                            timeout=15,
+                        )
+                        for vr in backfill_results:
+                            if isinstance(vr, tuple) and len(vr) >= 2:
+                                p, u = vr[0], vr[1]
+                                if not socials.get(p):
+                                    socials[p] = [u]
+                                    logger.info("Backfilled social profile: %s → %s", p, u)
+                        result["detected_social_links"] = socials
+                    except Exception:
+                        pass
+
     except Exception as e:
         logger.info("Social verification step failed: %s", str(e)[:100])
 
