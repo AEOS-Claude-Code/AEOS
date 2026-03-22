@@ -1989,6 +1989,9 @@ async def intake_from_url(url: str) -> dict:
 
     # 3. Extract social links
     social = extract_social_links(html, url)
+    # Track which platforms were found directly from the website's own HTML
+    # These are authoritative (company put them on their site) and skip verification
+    _html_sourced_socials: set[str] = {p for p, urls in social.items() if urls}
 
     # 4. Detect tech stack (reuse scanner's tech_stack_collector)
     tech_stack = _detect_tech_stack(html, url)
@@ -2485,9 +2488,17 @@ async def intake_from_url(url: str) -> dict:
             "oman": ["om", "oman"],
         }
         _suffixes = country_suffixes.get(_country, [])
+        verified_platforms: set[str] = set()
 
         for platform, urls in socials.items():
             if urls and isinstance(urls, list) and urls[0]:
+                # Skip verification for links found directly in the website's HTML
+                # These are authoritative — the company put them on their own site
+                if platform in _html_sourced_socials:
+                    verified_platforms.add(platform)
+                    logger.info("Social profile TRUSTED (from website HTML): %s → %s", platform, urls[0])
+                    continue
+
                 profile_url = urls[0]
                 # Extract slug from the profile URL
                 slug = profile_url.rstrip("/").split("/")[-1].lower().replace("-", "").replace("_", "")
@@ -2514,7 +2525,6 @@ async def intake_from_url(url: str) -> dict:
                 _aio.gather(*verify_tasks, return_exceptions=True),
                 timeout=20,
             )
-            verified_platforms = set()
             for vr in verify_results:
                 if isinstance(vr, tuple) and len(vr) >= 2:
                     verified_platforms.add(vr[0])
