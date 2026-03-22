@@ -1534,6 +1534,21 @@ async def _check_seo_health(html: str, url: str) -> dict:
     return results
 
 
+def _merge_social(target: dict[str, list[str]], source: dict[str, list[str]]) -> None:
+    """Merge social links from source into target, avoiding duplicates."""
+    for platform, urls in source.items():
+        if not urls:
+            continue
+        existing = set(target.get(platform, []))
+        for u in urls:
+            if u and u not in existing:
+                target.setdefault(platform, []).append(u)
+                existing.add(u)
+        # Cap at 2 per platform
+        if platform in target:
+            target[platform] = target[platform][:2]
+
+
 async def intake_from_url(url: str) -> dict:
     """
     Main intake pipeline: fetch website and extract everything.
@@ -1589,10 +1604,86 @@ async def intake_from_url(url: str) -> dict:
                         seen_emails.add(email)
                 if not contacts["whatsapp_links"]:
                     contacts["whatsapp_links"] = extra_contacts["whatsapp_links"]
+                # Also extract social links from contact page (some sites only have them there)
+                _merge_social(social, extract_social_links(contact_html, contact_url))
                 # Also add contact page HTML to corpus for country/city detection
                 html = html + " " + contact_html[:5000]
         except Exception as e:
             logger.info("Contact page follow failed: %s", str(e)[:100])
+
+    # 5c. Proactive subpage crawl — if main page missed key data, fetch key pages
+    #     Many sites block bots on the homepage but serve subpages normally.
+    import asyncio as _aio
+    _main_has_social = any(urls for urls in social.values())
+    _main_has_contacts = bool(contacts["phone_numbers"] or contacts["emails"])
+    _main_has_title = bool(profile.get("title"))
+
+    if not _main_has_social or not _main_has_contacts or not _main_has_title:
+        logger.info("Main page missing data (social=%s contacts=%s title=%s) — crawling subpages",
+                     _main_has_social, _main_has_contacts, _main_has_title)
+        parsed = urlparse(url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
+        subpage_paths = ["/about", "/about-us", "/contact", "/contact-us"]
+
+        async def _fetch_and_extract(path: str):
+            try:
+                sub_url = urljoin(base, path)
+                sub_profile = await collect_website_profile(sub_url, lightweight=True)
+                sub_html = sub_profile.get("html", "")
+                if sub_html and len(sub_html) > 500:
+                    return sub_url, sub_html, sub_profile
+            except Exception:
+                pass
+            return None, None, None
+
+        sub_tasks = [_fetch_and_extract(p) for p in subpage_paths]
+        sub_results = await _aio.gather(*sub_tasks, return_exceptions=True)
+
+        for sub_result in sub_results:
+            if isinstance(sub_result, Exception) or not sub_result:
+                continue
+            sub_url, sub_html, sub_profile = sub_result
+            if not sub_html:
+                continue
+
+            # Extract social links from each subpage
+            sub_social = extract_social_links(sub_html, sub_url)
+            _merge_social(social, sub_social)
+
+            # Extract contacts from each subpage
+            sub_contacts = extract_contacts(sub_html, sub_url)
+            seen_phones = set(contacts["phone_numbers"])
+            for phone in sub_contacts["phone_numbers"]:
+                if phone not in seen_phones:
+                    contacts["phone_numbers"].append(phone)
+                    seen_phones.add(phone)
+            seen_emails = set(contacts["emails"])
+            for email in sub_contacts["emails"]:
+                if email not in seen_emails:
+                    contacts["emails"].append(email)
+                    seen_emails.add(email)
+            if not contacts["whatsapp_links"]:
+                contacts["whatsapp_links"] = sub_contacts["whatsapp_links"]
+            if not contacts["contact_pages"] and sub_contacts["contact_pages"]:
+                contacts["contact_pages"] = sub_contacts["contact_pages"]
+
+            # Backfill title/OG image from subpages if main page missed them
+            if not profile.get("title") and sub_profile.get("title"):
+                profile["title"] = sub_profile["title"]
+            if not profile.get("og_image") and sub_profile.get("og_image"):
+                profile["og_image"] = sub_profile["og_image"]
+            if not profile.get("description") and sub_profile.get("description"):
+                profile["description"] = sub_profile["description"]
+
+            # Add subpage HTML to corpus
+            html = html + " " + sub_html[:5000]
+
+        logger.info(
+            "After subpage crawl: social=%d, phones=%d, emails=%d",
+            sum(1 for v in social.values() if v),
+            len(contacts["phone_numbers"]),
+            len(contacts["emails"]),
+        )
 
     # 6. Detect country/city
     corpus = " ".join([
