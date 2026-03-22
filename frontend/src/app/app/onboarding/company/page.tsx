@@ -100,6 +100,8 @@ interface IntakeResult {
   detected_keywords: string[];
   detected_team: { team_page_url: string; linkedin_search_url: string; members: { name: string; role: string }[]; count: number };
   detected_services: string[];
+  detected_description: string;
+  detected_address: string;
   detected_seo_health: {
     has_ssl: { status: boolean; detail: string };
     has_sitemap: { status: boolean; detail: string };
