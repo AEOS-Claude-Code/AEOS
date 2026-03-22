@@ -10,7 +10,7 @@ import {
   Sparkles, MessageCircle, ExternalLink, Building2, Bot, MapPin,
   ArrowRight, Check, Code2, Zap, Shield, Flag,
   Users, Image, Trophy, Search, Briefcase, ShieldCheck,
-  CheckSquare, XSquare, Linkedin, Activity, TrendingUp, Wifi,
+  Linkedin, Activity, TrendingUp, Wifi,
 } from "lucide-react";
 
 /* ── Data ─────────────────────────────────────────────────────────── */
@@ -692,7 +692,7 @@ export default function OnboardingCompany() {
         )}
       </div>
 
-      {/* ══════════ ROW 2: Social Profiles + Location + Products & Services ══════════ */}
+      {/* ══════════ ROW 2: Social Profiles + Digital Readiness + Products & Services ══════════ */}
       {intake && (
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Social Media Profiles */}
@@ -759,56 +759,98 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* Location Map */}
+          {/* Digital Readiness Score — Overall company digital presence assessment */}
           <Card delay={0.3} className="h-full">
             <CardHeader
-              icon={MapPin}
-              iconGradient="from-emerald-500 to-green-600 shadow-emerald-500/25"
-              title="Location"
-              subtitle="Detected headquarters"
+              icon={Activity}
+              iconGradient="from-violet-500 to-fuchsia-500 shadow-violet-500/25"
+              title="Digital Readiness"
+              subtitle="Overall digital presence score"
+              badge={(() => {
+                const sc = Object.values(intake.detected_social_links || {}).filter((v: any) => v?.length > 0).length;
+                const seo = intake.detected_seo_health?.score ?? 0;
+                const hp = (intake.detected_phone_numbers?.length ?? 0) > 0;
+                const he = (intake.detected_emails?.length ?? 0) > 0;
+                const hw = (intake.detected_whatsapp_links?.length ?? 0) > 0;
+                const hc = (intake.detected_contact_pages?.length ?? 0) > 0;
+                const ht = (intake.detected_tech_stack?.length ?? 0) > 0;
+                const hs = (intake.detected_services?.length ?? 0) > 0;
+                const hl = (intake.detected_languages?.length ?? 0) > 0;
+                const ps = Math.min(100, Math.round((sc / 6) * 100));
+                const cs = Math.round(([hp, he, hw, hc].filter(Boolean).length / 4) * 100);
+                const ts = Math.min(100, ht ? 70 + (hl ? 30 : 0) : (hl ? 30 : 0));
+                const ds = Math.min(100, (hs ? 50 : 0) + Math.min(50, (intake.detected_keywords?.length ?? 0) * 5));
+                const ov = Math.round((ps * 0.3 + seo * 0.25 + cs * 0.25 + ts * 0.1 + ds * 0.1));
+                return (
+                  <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
+                    ov >= 70 ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
+                    : ov >= 40 ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
+                    : "bg-red-500/10 text-red-500 ring-red-500/20"
+                  }`}>{ov}/100</span>
+                );
+              })()}
             />
             <div className="flex-1 p-5">
-              {country ? (
-                <>
-                  <div className="relative overflow-hidden rounded-xl border border-border">
-                    <div className="relative flex flex-col items-center justify-center py-8">
-                      <motion.div
-                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
-                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-400/5 to-teal-500/10"
-                      />
-                      <motion.div
-                        animate={{ y: [0, -4, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        className="relative"
-                      >
-                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/30">
-                          <MapPin size={28} className="text-white" />
-                        </div>
-                      </motion.div>
-                      <p className="relative mt-3 text-base font-bold text-fg">{city || country}</p>
-                      {city && <p className="relative text-xs text-fg-hint">{country}</p>}
+              {(() => {
+                const socialCount = Object.values(intake.detected_social_links || {}).filter((v: any) => v?.length > 0).length;
+                const seoScore = intake.detected_seo_health?.score ?? 0;
+                const hasPhone = (intake.detected_phone_numbers?.length ?? 0) > 0;
+                const hasEmail = (intake.detected_emails?.length ?? 0) > 0;
+                const hasWhatsApp = (intake.detected_whatsapp_links?.length ?? 0) > 0;
+                const hasContactPage = (intake.detected_contact_pages?.length ?? 0) > 0;
+                const hasTech = (intake.detected_tech_stack?.length ?? 0) > 0;
+                const hasServices = (intake.detected_services?.length ?? 0) > 0;
+                const hasLangs = (intake.detected_languages?.length ?? 0) > 0;
+                const categories = [
+                  { label: "Social Presence", icon: Share2, score: Math.min(100, Math.round((socialCount / 6) * 100)), detail: `${socialCount}/8 platforms`, color: "violet" },
+                  { label: "SEO Health", icon: ShieldCheck, score: seoScore, detail: `${seoScore}% optimized`, color: "amber" },
+                  { label: "Contact Access", icon: Phone, score: Math.round(([hasPhone, hasEmail, hasWhatsApp, hasContactPage].filter(Boolean).length / 4) * 100), detail: `${[hasPhone && "Phone", hasEmail && "Email", hasWhatsApp && "WhatsApp", hasContactPage && "Contact"].filter(Boolean).join(", ") || "None found"}`, color: "blue" },
+                  { label: "Tech Stack", icon: Code2, score: Math.min(100, hasTech ? 70 + (hasLangs ? 30 : 0) : (hasLangs ? 30 : 0)), detail: hasTech ? `${intake.detected_tech_stack.length} technologies` : "Not detected", color: "cyan" },
+                  { label: "Content Depth", icon: Briefcase, score: Math.min(100, (hasServices ? 50 : 0) + Math.min(50, (intake.detected_keywords?.length ?? 0) * 5)), detail: hasServices ? `${intake.detected_services.length} services listed` : "No services detected", color: "emerald" },
+                ];
+                const overall = Math.round(categories[0].score * 0.3 + categories[1].score * 0.25 + categories[2].score * 0.25 + categories[3].score * 0.1 + categories[4].score * 0.1);
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4 mb-1">
+                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+                        <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90">
+                          <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-border" />
+                          <motion.path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="2.5" strokeLinecap="round" className={overall >= 70 ? "text-emerald-500" : overall >= 40 ? "text-amber-500" : "text-red-500"} stroke="currentColor" initial={{ strokeDasharray: "0, 100" }} animate={{ strokeDasharray: `${overall}, 100` }} transition={{ delay: 0.6, duration: 1.2, ease: "easeOut" }} />
+                        </svg>
+                        <span className={`absolute text-lg font-black ${overall >= 70 ? "text-emerald-500" : overall >= 40 ? "text-amber-500" : "text-red-500"}`}>{overall}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-bold ${overall >= 70 ? "text-emerald-500" : overall >= 40 ? "text-amber-500" : "text-red-500"}`}>
+                          {overall >= 70 ? "Strong Presence" : overall >= 40 ? "Growing Presence" : "Needs Improvement"}
+                        </p>
+                        <p className="text-2xs text-fg-hint mt-0.5">
+                          {overall >= 70 ? "Your digital footprint is well established" : overall >= 40 ? "Room to grow across key channels" : "AEOS can help you build your digital presence"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {categories.map((cat, i) => {
+                        const Icon = cat.icon;
+                        return (
+                          <motion.div key={cat.label} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.06 }} className="flex items-center gap-2.5">
+                            <Icon size={13} className="shrink-0 text-fg-hint" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="text-2xs font-semibold text-fg">{cat.label}</span>
+                                <span className={`text-2xs font-bold ${cat.score >= 70 ? "text-emerald-500" : cat.score >= 40 ? "text-amber-500" : "text-red-400"}`}>{cat.score}%</span>
+                              </div>
+                              <div className="h-1.5 w-full rounded-full bg-border/50 overflow-hidden">
+                                <motion.div className={`h-full rounded-full ${cat.score >= 70 ? "bg-emerald-500" : cat.score >= 40 ? "bg-amber-500" : "bg-red-400"}`} initial={{ width: 0 }} animate={{ width: `${cat.score}%` }} transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }} />
+                              </div>
+                              <p className="text-[9px] text-fg-hint/60 mt-0.5">{cat.detail}</p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((city ? city + ", " : "") + country)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-secondary/50 px-4 py-2 text-xs font-semibold text-fg-hint hover:text-fg hover:border-emerald-500/30 transition-all"
-                  >
-                    <ExternalLink size={12} />
-                    Open in Google Maps
-                  </a>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 mb-3">
-                    <MapPin size={24} className="text-emerald-500/50" />
-                  </div>
-                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Set your country above</p>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </Card>
 
@@ -856,7 +898,7 @@ export default function OnboardingCompany() {
         </div>
       )}
 
-      {/* ══════════ ROW 3: Team/People + SEO & Site Health + Digital Readiness ══════════ */}
+      {/* ══════════ ROW 3: Team/People + AI Quick Summary + Location ══════════ */}
       {intake && (
         <div className="grid gap-4 lg:grid-cols-3">
           {/* Team / People */}
@@ -953,248 +995,152 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* SEO & Site Health */}
+          {/* AI Quick Summary */}
           <Card delay={0.42} className="h-full">
             <CardHeader
-              icon={ShieldCheck}
-              iconGradient="from-amber-500 to-orange-500 shadow-amber-500/25"
-              title="SEO & Site Health"
-              subtitle="Website optimization checks"
-              badge={intake.detected_seo_health?.score != null ? (
-                <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
-                  intake.detected_seo_health.score >= 80
-                    ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
-                    : intake.detected_seo_health.score >= 50
-                    ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
-                    : "bg-red-500/10 text-red-500 ring-red-500/20"
-                }`}>
-                  {intake.detected_seo_health.score}%
+              icon={Bot}
+              iconGradient="from-violet-500 to-purple-600 shadow-violet-500/25"
+              title="AI Quick Summary"
+              subtitle="Auto-generated company brief"
+              badge={intake.detected_description ? (
+                <span className="rounded-full px-2.5 py-1 text-2xs font-bold ring-1 bg-violet-500/10 text-violet-500 ring-violet-500/20">
+                  AI Generated
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_seo_health?.score != null ? (
-                <div className="space-y-1.5">
-                  {[
-                    { key: "has_ssl", label: "SSL / HTTPS", icon: "🔒" },
-                    { key: "has_meta_title", label: "Meta Title", icon: "📄" },
-                    { key: "has_meta_description", label: "Meta Description", icon: "📝" },
-                    { key: "has_sitemap", label: "Sitemap.xml", icon: "🗺️" },
-                    { key: "has_robots", label: "Robots.txt", icon: "🤖" },
-                    { key: "has_h1", label: "H1 Heading", icon: "🔤" },
-                    { key: "has_viewport", label: "Mobile Ready", icon: "📱" },
-                    { key: "has_og_tags", label: "OG Tags", icon: "🏷️" },
-                    { key: "has_canonical", label: "Canonical URL", icon: "🔗" },
-                  ].map(({ key, label, icon }, i) => {
-                    const check = (intake.detected_seo_health as any)?.[key];
-                    const passed = check?.status === true;
-                    return (
-                      <motion.div
-                        key={key}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.42 + i * 0.03 }}
-                        className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs ${
-                          passed ? "bg-emerald-500/[0.06]" : "bg-red-500/[0.06]"
-                        }`}
-                      >
-                        <span className="text-xs">{icon}</span>
-                        <span className="flex-1 font-medium text-fg">{label}</span>
-                        {passed ? (
-                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
-                        ) : (
-                          <XCircle size={13} className="text-red-400 shrink-0" />
-                        )}
-                      </motion.div>
-                    );
-                  })}
+              {intake.detected_description || intake.detected_industry ? (
+                <div className="space-y-3">
+                  {/* Description */}
+                  {intake.detected_description && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.44 }}
+                      className="rounded-xl bg-violet-500/[0.06] border border-violet-500/10 p-3"
+                    >
+                      <p className="text-xs leading-relaxed text-fg/90">{intake.detected_description}</p>
+                    </motion.div>
+                  )}
+
+                  {/* Quick Facts */}
+                  <div className="space-y-1.5">
+                    {[
+                      intake.detected_industry && {
+                        label: "Industry",
+                        value: INDUSTRY_LABELS[intake.detected_industry] || intake.detected_industry,
+                        icon: Briefcase,
+                        color: "text-blue-500",
+                      },
+                      intake.detected_country && {
+                        label: "Headquarters",
+                        value: [intake.detected_city, intake.detected_country].filter(Boolean).join(", "),
+                        icon: MapPin,
+                        color: "text-emerald-500",
+                      },
+                      intake.detected_services?.length > 0 && {
+                        label: "Key Offerings",
+                        value: intake.detected_services.slice(0, 3).join(", "),
+                        icon: Zap,
+                        color: "text-amber-500",
+                      },
+                      intake.detected_keywords?.length > 0 && {
+                        label: "Focus Areas",
+                        value: intake.detected_keywords.slice(0, 4).join(", "),
+                        icon: Search,
+                        color: "text-cyan-500",
+                      },
+                      (intake.detected_team?.members?.length > 0) && {
+                        label: "Team Size Signal",
+                        value: `${intake.detected_team.members.length} key people identified`,
+                        icon: Users,
+                        color: "text-pink-500",
+                      },
+                    ]
+                      .filter(Boolean)
+                      .map((fact: any, i: number) => (
+                        <motion.div
+                          key={fact.label}
+                          initial={{ opacity: 0, x: -6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.46 + i * 0.04 }}
+                          className="flex items-start gap-2.5 rounded-lg px-2.5 py-1.5"
+                        >
+                          <fact.icon size={13} className={`${fact.color} mt-0.5 shrink-0`} />
+                          <div className="min-w-0">
+                            <p className="text-2xs font-semibold text-fg-hint uppercase tracking-wider">{fact.label}</p>
+                            <p className="text-xs text-fg/80 truncate">{fact.value}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <motion.div
                     animate={{ opacity: [0.4, 0.8, 0.4] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 mb-3"
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3"
                   >
-                    <ShieldCheck size={24} className="text-amber-500/50" />
+                    <Bot size={24} className="text-violet-500/50" />
                   </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Checking...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Running SEO health checks</p>
+                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Generating company brief</p>
                 </div>
               )}
             </div>
           </Card>
 
-          {/* Digital Readiness Score — Overall company digital presence assessment */}
+          {/* Location Map */}
           <Card delay={0.45} className="h-full">
             <CardHeader
-              icon={Activity}
-              iconGradient="from-violet-500 to-fuchsia-500 shadow-violet-500/25"
-              title="Digital Readiness"
-              subtitle="Overall digital presence score"
-              badge={(() => {
-                const socialCount = Object.values(intake.detected_social_links || {}).filter((v: any) => v?.length > 0).length;
-                const seoScore = intake.detected_seo_health?.score ?? 0;
-                const hasPhone = (intake.detected_phone_numbers?.length ?? 0) > 0;
-                const hasEmail = (intake.detected_emails?.length ?? 0) > 0;
-                const hasWhatsApp = (intake.detected_whatsapp_links?.length ?? 0) > 0;
-                const hasContactPage = (intake.detected_contact_pages?.length ?? 0) > 0;
-                const hasTech = (intake.detected_tech_stack?.length ?? 0) > 0;
-                const hasServices = (intake.detected_services?.length ?? 0) > 0;
-                const hasLangs = (intake.detected_languages?.length ?? 0) > 0;
-
-                const presenceScore = Math.min(100, Math.round((socialCount / 6) * 100));
-                const contactScore = Math.round(([hasPhone, hasEmail, hasWhatsApp, hasContactPage].filter(Boolean).length / 4) * 100);
-                const techScore = Math.min(100, hasTech ? 70 + (hasLangs ? 30 : 0) : (hasLangs ? 30 : 0));
-                const contentScore = Math.min(100, (hasServices ? 50 : 0) + Math.min(50, (intake.detected_keywords?.length ?? 0) * 5));
-                const overall = Math.round((presenceScore * 0.3 + seoScore * 0.25 + contactScore * 0.25 + techScore * 0.1 + contentScore * 0.1));
-
-                return (
-                  <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
-                    overall >= 70
-                      ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20"
-                      : overall >= 40
-                      ? "bg-amber-500/10 text-amber-600 ring-amber-500/20"
-                      : "bg-red-500/10 text-red-500 ring-red-500/20"
-                  }`}>
-                    {overall}/100
-                  </span>
-                );
-              })()}
+              icon={MapPin}
+              iconGradient="from-emerald-500 to-green-600 shadow-emerald-500/25"
+              title="Location"
+              subtitle="Detected headquarters"
             />
             <div className="flex-1 p-5">
-              {(() => {
-                const socialCount = Object.values(intake.detected_social_links || {}).filter((v: any) => v?.length > 0).length;
-                const seoScore = intake.detected_seo_health?.score ?? 0;
-                const hasPhone = (intake.detected_phone_numbers?.length ?? 0) > 0;
-                const hasEmail = (intake.detected_emails?.length ?? 0) > 0;
-                const hasWhatsApp = (intake.detected_whatsapp_links?.length ?? 0) > 0;
-                const hasContactPage = (intake.detected_contact_pages?.length ?? 0) > 0;
-                const hasTech = (intake.detected_tech_stack?.length ?? 0) > 0;
-                const hasServices = (intake.detected_services?.length ?? 0) > 0;
-                const hasLangs = (intake.detected_languages?.length ?? 0) > 0;
-
-                const categories = [
-                  {
-                    label: "Social Presence",
-                    icon: Share2,
-                    score: Math.min(100, Math.round((socialCount / 6) * 100)),
-                    detail: `${socialCount}/8 platforms`,
-                    color: "violet",
-                  },
-                  {
-                    label: "SEO Health",
-                    icon: ShieldCheck,
-                    score: seoScore,
-                    detail: `${seoScore}% optimized`,
-                    color: "amber",
-                  },
-                  {
-                    label: "Contact Access",
-                    icon: Phone,
-                    score: Math.round(([hasPhone, hasEmail, hasWhatsApp, hasContactPage].filter(Boolean).length / 4) * 100),
-                    detail: `${[hasPhone && "Phone", hasEmail && "Email", hasWhatsApp && "WhatsApp", hasContactPage && "Contact"].filter(Boolean).join(", ") || "None found"}`,
-                    color: "blue",
-                  },
-                  {
-                    label: "Tech Stack",
-                    icon: Code2,
-                    score: Math.min(100, hasTech ? 70 + (hasLangs ? 30 : 0) : (hasLangs ? 30 : 0)),
-                    detail: hasTech ? `${intake.detected_tech_stack.length} technologies` : "Not detected",
-                    color: "cyan",
-                  },
-                  {
-                    label: "Content Depth",
-                    icon: Briefcase,
-                    score: Math.min(100, (hasServices ? 50 : 0) + Math.min(50, (intake.detected_keywords?.length ?? 0) * 5)),
-                    detail: hasServices ? `${intake.detected_services.length} services listed` : "No services detected",
-                    color: "emerald",
-                  },
-                ];
-
-                const overall = Math.round(
-                  categories[0].score * 0.3 + categories[1].score * 0.25 + categories[2].score * 0.25 +
-                  categories[3].score * 0.1 + categories[4].score * 0.1
-                );
-
-                return (
-                  <div className="space-y-3">
-                    {/* Overall score ring */}
-                    <div className="flex items-center gap-4 mb-1">
-                      <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
-                        <svg viewBox="0 0 36 36" className="h-16 w-16 -rotate-90">
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            className="text-border"
-                          />
-                          <motion.path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            className={overall >= 70 ? "text-emerald-500" : overall >= 40 ? "text-amber-500" : "text-red-500"}
-                            stroke="currentColor"
-                            initial={{ strokeDasharray: "0, 100" }}
-                            animate={{ strokeDasharray: `${overall}, 100` }}
-                            transition={{ delay: 0.6, duration: 1.2, ease: "easeOut" }}
-                          />
-                        </svg>
-                        <span className={`absolute text-lg font-black ${overall >= 70 ? "text-emerald-500" : overall >= 40 ? "text-amber-500" : "text-red-500"}`}>
-                          {overall}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-bold ${overall >= 70 ? "text-emerald-500" : overall >= 40 ? "text-amber-500" : "text-red-500"}`}>
-                          {overall >= 70 ? "Strong Presence" : overall >= 40 ? "Growing Presence" : "Needs Improvement"}
-                        </p>
-                        <p className="text-2xs text-fg-hint mt-0.5">
-                          {overall >= 70 ? "Your digital footprint is well established" : overall >= 40 ? "Room to grow across key channels" : "AEOS can help you build your digital presence"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Category breakdown */}
-                    <div className="space-y-2">
-                      {categories.map((cat, i) => {
-                        const Icon = cat.icon;
-                        return (
-                          <motion.div
-                            key={cat.label}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.5 + i * 0.06 }}
-                            className="flex items-center gap-2.5"
-                          >
-                            <Icon size={13} className="shrink-0 text-fg-hint" />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-0.5">
-                                <span className="text-2xs font-semibold text-fg">{cat.label}</span>
-                                <span className={`text-2xs font-bold ${cat.score >= 70 ? "text-emerald-500" : cat.score >= 40 ? "text-amber-500" : "text-red-400"}`}>
-                                  {cat.score}%
-                                </span>
-                              </div>
-                              <div className="h-1.5 w-full rounded-full bg-border/50 overflow-hidden">
-                                <motion.div
-                                  className={`h-full rounded-full ${
-                                    cat.score >= 70 ? "bg-emerald-500" : cat.score >= 40 ? "bg-amber-500" : "bg-red-400"
-                                  }`}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${cat.score}%` }}
-                                  transition={{ delay: 0.6 + i * 0.08, duration: 0.8, ease: "easeOut" }}
-                                />
-                              </div>
-                              <p className="text-[9px] text-fg-hint/60 mt-0.5">{cat.detail}</p>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+              {country ? (
+                <>
+                  <div className="relative overflow-hidden rounded-xl border border-border">
+                    <div className="relative flex flex-col items-center justify-center py-8">
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-green-400/5 to-teal-500/10"
+                      />
+                      <motion.div
+                        animate={{ y: [0, -4, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative"
+                      >
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/30">
+                          <MapPin size={28} className="text-white" />
+                        </div>
+                      </motion.div>
+                      <p className="relative mt-3 text-base font-bold text-fg">{city || country}</p>
+                      {city && <p className="relative text-xs text-fg-hint">{country}</p>}
                     </div>
                   </div>
-                );
-              })()}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((city ? city + ", " : "") + country)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-secondary/50 px-4 py-2 text-xs font-semibold text-fg-hint hover:text-fg hover:border-emerald-500/30 transition-all"
+                  >
+                    <ExternalLink size={12} />
+                    Open in Google Maps
+                  </a>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 mb-3">
+                    <MapPin size={24} className="text-emerald-500/50" />
+                  </div>
+                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Set your country above</p>
+                </div>
+              )}
             </div>
           </Card>
         </div>
