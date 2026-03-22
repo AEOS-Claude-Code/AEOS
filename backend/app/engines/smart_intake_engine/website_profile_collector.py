@@ -4,8 +4,8 @@ AEOS – Smart Intake Engine: Website Profile Collector.
 Fetches and parses a website to extract company name, page title,
 meta description, and raw HTML for downstream extractors.
 
-Uses Playwright (headless Chromium) for full JavaScript rendering
-when available, with httpx fallback for lightweight environments.
+Uses httpx with browser-like headers for reliable fetching.
+Lightweight and memory-efficient — no headless browser required.
 """
 
 from __future__ import annotations
@@ -24,6 +24,22 @@ try:
 except ImportError:
     HAS_BS4 = False
 
+# Browser-like headers to avoid being blocked
+_BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+    "Accept-Encoding": "gzip, deflate, br",
+    "DNT": "1",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
+}
+
 
 def _domain_to_name(url: str) -> str:
     """Derive a company name from the domain."""
@@ -35,70 +51,28 @@ def _domain_to_name(url: str) -> str:
     return " ".join(p.capitalize() for p in parts if p)
 
 
-async def _fetch_with_playwright(url: str) -> str | None:
-    """Fetch page with headless Chromium — executes JavaScript. Memory-optimised."""
+async def _fetch_html(url: str, timeout: int = 15) -> str | None:
+    """Fetch page HTML with browser-like headers."""
     try:
-        from playwright.async_api import async_playwright
-
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(
-                headless=True,
-                args=[
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                    "--single-process",
-                    "--disable-extensions",
-                    "--disable-background-networking",
-                    "--disable-default-apps",
-                    "--disable-sync",
-                    "--disable-translate",
-                    "--no-first-run",
-                    "--no-zygote",
-                    "--js-flags=--max-old-space-size=128",
-                    "--disable-software-rasterizer",
-                    "--disable-features=TranslateUI",
-                    "--disable-ipc-flooding-protection",
-                ],
-            )
-            try:
-                ctx = await browser.new_context(
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    java_script_enabled=True,
-                    bypass_csp=True,
-                )
-                page = await ctx.new_page()
-                # Block heavy resources to save memory
-                await page.route("**/*.{png,jpg,jpeg,gif,svg,webp,mp4,webm,woff,woff2,ttf,eot}", lambda route: route.abort())
-                await page.goto(url, wait_until="domcontentloaded", timeout=15000)
-                # Short wait for dynamic content — reduced from 2s
-                await page.wait_for_timeout(1000)
-                html = await page.content()
-                return html
-            finally:
-                await browser.close()
-    except Exception as e:
-        logger.info("Playwright fetch failed for %s: %s", url, str(e)[:150])
-        return None
-
-
-async def _fetch_with_httpx(url: str) -> str | None:
-    """Simple HTTP fetch — no JavaScript execution."""
-    try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
-            resp = await client.get(url, headers={"User-Agent": "AEOS-IntakeBot/1.0"})
+        async with httpx.AsyncClient(
+            timeout=timeout,
+            follow_redirects=True,
+            limits=httpx.Limits(max_connections=5, max_keepalive_connections=2),
+        ) as client:
+            resp = await client.get(url, headers=_BROWSER_HEADERS)
             resp.raise_for_status()
             return resp.text
     except Exception as e:
-        logger.info("httpx fetch failed for %s: %s", url, str(e)[:100])
+        logger.info("Fetch failed for %s: %s", url, str(e)[:100])
         return None
 
 
 async def collect_website_profile(url: str, lightweight: bool = False) -> dict:
     """
     Fetch website and extract basic profile data.
-    Tries Playwright (full JS rendering) first, falls back to httpx.
-    Set lightweight=True for httpx-only fetch (no Playwright, saves ~300MB RAM).
+    Uses httpx with browser-like headers (lightweight, no Chromium).
+    The `lightweight` parameter is accepted for API compatibility but
+    all fetches are now lightweight by default.
     Returns dict with: html, title, description, detected_company_name, url.
     """
     result = {
@@ -114,15 +88,7 @@ async def collect_website_profile(url: str, lightweight: bool = False) -> dict:
     if not url or not url.startswith("http"):
         return result
 
-    if lightweight:
-        # httpx only — for backfill & secondary page fetches (no Chromium memory cost)
-        html = await _fetch_with_httpx(url)
-    else:
-        # Try Playwright first (full JS rendering), fall back to httpx
-        html = await _fetch_with_playwright(url)
-        if not html:
-            logger.info("Falling back to httpx for %s", url)
-            html = await _fetch_with_httpx(url)
+    html = await _fetch_html(url)
 
     if not html:
         return result

@@ -44,13 +44,8 @@ async def scan_competitor_website(url: str) -> dict:
     # 1. Fetch website HTML
     html = ""
     try:
-        from app.engines.smart_intake_engine.website_profile_collector import (
-            _fetch_with_playwright,
-            _fetch_with_httpx,
-        )
-        html = await _fetch_with_playwright(url) or ""
-        if not html:
-            html = await _fetch_with_httpx(url) or ""
+        from app.engines.smart_intake_engine.website_profile_collector import _fetch_html
+        html = await _fetch_html(url) or ""
     except Exception as e:
         logger.warning("Failed to fetch %s: %s", url, str(e)[:100])
         try:

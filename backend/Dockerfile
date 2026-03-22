@@ -6,26 +6,17 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# System deps (including Playwright/Chromium dependencies)
+# System deps (minimal — no Chromium/Playwright)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        gcc libpq-dev \
-        # Playwright Chromium dependencies
-        libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
-        libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
-        libxdamage1 libxfixes3 libxrandr2 libgbm1 libpango-1.0-0 \
-        libcairo2 libasound2 libatspi2.0-0 libwayland-client0 && \
+    apt-get install -y --no-install-recommends gcc libpq-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Python deps
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright Chromium browser (minimal)
-RUN playwright install chromium
-
 COPY . .
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "echo '==> Container starting on port ${PORT:-10000}' && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000} --timeout-keep-alive 65"]
+CMD ["sh", "-c", "echo '==> Container starting on port ${PORT:-10000}' && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000} --timeout-keep-alive 65 --workers 1"]
