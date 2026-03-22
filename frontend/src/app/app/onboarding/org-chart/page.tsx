@@ -113,8 +113,8 @@ export default function OnboardingOrgChart() {
       if (Object.keys(humanRoles).length > 0) {
         await api.put("/api/v1/workspace/role-assignments", { role_map: humanRoles }).catch(() => {});
       }
-      router.push("/app/onboarding/competitors");
-    } catch { router.push("/app/onboarding/competitors"); }
+      router.push("/app/onboarding/integrations");
+    } catch { router.push("/app/onboarding/integrations"); }
     finally { setSaving(false); }
   }
 

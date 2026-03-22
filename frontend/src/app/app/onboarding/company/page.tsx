@@ -383,8 +383,8 @@ export default function OnboardingCompany() {
           phone: intake.detected_phone_numbers[0] || "", google_business_url: "",
         });
       }
-      router.push("/app/onboarding/org-chart");
-    } catch { router.push("/app/onboarding/org-chart"); }
+      router.push("/app/onboarding/competitors");
+    } catch { router.push("/app/onboarding/competitors"); }
     finally { setSaving(false); }
   }
 
