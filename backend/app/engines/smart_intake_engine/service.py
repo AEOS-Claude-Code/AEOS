@@ -2270,6 +2270,15 @@ async def intake_from_url(url: str) -> dict:
         # Reject numbers that are too short without country code
         if not phone.startswith("+") and not phone.startswith("00") and len(digits) < 8:
             return False
+        # Reject numbers starting with 00 followed by short/invalid sequences
+        if phone.startswith("00") and not phone.startswith("00+"):
+            # 00XXXX should have country code (1-3 digits) + number (7+ digits)
+            # Total should be at least 11 digits (00 + country + number)
+            if len(digits) < 11:
+                return False
+        # Reject numbers with too many leading zeros (e.g. 007600000)
+        if digits.startswith("000") or (digits.startswith("00") and digits[2] == "0"):
+            return False
         return True
 
     valid_phones = [p for p in contacts["phone_numbers"] if _is_valid_phone(p)]

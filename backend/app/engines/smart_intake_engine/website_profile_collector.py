@@ -119,13 +119,33 @@ async def collect_website_profile(url: str, lightweight: bool = False) -> dict:
     if result["og_site_name"]:
         result["detected_company_name"] = result["og_site_name"]
     elif result["title"]:
-        # Try to extract company name from title (before separator)
+        # Try to extract company name from title (pick the best part)
         for sep in [" | ", " - ", " – ", " — ", " :: ", " : "]:
             if sep in result["title"]:
-                candidate = result["title"].split(sep)[0].strip()
-                if 2 < len(candidate) < 60:
-                    result["detected_company_name"] = candidate
-                    break
+                parts = [p.strip() for p in result["title"].split(sep) if p.strip()]
+                if not parts:
+                    continue
+                # Pick the part that looks most like a company name:
+                # - Shorter part is usually the company name
+                # - Part with fewer common words is usually the name
+                # - Part that matches domain name is preferred
+                _desc_words = {"in", "for", "the", "of", "and", "with", "our", "your",
+                               "best", "top", "leading", "official", "welcome", "home"}
+                best = parts[0]
+                for part in parts:
+                    if 2 < len(part) < 60:
+                        part_lower_words = set(part.lower().split())
+                        desc_overlap = len(part_lower_words & _desc_words)
+                        best_lower_words = set(best.lower().split())
+                        best_desc_overlap = len(best_lower_words & _desc_words)
+                        # Prefer part with fewer descriptive words and shorter length
+                        if desc_overlap < best_desc_overlap or (
+                            desc_overlap == best_desc_overlap and len(part) < len(best)
+                        ):
+                            best = part
+                if 2 < len(best) < 60:
+                    result["detected_company_name"] = best
+                break
 
     # OG image
     og_image_tag = soup.find("meta", attrs={"property": "og:image"})
