@@ -36,7 +36,7 @@ def _domain_to_name(url: str) -> str:
 
 
 async def _fetch_with_playwright(url: str) -> str | None:
-    """Fetch page with headless Chromium — executes JavaScript."""
+    """Fetch page with headless Chromium — executes JavaScript. Memory-optimised."""
     try:
         from playwright.async_api import async_playwright
 
@@ -55,15 +55,24 @@ async def _fetch_with_playwright(url: str) -> str | None:
                     "--disable-translate",
                     "--no-first-run",
                     "--no-zygote",
+                    "--js-flags=--max-old-space-size=128",
+                    "--disable-software-rasterizer",
+                    "--disable-features=TranslateUI",
+                    "--disable-ipc-flooding-protection",
                 ],
             )
             try:
-                page = await browser.new_page(
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                ctx = await browser.new_context(
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    java_script_enabled=True,
+                    bypass_csp=True,
                 )
-                await page.goto(url, wait_until="networkidle", timeout=20000)
-                # Wait a bit for late-loading JS content
-                await page.wait_for_timeout(2000)
+                page = await ctx.new_page()
+                # Block heavy resources to save memory
+                await page.route("**/*.{png,jpg,jpeg,gif,svg,webp,mp4,webm,woff,woff2,ttf,eot}", lambda route: route.abort())
+                await page.goto(url, wait_until="domcontentloaded", timeout=15000)
+                # Short wait for dynamic content — reduced from 2s
+                await page.wait_for_timeout(1000)
                 html = await page.content()
                 return html
             finally:
@@ -85,10 +94,11 @@ async def _fetch_with_httpx(url: str) -> str | None:
         return None
 
 
-async def collect_website_profile(url: str) -> dict:
+async def collect_website_profile(url: str, lightweight: bool = False) -> dict:
     """
     Fetch website and extract basic profile data.
     Tries Playwright (full JS rendering) first, falls back to httpx.
+    Set lightweight=True for httpx-only fetch (no Playwright, saves ~300MB RAM).
     Returns dict with: html, title, description, detected_company_name, url.
     """
     result = {
@@ -104,11 +114,15 @@ async def collect_website_profile(url: str) -> dict:
     if not url or not url.startswith("http"):
         return result
 
-    # Try Playwright first (full JS rendering), fall back to httpx
-    html = await _fetch_with_playwright(url)
-    if not html:
-        logger.info("Falling back to httpx for %s", url)
+    if lightweight:
+        # httpx only — for backfill & secondary page fetches (no Chromium memory cost)
         html = await _fetch_with_httpx(url)
+    else:
+        # Try Playwright first (full JS rendering), fall back to httpx
+        html = await _fetch_with_playwright(url)
+        if not html:
+            logger.info("Falling back to httpx for %s", url)
+            html = await _fetch_with_httpx(url)
 
     if not html:
         return result

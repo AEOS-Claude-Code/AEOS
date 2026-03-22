@@ -117,7 +117,7 @@ async def get_intake_results(
             try:
                 from .website_profile_collector import collect_website_profile
                 from .service import _extract_team_members, _extract_services, _check_seo_health
-                wp = await asyncio.wait_for(collect_website_profile(url), timeout=10)
+                wp = await asyncio.wait_for(collect_website_profile(url, lightweight=True), timeout=10)
                 html_content = wp.get("html", "")
                 if html_content:
                     if not services_data:

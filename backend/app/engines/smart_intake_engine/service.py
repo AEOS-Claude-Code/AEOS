@@ -1279,7 +1279,7 @@ async def _extract_team_members(html: str, url: str) -> dict:
             team_url = result["team_page_url"]
             is_about = any(kw in team_url.lower() for kw in ["about", "who-we-are", "who_we_are"])
             logger.info("Following team/about page %s for team members (is_about=%s)", team_url, is_about)
-            team_profile = await collect_website_profile(team_url)
+            team_profile = await collect_website_profile(team_url, lightweight=True)
             team_html = team_profile.get("html", "")
             if team_html:
                 team_soup = _BS(team_html, "lxml")
@@ -1307,7 +1307,7 @@ async def _extract_team_members(html: str, url: str) -> dict:
                 continue
             try:
                 logger.info("Trying common about/team path: %s", candidate_url)
-                about_profile = await collect_website_profile(candidate_url)
+                about_profile = await collect_website_profile(candidate_url, lightweight=True)
                 about_html = about_profile.get("html", "")
                 if about_html and len(about_html) > 500:
                     about_soup = _BS(about_html, "lxml")
@@ -1578,7 +1578,7 @@ async def intake_from_url(url: str) -> dict:
         try:
             contact_url = contacts["contact_pages"][0]
             logger.info("Following contact page %s for more data", contact_url)
-            contact_profile = await collect_website_profile(contact_url)
+            contact_profile = await collect_website_profile(contact_url, lightweight=True)
             contact_html = contact_profile.get("html", "")
             if contact_html:
                 extra_contacts = extract_contacts(contact_html, contact_url)
