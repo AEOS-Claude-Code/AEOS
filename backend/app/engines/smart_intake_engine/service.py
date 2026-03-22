@@ -907,9 +907,33 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
     keywords: list[str] = []
     seen = set()
 
+    def _is_gibberish(word: str) -> bool:
+        """Detect CloudFlare-obfuscated nonsense words (e.g. Whqm, Ybbq, Ldkz)."""
+        if len(word) < 3:
+            return True
+        # Count vowels — real English words have ~35-45% vowels
+        vowels = sum(1 for c in word.lower() if c in "aeiou")
+        ratio = vowels / len(word) if word else 0
+        if ratio < 0.1 and len(word) > 3:
+            return True  # No vowels in 4+ char word = gibberish
+        # Check for uncommon consonant clusters
+        consonant_run = 0
+        max_consonant_run = 0
+        for c in word.lower():
+            if c not in "aeiou":
+                consonant_run += 1
+                max_consonant_run = max(max_consonant_run, consonant_run)
+            else:
+                consonant_run = 0
+        if max_consonant_run >= 4:
+            return True  # 4+ consecutive consonants = likely gibberish
+        return False
+
     def _add(kw: str):
         kw = kw.strip().lower()
         if kw and kw not in seen and len(kw) >= 3 and kw not in _STOP_WORDS:
+            if _is_gibberish(kw):
+                return
             seen.add(kw)
             keywords.append(kw.title())
 
@@ -1590,12 +1614,15 @@ def _extract_social_handles_from_html(domain_name: str, html: str) -> set[str]:
 
 
 async def _verify_social_profile_content(
-    platform: str, url: str, domain: str, company_name: str
-) -> tuple[str, str] | None:
+    platform: str, url: str, domain: str, company_name: str,
+    strict: bool = False,
+) -> tuple[str, str, bool] | None:
     """
     Verify a social profile URL actually belongs to this company.
     Fetches the page and checks if company domain or name appears in content.
-    Falls back to HEAD check if GET fails.
+
+    Returns (platform, url, verified) where verified=True means content match found.
+    In strict mode, only returns if content match is found.
     """
     try:
         async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
@@ -1613,34 +1640,43 @@ async def _verify_social_profile_content(
             domain_name = domain_short.split(".")[0]
 
             # Check for domain/company name in the page content
-            checks = [domain_short, domain_name]
-            if company_name:
+            checks = [domain_short]
+            if company_name and len(company_name) >= 3:
                 checks.append(company_name.lower())
+            # Also check domain with common suffixes
+            if "." in domain_short:
+                # e.g. "designzone.com.sa" → also check "designzone.com"
+                parts = domain_short.split(".")
+                if len(parts) >= 2:
+                    checks.append(".".join(parts[:2]))
 
             for check in checks:
                 if check and len(check) >= 3 and check in page_text:
                     logger.info("Social profile VERIFIED (content match '%s'): %s → %s", check, platform, url)
-                    return (platform, url)
+                    return (platform, url, True)
 
-            # If no content match but page loaded successfully, still accept
-            # (some social platforms don't include the website in visible text)
-            # But mark it as unverified - we'll prefer verified ones
+            if strict:
+                logger.info("Social profile REJECTED (no content match, strict): %s → %s", platform, url)
+                return None
+
+            # Non-strict: return but mark as unverified
             logger.info("Social profile loaded but no content match: %s → %s", platform, url)
-            return (platform, url)
+            return (platform, url, False)
 
     except Exception:
         pass
 
-    # Fallback: HEAD check only
-    try:
-        async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
-            resp = await client.head(url, headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            })
-            if resp.status_code < 400:
-                return (platform, url)
-    except Exception:
-        pass
+    # Fallback: HEAD check only (page exists)
+    if not strict:
+        try:
+            async with httpx.AsyncClient(timeout=5, follow_redirects=True) as client:
+                resp = await client.head(url, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                })
+                if resp.status_code < 400:
+                    return (platform, url, False)
+        except Exception:
+            pass
 
     return None
 
@@ -1788,12 +1824,19 @@ async def _search_social_profiles(company_name: str, domain: str, html: str = ""
 
     if verify_tasks:
         verify_results = await asyncio.gather(*verify_tasks, return_exceptions=True)
+        # Prefer content-verified profiles over unverified ones
+        verified_found: dict[str, tuple[str, bool]] = {}
         for vr in verify_results:
-            if isinstance(vr, tuple) and vr:
-                p, u = vr
-                if not result.get(p):
-                    result[p] = [u]
-                    logger.info("Verified social profile via direct URL: %s → %s", p, u)
+            if isinstance(vr, tuple) and len(vr) == 3:
+                p, u, is_verified = vr
+                if p not in verified_found or (is_verified and not verified_found[p][1]):
+                    verified_found[p] = (u, is_verified)
+
+        for p, (u, is_verified) in verified_found.items():
+            if not result.get(p):
+                result[p] = [u]
+                logger.info("Social profile via direct URL (%s): %s → %s",
+                            "VERIFIED" if is_verified else "unverified", p, u)
 
     # Cap at 1 per platform
     for p in result:
@@ -1947,8 +1990,8 @@ async def intake_from_url(url: str) -> dict:
             if not profile.get("description") and sub_profile.get("description"):
                 profile["description"] = sub_profile["description"]
 
-            # Add subpage HTML to corpus
-            html = html + " " + sub_html[:5000]
+            # Add subpage HTML to corpus (keep more for social handle extraction)
+            html = html + " " + sub_html[:20000]
 
         logger.info(
             "After subpage crawl: social=%d, phones=%d, emails=%d",
@@ -2100,8 +2143,9 @@ async def intake_from_url(url: str) -> dict:
     except Exception as e:
         logger.warning("AI deep extract timed out or failed: %s", str(e)[:100])
 
-    # ── 10. Verify AI-constructed social URLs ──
-    # If AI provided handles that we constructed into URLs, verify they actually exist
+    # ── 10. Verify social URLs with strict content matching ──
+    # Check each social URL and only keep those where the profile page
+    # actually mentions the company domain (eliminates wrong-company profiles)
     try:
         import asyncio as _aio
         socials = result.get("detected_social_links", {})
@@ -2113,24 +2157,30 @@ async def intake_from_url(url: str) -> dict:
         for platform, urls in socials.items():
             if urls and isinstance(urls, list) and urls[0]:
                 verify_tasks.append(
-                    _verify_social_profile_content(platform, urls[0], _domain, _company)
+                    _verify_social_profile_content(
+                        platform, urls[0], _domain, _company, strict=True
+                    )
                 )
 
         if verify_tasks:
             verify_results = await _aio.wait_for(
                 _aio.gather(*verify_tasks, return_exceptions=True),
-                timeout=15,
+                timeout=20,
             )
             verified_platforms = set()
             for vr in verify_results:
-                if isinstance(vr, tuple) and vr:
+                if isinstance(vr, tuple) and len(vr) >= 2:
                     verified_platforms.add(vr[0])
 
-            # Remove unverified social profiles (returned None = 404 or unreachable)
+            # Remove profiles that failed strict verification (wrong company)
+            removed = []
             for platform in list(socials.keys()):
                 if socials.get(platform) and platform not in verified_platforms:
-                    logger.info("Removing unverified social profile: %s → %s", platform, socials[platform])
+                    removed.append(f"{platform}={socials[platform]}")
                     socials[platform] = []
+
+            if removed:
+                logger.info("Removed %d unverified social profiles: %s", len(removed), ", ".join(removed))
 
             result["detected_social_links"] = socials
     except Exception as e:
