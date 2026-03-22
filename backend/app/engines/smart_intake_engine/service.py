@@ -958,7 +958,7 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
         "fldurl", "listguid", "viewguid", "aspx", "ascx",
         "onclick", "onload", "onchange", "onsubmit", "classname",
         "stylesheet", "javascript", "innerhtml", "classid",
-        "arrow", "item", "icon", "button", "wrapper", "container",
+        "arrow", "item", "icon", "button", "wrapper", "container", "list",
         "modal", "dropdown", "tooltip", "carousel", "slider",
         "sidebar", "navbar", "breadcrumb", "pagination",
     }
@@ -2133,6 +2133,11 @@ async def intake_from_url(url: str) -> dict:
             "services", "support", "help desk", "helpdesk", "info center",
             "مكاتب", "خدمة العملاء", "مركز", "المعلومات", "الخدمة",
             "office", "department", "division", "branch", "center",
+            "about ", "about us", "who we are", "our story", "our team",
+            # Arabic organizational/service terms (not people)
+            "نظام", "إلكترونية", "البيانات", "المفتوحة", "إخطارات",
+            "منصة", "تكنولوجيا", "برنامج", "خريطة", "تفاعلية",
+            "قائمة", "الشركات", "المعتمدة", "التأهيل", "إدارة",
         ]
         clean_members = []
         for m in team_data["members"]:
@@ -2995,11 +3000,27 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
     if not intake_result.get("detected_city") and ai_data.get("city"):
         intake_result["detected_city"] = ai_data["city"]
 
-    # Phone numbers
+    # Phone numbers — apply same validation as regex-extracted phones
     if not intake_result.get("detected_phone_numbers") and ai_data.get("phone_numbers"):
         phones = ai_data["phone_numbers"]
         if isinstance(phones, list):
-            intake_result["detected_phone_numbers"] = [p for p in phones if p][:5]
+            valid = []
+            for p in phones:
+                if not p:
+                    continue
+                digits = re.sub(r"[^\d]", "", str(p))
+                if len(digits) < 7 or len(digits) > 15:
+                    continue
+                if len(set(digits)) <= 2:
+                    continue
+                if not str(p).startswith("+") and not str(p).startswith("00") and len(digits) < 8:
+                    continue
+                if digits.startswith("000") or (digits.startswith("00") and len(digits) >= 3 and digits[2] == "0"):
+                    continue
+                if str(p).startswith("00") and len(digits) < 11:
+                    continue
+                valid.append(p)
+            intake_result["detected_phone_numbers"] = valid[:5]
 
     # Emails
     if not intake_result.get("detected_emails") and ai_data.get("emails"):
