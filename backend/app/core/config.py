@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     @property
     def async_database_url(self) -> str:
-        """Ensure DATABASE_URL uses asyncpg driver (Render gives postgres://)."""
+        """Ensure DATABASE_URL uses asyncpg driver (Railway gives postgresql://)."""
         url = self.DATABASE_URL
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)

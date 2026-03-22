@@ -67,7 +67,7 @@ export default function AiEnginesPage() {
                 {hasKey ? (
                   <><span className="text-emerald-400 font-semibold">Active</span> — {anth.key_prefix}</>
                 ) : (
-                  <span className="text-red-400">Not configured — set ANTHROPIC_API_KEY in Render environment</span>
+                  <span className="text-red-400">Not configured — set ANTHROPIC_API_KEY in Railway environment</span>
                 )}
               </p>
             </div>

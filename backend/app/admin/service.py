@@ -467,7 +467,7 @@ async def get_system_health(db: AsyncSession) -> dict:
     health["services"]["backend"] = {
         "status": "healthy",
         "environment": os.getenv("ENVIRONMENT", "production"),
-        "render_instance": os.getenv("RENDER_INSTANCE_ID", "unknown"),
+        "railway_service": os.getenv("RAILWAY_SERVICE_ID", "unknown"),
     }
 
     # Anthropic API key check + balance

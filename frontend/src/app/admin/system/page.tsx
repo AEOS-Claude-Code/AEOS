@@ -146,7 +146,7 @@ export default function AdminSystemPage() {
           </div>
           <div>
             <p className="text-sm font-bold text-violet-400">Redeploy Backend</p>
-            <p className="text-2xs text-slate-500">Render • FastAPI</p>
+            <p className="text-2xs text-slate-500">Railway • FastAPI</p>
           </div>
         </motion.button>
 
@@ -211,7 +211,7 @@ export default function AdminSystemPage() {
             <StatusDot ok={true} />
           </div>
           <p className="text-lg font-bold text-emerald-400">Healthy</p>
-          <p className="mt-1 text-2xs text-slate-600">Render • FastAPI • {backendLatency}ms latency</p>
+          <p className="mt-1 text-2xs text-slate-600">Railway • FastAPI • {backendLatency}ms latency</p>
         </motion.div>
 
         {/* Database */}

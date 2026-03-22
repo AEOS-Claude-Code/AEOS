@@ -63,7 +63,7 @@
 
 **Production URLs:**
 - Frontend: https://frontend-lac-six-41.vercel.app (Vercel)
-- Backend: https://aeos-backend.onrender.com (Render)
+- Backend: https://aeos-backend-production.up.railway.app (Railway)
 - GitHub: https://github.com/AEOS-Claude-Code/AEOS
 
 ---

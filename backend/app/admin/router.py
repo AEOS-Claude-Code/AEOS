@@ -265,7 +265,7 @@ async def admin_change_secret(body: ChangeSecretRequest, user: User = Depends(_r
         raise HTTPException(status_code=400, detail="New secret must be at least 8 characters")
     _secret_override = body.new_secret
     logger.info("Admin secret changed by %s (in-memory only — set AEOS_ADMIN_SECRET env var for permanent change)", user.email)
-    return {"success": True, "message": "Admin secret changed. Note: This is in-memory only. Set AEOS_ADMIN_SECRET env var on Render for permanent change."}
+    return {"success": True, "message": "Admin secret changed. Note: This is in-memory only. Set AEOS_ADMIN_SECRET env var on Railway for permanent change."}
 
 
 # ── Redeploy Triggers ───────────────────────────────────────────────
@@ -273,8 +273,9 @@ async def admin_change_secret(body: ChangeSecretRequest, user: User = Depends(_r
 VERCEL_TOKEN = os.getenv("VERCEL_TOKEN", "")
 VERCEL_PROJECT_ID = os.getenv("VERCEL_PROJECT_ID", "prj_ZmrJuu5JRiA7Tk0JELqNGNULoBjH")
 VERCEL_TEAM_ID = os.getenv("VERCEL_TEAM_ID", "team_94SUwXdd5jjBOGhnY6Ifm2AG")
-RENDER_API_KEY = os.getenv("RENDER_API_KEY", "")
-RENDER_SERVICE_ID = os.getenv("RENDER_SERVICE_ID", "srv-d6s6mjq4d50c73bibuk0")
+RAILWAY_API_TOKEN = os.getenv("RAILWAY_API_TOKEN", "")
+RAILWAY_SERVICE_ID = os.getenv("RAILWAY_SERVICE_ID", "02918935-0af7-4e62-ac2c-e703b80ed64b")
+RAILWAY_ENVIRONMENT_ID = os.getenv("RAILWAY_ENVIRONMENT_ID", "6e71e67e-e242-4faa-af77-8837e6b55d2c")
 
 
 @router.post("/redeploy/frontend")
@@ -316,22 +317,36 @@ async def admin_redeploy_frontend(user: User = Depends(_require_admin)):
 
 @router.post("/redeploy/backend")
 async def admin_redeploy_backend(user: User = Depends(_require_admin)):
-    """Trigger a Render backend redeploy."""
+    """Trigger a Railway backend redeploy."""
     import httpx
-    api_key = RENDER_API_KEY
-    if not api_key:
-        raise HTTPException(status_code=400, detail="RENDER_API_KEY not configured. Set it in Render environment variables.")
+    api_token = RAILWAY_API_TOKEN
+    if not api_token:
+        raise HTTPException(status_code=400, detail="RAILWAY_API_TOKEN not configured. Set it in Railway environment variables.")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
+            # Railway uses a GraphQL API for deployments
             resp = await client.post(
-                f"https://api.render.com/v1/services/{RENDER_SERVICE_ID}/deploys",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={"clearCache": "do_not_clear"},
+                "https://backboard.railway.com/graphql/v2",
+                headers={"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"},
+                json={
+                    "query": """
+                        mutation serviceInstanceRedeploy($serviceId: String!, $environmentId: String!) {
+                            serviceInstanceRedeploy(serviceId: $serviceId, environmentId: $environmentId)
+                        }
+                    """,
+                    "variables": {
+                        "serviceId": RAILWAY_SERVICE_ID,
+                        "environmentId": RAILWAY_ENVIRONMENT_ID,
+                    },
+                },
             )
-            if resp.status_code in (200, 201):
-                return {"success": True, "service": "backend", "message": "Render redeploy triggered"}
+            data = resp.json()
+            if resp.status_code == 200 and not data.get("errors"):
+                return {"success": True, "service": "backend", "message": "Railway redeploy triggered"}
             else:
-                return {"success": False, "service": "backend", "error": resp.text[:200]}
+                errors = data.get("errors", [{}])
+                error_msg = errors[0].get("message", resp.text[:200]) if errors else resp.text[:200]
+                return {"success": False, "service": "backend", "error": error_msg}
     except HTTPException:
         raise
     except Exception as e:
