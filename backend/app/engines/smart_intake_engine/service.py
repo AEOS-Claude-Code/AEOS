@@ -2098,6 +2098,34 @@ async def intake_from_url(url: str) -> dict:
         logger.info("Team extraction timed out for %s", url)
         team_data = {"team_page_url": "", "members": [], "count": 0, "linkedin_search_url": ""}
 
+    # Post-process team: filter out UI text, navigation, and marketing copy
+    if team_data.get("members"):
+        _ui_indicators = [
+            "سجل", "تسجيل", "login", "sign", "register", "account", "order",
+            "cart", "basket", "checkout", "newsletter", "subscribe", "cookie",
+            "الخدمات", "طلبات", "عرض", "تصفح", "اختر", "ادخل", "حسابك",
+            "world of", "est.", "discover", "explore", "learn more", "click",
+            "view all", "see more", "load more", "show more",
+        ]
+        clean_members = []
+        for m in team_data["members"]:
+            name = m.get("name", "")
+            role = m.get("role", "")
+            text = (name + " " + role).lower()
+            # Skip if name/role contains UI or marketing indicators
+            if any(ui in text for ui in _ui_indicators):
+                continue
+            # Skip if name is too long (likely a sentence, not a person's name)
+            if len(name) > 50:
+                continue
+            # Skip if name doesn't have at least 2 words (first + last)
+            if " " not in name.strip() and not any(c in name for c in "\u0600\u06FF"):
+                # Allow Arabic names without space detection
+                pass
+            clean_members.append(m)
+        team_data["members"] = clean_members
+        team_data["count"] = len(clean_members)
+
     # 7d. Extract services/products
     detected_services = _extract_services(html, profile.get("headings", []))
 
@@ -2137,18 +2165,99 @@ async def intake_from_url(url: str) -> dict:
         location.get("city", ""),
     )
 
+    # ── Pre-build: TLD-based industry + country inference (when regex fails) ──
+    tld_industry = industry_result["detected_industry"]
+    tld_confidence = industry_result["industry_confidence"]
+    parsed_for_tld = urlparse(url)
+    tld_parts = parsed_for_tld.netloc.split(".")
+    tld = tld_parts[-1].lower() if tld_parts else ""
+    tld2 = ".".join(tld_parts[-2:]).lower() if len(tld_parts) >= 2 else ""
+
+    # TLD-based industry inference when regex-based detection fails
+    if tld_industry == "other" or tld_confidence < 0.2:
+        tld_industry_map = {
+            "edu": "education", "edu.sa": "education", "edu.jo": "education",
+            "edu.qa": "education", "edu.ae": "education", "edu.eg": "education",
+            "ac": "education",
+            "gov": "government", "gov.sa": "government", "gov.qa": "government",
+            "gov.ae": "government", "gov.jo": "government", "gov.eg": "government",
+            "mil": "government",
+            "med": "healthcare", "med.sa": "healthcare",
+            "health": "healthcare",
+        }
+        for tld_key in [tld2, tld]:
+            if tld_key in tld_industry_map:
+                tld_industry = tld_industry_map[tld_key]
+                tld_confidence = max(tld_confidence, 0.4)
+                logger.info("TLD-based industry override: %s → %s (from .%s)", url, tld_industry, tld_key)
+                break
+
+    # TLD-based country inference when location detection fails
+    tld_country = location.get("country", "")
+    if not tld_country:
+        tld_country_map = {
+            "sa": "Saudi Arabia", "ae": "UAE", "jo": "Jordan", "qa": "Qatar",
+            "kw": "Kuwait", "bh": "Bahrain", "om": "Oman", "eg": "Egypt",
+            "lb": "Lebanon", "iq": "Iraq", "ps": "Palestine",
+            "com.sa": "Saudi Arabia", "gov.sa": "Saudi Arabia", "edu.sa": "Saudi Arabia",
+            "med.sa": "Saudi Arabia", "net.sa": "Saudi Arabia", "org.sa": "Saudi Arabia",
+            "co.ae": "UAE", "gov.ae": "UAE", "ac.ae": "UAE",
+            "edu.jo": "Jordan", "gov.jo": "Jordan", "com.jo": "Jordan",
+            "gov.qa": "Qatar", "edu.qa": "Qatar", "com.qa": "Qatar",
+        }
+        for tld_key in [tld2, tld]:
+            if tld_key in tld_country_map:
+                tld_country = tld_country_map[tld_key]
+                logger.info("TLD-based country: %s → %s", url, tld_country)
+                break
+
+    # ── Pre-build: Validate phone numbers ──
+    def _is_valid_phone(phone: str) -> bool:
+        digits = re.sub(r"[^\d]", "", phone)
+        if len(digits) < 7 or len(digits) > 15:
+            return False
+        # Reject all-zeros or repeated digits
+        if len(set(digits)) <= 2:
+            return False
+        # Reject numbers that are too short without country code
+        if not phone.startswith("+") and not phone.startswith("00") and len(digits) < 8:
+            return False
+        return True
+
+    valid_phones = [p for p in contacts["phone_numbers"] if _is_valid_phone(p)]
+
+    # ── Pre-build: Clean emails ──
+    def _clean_email(email: str) -> str:
+        # Fix HTML-encoded prefixes like u003e, \\u003e
+        email = re.sub(r'^(?:\\?u[0-9a-f]{4})+', '', email, flags=re.IGNORECASE)
+        email = re.sub(r'^[<>]+', '', email)
+        try:
+            from urllib.parse import unquote
+            email = unquote(email)
+        except Exception:
+            pass
+        return email.strip()
+
+    clean_emails = []
+    seen_email = set()
+    for e in contacts["emails"]:
+        cleaned = _clean_email(e)
+        if "@" in cleaned and cleaned.lower() not in seen_email and "%" not in cleaned:
+            clean_emails.append(cleaned)
+            seen_email.add(cleaned.lower())
+
     # Build initial result dict
     result = {
         "url": url,
         "detected_company_name": profile.get("detected_company_name", ""),
-        "detected_industry": industry_result["detected_industry"],
-        "industry_confidence": industry_result["industry_confidence"],
+        "detected_industry": tld_industry,
+        "industry_confidence": tld_confidence,
         "industry_scores": industry_result["industry_scores"],
         "industry_signals": industry_result["signals_found"],
-        "detected_country": location.get("country", ""),
+        "detected_country": tld_country,
         "detected_city": location.get("city", ""),
-        "detected_phone_numbers": contacts["phone_numbers"],
-        "detected_emails": contacts["emails"],
+        "detected_phone_numbers": valid_phones,
+        "detected_emails": clean_emails,
         "detected_social_links": social,
         "detected_whatsapp_links": contacts["whatsapp_links"],
         "detected_contact_pages": contacts["contact_pages"],
@@ -2187,6 +2296,22 @@ async def intake_from_url(url: str) -> dict:
             )
     except Exception as e:
         logger.warning("AI deep extract timed out or failed: %s", str(e)[:100])
+
+    # ── 9b. Generate keywords from services when HTML keywords are empty ──
+    if not result.get("detected_keywords") and result.get("detected_services"):
+        service_keywords = []
+        seen_kw = set()
+        for svc in result["detected_services"]:
+            # Extract individual words from service names
+            words = re.findall(r'\b[a-zA-Z]{3,}\b', svc)
+            for w in words:
+                wl = w.lower()
+                if wl not in seen_kw and wl not in _STOP_WORDS and len(wl) >= 3:
+                    service_keywords.append(w.title())
+                    seen_kw.add(wl)
+        if service_keywords:
+            result["detected_keywords"] = service_keywords[:20]
+            logger.info("Generated %d keywords from services", len(service_keywords[:20]))
 
     # ── 10. Verify social URLs ──
     # For each social URL, check if it belongs to this company.
@@ -2546,17 +2671,29 @@ async def _ai_deep_extract(
         f'  "team_members": [\n'
         f'    {{"name": "Full Name", "role": "Job Title"}}\n'
         f'  ],\n'
+        f'  "company_name": "Official full company name (not abbreviation or domain)",\n'
+        f'  "industry": "One of: ecommerce, healthcare, travel, restaurant, education, real_estate, '
+        f'saas, agency, design_creative, engineering, construction, manufacturing, technology, '
+        f'retail, finance, logistics, media_entertainment, nonprofit, professional_services, '
+        f'government, telecom, other",\n'
+        f'  "country": "Country where company is headquartered",\n'
         f'  "company_description": "One-sentence company description",\n'
         f'  "address": "Full physical address if found"\n'
         f'}}\n\n'
         f"RULES:\n"
         f"- Extract ONLY real data found in the website content above\n"
+        f"- company_name: Extract the OFFICIAL company name, not just the domain. "
+        f"E.g. for jarir.com → 'Jarir Bookstore' not 'Jarir', for aus.edu → "
+        f"'American University of Sharjah' not 'Aus'\n"
+        f"- industry: Classify based on what the company DOES, not its TLD\n"
+        f"- country: Detect from addresses, phone codes (+966=Saudi, +971=UAE, +962=Jordan, +974=Qatar)\n"
         f"- Phone numbers: include country code (e.g. +966...)\n"
         f"- Social profiles: must be actual full profile URLs found in the content\n"
         f"- Social handles: extract usernames/handles from URLs, @mentions, or text references\n"
         f"  Look for patterns like @companyname, /companyname in social URLs, text mentions\n"
         f"- Services: extract the main service/product offerings, not generic categories\n"
-        f"- Team: extract actual names and roles of team members\n"
+        f"- Team: extract ONLY actual people's names and job titles. "
+        f"Do NOT include UI elements, navigation text, slogans, or marketing copy\n"
         f"- Return ONLY valid JSON, no markdown fences, no explanation\n"
     )
 
@@ -2628,6 +2765,38 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
     """
     if not ai_data:
         return intake_result
+
+    # Company name — AI provides much better names than domain prefix
+    ai_company = ai_data.get("company_name", "").strip()
+    existing_company = intake_result.get("detected_company_name", "")
+    if ai_company and len(ai_company) > len(existing_company):
+        # AI name is longer/better (e.g. "American University of Sharjah" vs "Aus")
+        intake_result["detected_company_name"] = ai_company
+        logger.info("AI company name upgrade: '%s' → '%s'", existing_company, ai_company)
+
+    # Industry — override if regex got "other" and AI found something
+    ai_industry = ai_data.get("industry", "").strip().lower()
+    valid_industries = {
+        "ecommerce", "healthcare", "travel", "restaurant", "education", "real_estate",
+        "saas", "agency", "design_creative", "engineering", "construction",
+        "manufacturing", "technology", "retail", "finance", "logistics",
+        "media_entertainment", "nonprofit", "professional_services", "government",
+        "telecom", "other",
+    }
+    if ai_industry in valid_industries and ai_industry != "other":
+        current_industry = intake_result.get("detected_industry", "other")
+        current_confidence = intake_result.get("industry_confidence", 0)
+        if current_industry == "other" or current_confidence < 0.3:
+            intake_result["detected_industry"] = ai_industry
+            intake_result["industry_confidence"] = max(current_confidence, 0.5)
+            logger.info("AI industry override: '%s' → '%s'", current_industry, ai_industry)
+
+    # Country — fill or fix wrong detection
+    ai_country = ai_data.get("country", "").strip()
+    if ai_country and (not intake_result.get("detected_country") or
+                       intake_result.get("detected_country") == "Brazil"):  # Known misdetection
+        intake_result["detected_country"] = ai_country
+        logger.info("AI country: %s", ai_country)
 
     # City
     if not intake_result.get("detected_city") and ai_data.get("city"):
