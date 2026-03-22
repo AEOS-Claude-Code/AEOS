@@ -2135,7 +2135,7 @@ async def intake_from_url(url: str) -> dict:
             "office", "department", "division", "branch", "center",
             "about ", "about us", "who we are", "our story", "our team",
             # Arabic organizational/service terms (not people)
-            "نظام", "إلكترونية", "البيانات", "المفتوحة", "إخطارات",
+            "خدمات", "نظام", "إلكترونية", "البيانات", "المفتوحة", "إخطارات",
             "منصة", "تكنولوجيا", "برنامج", "خريطة", "تفاعلية",
             "قائمة", "الشركات", "المعتمدة", "التأهيل", "إدارة",
         ]
@@ -2988,10 +2988,11 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
             }
             city_to_check = ai_city or current_city
             expected_country = known_city_country.get(city_to_check, "")
-            if expected_country and expected_country.lower() == ai_country.lower():
-                intake_result["detected_country"] = ai_country
-                logger.info("AI country override (city match): %s → %s", current_country, ai_country)
-            elif current_country in ("Brazil", "Australia", "Indonesia", "India") and ai_country:
+            if expected_country:
+                # City is a known MENA city — trust city-based country over everything
+                intake_result["detected_country"] = expected_country
+                logger.info("City-based country override: %s → %s (city=%s)", current_country, expected_country, city_to_check)
+            elif current_country in ("Brazil", "Australia", "Indonesia", "India", "United Kingdom") and ai_country:
                 # These are common misdetections for MENA companies
                 intake_result["detected_country"] = ai_country
                 logger.info("AI country override (misdetection fix): %s → %s", current_country, ai_country)
