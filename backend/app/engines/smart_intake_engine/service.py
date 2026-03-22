@@ -937,9 +937,12 @@ def _extract_seo_keywords(html: str, title: str, description: str, headings: lis
                           "ve", "co", "me", "de", "hi", "ri", "ro", "ic", "ne", "ea",
                           "ra", "ce", "li", "ch", "ll", "be", "ma", "si", "om", "ur"}
         if len(w) >= 4:
-            bigrams = {w[i:i+2] for i in range(len(w) - 1)}
-            common_count = len(bigrams & common_bigrams)
-            min_required = max(1, len(bigrams) // 2)  # At least half of bigrams should be common
+            bigrams = [w[i:i+2] for i in range(len(w) - 1)]
+            unique_bigrams = set(bigrams)
+            common_count = len(unique_bigrams & common_bigrams)
+            # For short words (4 chars = 3 bigrams), require at least 2 common bigrams
+            # For longer words, require at least 60% common bigrams
+            min_required = max(2, int(len(unique_bigrams) * 0.6))
             if common_count < min_required:
                 return True  # Too few common English bigrams = likely gibberish
         return False
@@ -2264,8 +2267,9 @@ async def intake_from_url(url: str) -> dict:
             if empty_platforms and _suffixes:
                 backfill_handles = []
                 for sfx in _suffixes[:2]:  # Use top 2 country suffixes
-                    backfill_handles.append(f"{_domain_name}{sfx}")
-                    backfill_handles.append(f"{_domain_name}_{sfx}")
+                    backfill_handles.append(f"{_domain_name}{sfx}")       # designzoneksa
+                    backfill_handles.append(f"{_domain_name}_{sfx}")      # designzone_ksa
+                    backfill_handles.append(f"{_domain_name}-{sfx}")      # designzone-ksa (LinkedIn style)
 
                 backfill_templates = {
                     "instagram": "https://www.instagram.com/{handle}/",
