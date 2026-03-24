@@ -92,7 +92,7 @@ export default function OnboardingCompetitors() {
         ...manualUrls.filter((u) => u.trim()),
       ];
       await api.post("/api/v1/onboarding/competitors", { competitor_urls: allUrls });
-      router.push("/app/onboarding/org-chart");
+      router.push("/app/onboarding/integrations");
     } catch {
     } finally {
       setLoading(false);
@@ -322,7 +322,7 @@ export default function OnboardingCompetitors() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/app/onboarding/org-chart")}
+                onClick={() => router.push("/app/onboarding/integrations")}
                 className="rounded-xl px-5 py-3 text-sm font-medium text-fg-hint transition hover:bg-surface-secondary hover:text-fg-muted"
               >
                 Skip

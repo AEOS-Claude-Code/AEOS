@@ -8,8 +8,8 @@ import { RequireAuth } from "@/lib/auth/AuthProvider";
 const STEPS = [
   { path: "/app/onboarding/company", label: "Company", num: 1 },
   { path: "/app/onboarding/competitors", label: "Competitors", num: 2 },
-  { path: "/app/onboarding/org-chart", label: "Org Chart", num: 3 },
-  { path: "/app/onboarding/integrations", label: "Integrations", num: 4 },
+  { path: "/app/onboarding/integrations", label: "Integrations", num: 3 },
+  { path: "/app/onboarding/org-chart", label: "Org Chart", num: 4 },
   { path: "/app/onboarding/complete", label: "Ready", num: 5 },
 ];
 
