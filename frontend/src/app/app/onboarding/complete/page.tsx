@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CheckCircle2, ArrowRight, Plug, LayoutDashboard, ExternalLink, Sparkles, Bot, Zap, Crown, Lock } from "lucide-react";
+import { CheckCircle2, ArrowLeft, ArrowRight, Plug, LayoutDashboard, ExternalLink, Sparkles, Bot, Zap, Crown, Lock } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { usePlanGate } from "@/lib/hooks/usePlanGate";
@@ -130,6 +130,13 @@ export default function OnboardingComplete() {
         {/* Actions */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
           className="mt-8 space-y-3">
+          <button
+            onClick={() => router.push("/app/onboarding/org-chart")}
+            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-fg-muted transition hover:bg-surface-secondary hover:text-fg"
+          >
+            <ArrowLeft size={14} />
+            Back
+          </button>
           <button onClick={() => router.push("/app/dashboard")}
             className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 py-4 text-base font-bold text-white shadow-xl shadow-blue-500/25 transition-all hover:shadow-2xl hover:shadow-blue-500/35 hover:scale-[1.01]">
             <LayoutDashboard size={18} />

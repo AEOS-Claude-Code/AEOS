@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   Plus,
   X,
+  ArrowLeft,
   ArrowRight,
   Loader2,
   Swords,
@@ -298,6 +299,14 @@ export default function OnboardingCompetitors() {
           {/* Action bar */}
           <div className="border-t border-border px-6 py-4">
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.push("/app/onboarding/company")}
+                className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-fg-muted transition hover:bg-surface-secondary hover:text-fg"
+              >
+                <ArrowLeft size={14} />
+                Back
+              </button>
               <button
                 type="submit"
                 disabled={loading}

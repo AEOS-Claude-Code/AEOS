@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowRight, Loader2, Plug, CheckCircle2, RefreshCw, Sparkles,
+  ArrowLeft, ArrowRight, Loader2, Plug, CheckCircle2, RefreshCw, Sparkles,
   Bot, X,
   Users, DollarSign, Megaphone, HeadphonesIcon, ClipboardList,
   BarChart3, ShoppingBag, Briefcase, Building2, Truck,
@@ -33,7 +33,6 @@ interface DepartmentDef {
   color: string;       // tailwind color prefix, e.g. "blue", "violet"
   desc: string;
   industries: string[];
-  universal?: boolean;
   tools: { name: string; icon: string; providerId: string; desc: string; industries?: string[] }[];
 }
 
@@ -62,10 +61,20 @@ const DIGITAL_PLATFORMS: PlatformDef[] = [
 
 const ALL_DEPARTMENTS: DepartmentDef[] = [
   {
+    id: "booking", name: "Reservations & Booking", color: "rose",
+    icon: <ShoppingBag size={18} />, desc: "Online bookings & reservation management",
+    industries: ["travel", "hospitality", "restaurant", "healthcare"],
+    tools: [
+      { name: "Booking.com", icon: "🏨", providerId: "booking_dept", desc: "OTA reservations", industries: ["travel", "hospitality"] },
+      { name: "Rezdy", icon: "🎟️", providerId: "rezdy", desc: "Tour & activity bookings", industries: ["travel"] },
+      { name: "Toast POS", icon: "🍞", providerId: "toast", desc: "Restaurant POS & orders", industries: ["restaurant"] },
+      { name: "Zocdoc", icon: "🏥", providerId: "zocdoc", desc: "Patient scheduling", industries: ["healthcare"] },
+    ],
+  },
+  {
     id: "sales_crm", name: "Sales & CRM", color: "orange",
     icon: <Briefcase size={18} />, desc: "Customer relationships & sales pipeline",
-    industries: ["saas", "real_estate", "finance", "telecom", "prof_svc", "consulting", "enterprise"],
-    universal: true,
+    industries: ["saas", "real_estate", "finance", "telecom", "prof_svc", "consulting", "enterprise", "travel", "retail", "ecommerce"],
     tools: [
       { name: "HubSpot", icon: "🟠", providerId: "hubspot", desc: "CRM & marketing automation" },
       { name: "Salesforce", icon: "☁️", providerId: "salesforce", desc: "Enterprise CRM & sales" },
@@ -74,36 +83,11 @@ const ALL_DEPARTMENTS: DepartmentDef[] = [
     ],
   },
   {
-    id: "hr", name: "HR & People", color: "pink",
-    icon: <Users size={18} />, desc: "Human resources & team management",
-    industries: ["saas", "enterprise", "telecom", "finance", "construction", "logistics", "government"],
-    universal: true,
-    tools: [
-      { name: "BambooHR", icon: "🎍", providerId: "bamboohr", desc: "HR management & payroll" },
-      { name: "Gusto", icon: "🧑‍💼", providerId: "gusto", desc: "Payroll, benefits & HR" },
-      { name: "Workday", icon: "📋", providerId: "workday", desc: "Enterprise HCM" },
-      { name: "Deel", icon: "🌍", providerId: "deel", desc: "Global payroll & compliance" },
-    ],
-  },
-  {
-    id: "finance", name: "Finance & Accounting", color: "emerald",
-    icon: <DollarSign size={18} />, desc: "Bookkeeping, invoicing & financial data",
-    industries: ["saas", "retail", "restaurant", "construction", "logistics", "prof_svc", "finance"],
-    universal: true,
-    tools: [
-      { name: "QuickBooks", icon: "📗", providerId: "quickbooks", desc: "Accounting & bookkeeping" },
-      { name: "Xero", icon: "💙", providerId: "xero", desc: "Cloud accounting" },
-      { name: "FreshBooks", icon: "📒", providerId: "freshbooks", desc: "Invoicing & expenses" },
-      { name: "Stripe", icon: "💳", providerId: "stripe", desc: "Payments & revenue" },
-    ],
-  },
-  {
     id: "marketing", name: "Marketing & Email", color: "amber",
     icon: <Megaphone size={18} />, desc: "Email campaigns & marketing automation",
-    industries: ["saas", "retail", "ecommerce", "travel", "real_estate", "restaurant", "education"],
-    universal: true,
+    industries: ["saas", "retail", "ecommerce", "travel", "real_estate", "restaurant", "education", "hospitality"],
     tools: [
-      { name: "Mailchimp", icon: "📧", providerId: "mailchimp", desc: "Email marketing" },
+      { name: "Mailchimp", icon: "📧", providerId: "mailchimp", desc: "Email marketing campaigns" },
       { name: "Brevo", icon: "📨", providerId: "brevo", desc: "Email & SMS marketing" },
       { name: "ActiveCampaign", icon: "⚡", providerId: "activecampaign", desc: "Marketing automation" },
       { name: "Constant Contact", icon: "✉️", providerId: "constant_contact", desc: "Email marketing" },
@@ -112,70 +96,75 @@ const ALL_DEPARTMENTS: DepartmentDef[] = [
   {
     id: "support", name: "Customer Support", color: "cyan",
     icon: <HeadphonesIcon size={18} />, desc: "Help desk, tickets & live chat",
-    industries: ["saas", "telecom", "retail", "ecommerce", "travel", "finance"],
-    universal: false,
+    industries: ["saas", "telecom", "retail", "ecommerce", "travel", "finance", "hospitality"],
     tools: [
-      { name: "Zendesk", icon: "🎫", providerId: "zendesk", desc: "Support tickets" },
+      { name: "Zendesk", icon: "🎫", providerId: "zendesk", desc: "Support tickets & knowledge base" },
       { name: "Intercom", icon: "💬", providerId: "intercom", desc: "Live chat & messaging" },
-      { name: "Freshdesk", icon: "🟩", providerId: "freshdesk", desc: "Support platform" },
+      { name: "Freshdesk", icon: "🟩", providerId: "freshdesk", desc: "Customer support platform" },
       { name: "Crisp", icon: "💭", providerId: "crisp", desc: "Live chat & chatbot" },
+    ],
+  },
+  {
+    id: "finance", name: "Finance & Accounting", color: "emerald",
+    icon: <DollarSign size={18} />, desc: "Bookkeeping, invoicing & financial data",
+    industries: ["saas", "retail", "restaurant", "construction", "logistics", "prof_svc", "finance", "travel", "ecommerce", "real_estate", "enterprise"],
+    tools: [
+      { name: "QuickBooks", icon: "📗", providerId: "quickbooks", desc: "Accounting & bookkeeping" },
+      { name: "Xero", icon: "💙", providerId: "xero", desc: "Cloud accounting" },
+      { name: "FreshBooks", icon: "📒", providerId: "freshbooks", desc: "Invoicing & expenses" },
+      { name: "Stripe", icon: "💳", providerId: "stripe", desc: "Payments & revenue", industries: ["saas", "ecommerce", "retail"] },
+    ],
+  },
+  {
+    id: "hr", name: "HR & People", color: "pink",
+    icon: <Users size={18} />, desc: "Human resources & team management",
+    industries: ["saas", "enterprise", "telecom", "finance", "construction", "logistics", "government", "travel", "retail", "hospitality"],
+    tools: [
+      { name: "BambooHR", icon: "🎍", providerId: "bamboohr", desc: "HR management & payroll" },
+      { name: "Gusto", icon: "🧑‍💼", providerId: "gusto", desc: "Payroll, benefits & HR" },
+      { name: "Workday", icon: "📋", providerId: "workday", desc: "Enterprise HCM", industries: ["enterprise", "finance", "telecom"] },
+      { name: "Deel", icon: "🌍", providerId: "deel", desc: "Global payroll & compliance" },
     ],
   },
   {
     id: "project", name: "Project Management", color: "indigo",
     icon: <ClipboardList size={18} />, desc: "Task tracking & team collaboration",
     industries: ["saas", "construction", "prof_svc", "consulting", "enterprise", "government"],
-    universal: true,
     tools: [
-      { name: "Asana", icon: "🔶", providerId: "asana", desc: "Work management" },
-      { name: "Monday.com", icon: "🟣", providerId: "monday", desc: "Work OS" },
-      { name: "Jira", icon: "🔷", providerId: "jira", desc: "Issue tracking" },
-      { name: "Trello", icon: "📌", providerId: "trello", desc: "Task boards" },
+      { name: "Asana", icon: "🔶", providerId: "asana", desc: "Work management & tasks" },
+      { name: "Monday.com", icon: "🟣", providerId: "monday", desc: "Work OS & project tracking" },
+      { name: "Jira", icon: "🔷", providerId: "jira", desc: "Issue tracking & agile", industries: ["saas", "enterprise"] },
+      { name: "Trello", icon: "📌", providerId: "trello", desc: "Boards & task management" },
     ],
   },
   {
-    id: "inventory", name: "Inventory & Supply", color: "lime",
+    id: "inventory", name: "Inventory & Supply Chain", color: "lime",
     icon: <Truck size={18} />, desc: "Stock management & supplier tracking",
     industries: ["retail", "restaurant", "ecommerce", "logistics", "construction"],
-    universal: false,
     tools: [
       { name: "TradeGecko", icon: "📦", providerId: "tradegecko", desc: "Inventory management" },
-      { name: "Cin7", icon: "🏭", providerId: "cin7", desc: "Order management" },
+      { name: "Cin7", icon: "🏭", providerId: "cin7", desc: "Inventory & order management" },
       { name: "Odoo", icon: "⚙️", providerId: "odoo", desc: "ERP & inventory" },
     ],
   },
   {
     id: "analytics", name: "Business Intelligence", color: "sky",
-    icon: <BarChart3 size={18} />, desc: "Dashboards, reporting & analytics",
+    icon: <BarChart3 size={18} />, desc: "Dashboards, reporting & data analytics",
     industries: ["saas", "finance", "enterprise", "telecom", "retail"],
-    universal: false,
     tools: [
       { name: "Tableau", icon: "📊", providerId: "tableau", desc: "Data visualization" },
-      { name: "Power BI", icon: "📈", providerId: "powerbi", desc: "BI dashboards" },
-      { name: "Looker", icon: "👁️", providerId: "looker", desc: "Data analytics" },
+      { name: "Power BI", icon: "📈", providerId: "powerbi", desc: "Microsoft BI dashboards" },
+      { name: "Looker", icon: "👁️", providerId: "looker", desc: "Google data analytics" },
     ],
   },
   {
     id: "property", name: "Property Management", color: "teal",
     icon: <Building2 size={18} />, desc: "Listings, tenants & property data",
     industries: ["real_estate"],
-    universal: false,
     tools: [
-      { name: "Zillow", icon: "🏠", providerId: "zillow", desc: "Property listings" },
+      { name: "Zillow", icon: "🏠", providerId: "zillow", desc: "Property listings & leads" },
       { name: "Buildium", icon: "🏢", providerId: "buildium", desc: "Property management" },
-      { name: "AppFolio", icon: "🔑", providerId: "appfolio", desc: "Property software" },
-    ],
-  },
-  {
-    id: "booking", name: "Reservations & Booking", color: "rose",
-    icon: <ShoppingBag size={18} />, desc: "Online bookings & reservations",
-    industries: ["travel", "hospitality", "restaurant", "healthcare"],
-    universal: false,
-    tools: [
-      { name: "Booking.com", icon: "🏨", providerId: "booking_dept", desc: "OTA reservations" },
-      { name: "Rezdy", icon: "🎟️", providerId: "rezdy", desc: "Tour bookings" },
-      { name: "Toast POS", icon: "🍞", providerId: "toast", desc: "Restaurant POS" },
-      { name: "Zocdoc", icon: "🏥", providerId: "zocdoc", desc: "Patient scheduling" },
+      { name: "AppFolio", icon: "🔑", providerId: "appfolio", desc: "Property management software" },
     ],
   },
 ];
@@ -219,7 +208,8 @@ function getRecommendedPlatforms(
 }
 
 function getRelevantDepartments(industry: string): DepartmentDef[] {
-  return ALL_DEPARTMENTS.filter(d => d.universal || d.industries.includes(industry));
+  // Only show departments whose industries list includes the detected industry
+  return ALL_DEPARTMENTS.filter(d => d.industries.includes(industry));
 }
 
 /* ── Component ────────────────────────────────────────────────── */
@@ -524,6 +514,13 @@ export default function OnboardingIntegrations() {
 
       {/* ── Action Bar ──────────────────────────────────────── */}
       <div className="flex items-center gap-3 pb-4">
+        <button
+          onClick={() => router.push("/app/onboarding/competitors")}
+          className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-fg-muted transition hover:bg-surface-secondary hover:text-fg"
+        >
+          <ArrowLeft size={14} />
+          Back
+        </button>
         <button onClick={handleContinue} disabled={loading}
           className="group flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 disabled:opacity-50">
           {loading ? <Loader2 size={16} className="animate-spin" /> : (

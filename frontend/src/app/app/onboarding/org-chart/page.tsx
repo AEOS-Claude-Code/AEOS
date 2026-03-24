@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, Bot, Users, Brain, Target, Megaphone, Wallet, Shield,
   Settings, Cpu, Package, Heart, CalendarDays, Sparkles, ChevronDown,
-  ArrowRight, Crown, Lock, Rocket,
+  ArrowLeft, ArrowRight, Crown, Lock, Rocket,
 } from "lucide-react";
 
 const DEPT_ICONS: Record<string,any> = {
@@ -311,8 +311,16 @@ export default function OnboardingOrgChart() {
       )}
 
       {/* === CONFIRM BUTTON === */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => router.push("/app/onboarding/integrations")}
+          className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-fg-muted transition hover:bg-surface-secondary hover:text-fg"
+        >
+          <ArrowLeft size={14} />
+          Back
+        </button>
       {isStarter ? (
-        <div className="space-y-3">
+        <div className="flex-1 space-y-3">
           <motion.button onClick={handleConfirm} disabled={saving}
             whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
@@ -342,6 +350,7 @@ export default function OnboardingOrgChart() {
           )}
         </motion.button>
       )}
+      </div>
 
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="AI Organization Chart" />
     </motion.div>
