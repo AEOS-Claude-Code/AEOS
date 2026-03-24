@@ -196,7 +196,7 @@ class OAuthState(Base):
     id = Column(String(36), primary_key=True, default=_uuid)
     state_token = Column(String(128), nullable=False, unique=True, index=True)
     workspace_id = Column(String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(36), default="")
     provider_id = Column(String(100), nullable=False)
     scopes = Column(Text, nullable=False)
     code_verifier = Column(String(128), default="")
