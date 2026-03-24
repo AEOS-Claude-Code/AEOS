@@ -333,6 +333,7 @@ export default function OnboardingCompany() {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
+  const [ogImageFailed, setOgImageFailed] = useState(false);
 
   useEffect(() => { fetchIntakeResults(); }, []); // eslint-disable-line
 
@@ -364,6 +365,7 @@ export default function OnboardingCompany() {
       }).filter(e => e.includes("@") && !e.includes("%"));
     }
     setIntake(data);
+    setOgImageFailed(false);
     setCompanyName(data.detected_company_name || workspace?.name || "");
     setIndustry(data.detected_industry || "other");
     if (data.detected_country) setCountry(data.detected_country);
@@ -648,13 +650,13 @@ export default function OnboardingCompany() {
               subtitle="Open Graph & meta info"
             />
             <div className="flex-1 p-5 space-y-3">
-              {intake.og_image ? (
+              {intake.og_image && !ogImageFailed ? (
                 <a href={intake.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-border hover:border-indigo-500/30 transition-colors group">
                   <img
                     src={intake.og_image}
                     alt="Website preview"
                     className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    onError={() => setOgImageFailed(true)}
                   />
                 </a>
               ) : (
