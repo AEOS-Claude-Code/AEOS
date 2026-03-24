@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str = ""
     FRONTEND_URL: str = "https://frontend-lac-six-41.vercel.app"
 
+    # ── OAuth (Meta / Facebook) ──
+    META_APP_ID: str = ""
+    META_APP_SECRET: str = ""
+    META_REDIRECT_URI: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
