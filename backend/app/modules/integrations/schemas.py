@@ -68,3 +68,15 @@ class DisconnectResponse(BaseModel):
     provider_id: str
     status: str
     message: str
+
+
+# ── OAuth ────────────────────────────────────────────────────────
+
+class OAuthAuthorizeResponse(BaseModel):
+    authorization_url: str
+    state: str
+
+class OAuthStatusResponse(BaseModel):
+    status: str  # "pending" | "connected" | "error" | "expired"
+    provider_id: str = ""
+    message: str = ""

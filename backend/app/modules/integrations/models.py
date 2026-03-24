@@ -186,3 +186,21 @@ class IntegrationCredential(Base):
 
     created_at = Column(DateTime, default=_now, nullable=False)
     updated_at = Column(DateTime, default=_now, onupdate=_now, nullable=False)
+
+
+# ── OAuth State (PKCE + CSRF) ────────────────────────────────────────
+
+class OAuthState(Base):
+    __tablename__ = "oauth_states"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    state_token = Column(String(128), nullable=False, unique=True, index=True)
+    workspace_id = Column(String(36), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    provider_id = Column(String(100), nullable=False)
+    scopes = Column(Text, nullable=False)
+    code_verifier = Column(String(128), default="")
+    redirect_after = Column(String(500), default="")
+    created_at = Column(DateTime, default=_now, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    consumed = Column(Boolean, default=False)

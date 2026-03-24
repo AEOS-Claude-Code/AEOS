@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = "aeos-storage"
     S3_REGION: str = "auto"
 
+    # ── OAuth (Google) ──
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = ""
+    FRONTEND_URL: str = "https://frontend-lac-six-41.vercel.app"
+
 
 @lru_cache
 def get_settings() -> Settings:

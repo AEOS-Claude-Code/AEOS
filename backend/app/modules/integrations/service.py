@@ -7,7 +7,7 @@ Manages connection lifecycle, provider dispatch, and credential storage.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -219,3 +219,47 @@ async def get_connected_count(db: AsyncSession, workspace_id: str) -> int:
         )
     )
     return result.scalar_one()
+
+
+async def get_valid_access_token(db: AsyncSession, integration_id: str) -> str:
+    """Return a valid access token, refreshing if expired."""
+    from .providers.google_provider import refresh_access_token, GOOGLE_PROVIDERS
+    from app.core.config import get_settings
+
+    result = await db.execute(
+        select(Integration).where(Integration.id == integration_id)
+    )
+    intg = result.scalar_one_or_none()
+    if not intg or intg.status != "connected":
+        raise ValueError("Integration not connected")
+
+    cred_result = await db.execute(
+        select(IntegrationCredential).where(IntegrationCredential.integration_id == integration_id)
+    )
+    cred = cred_result.scalar_one_or_none()
+    if not cred or not cred.access_token:
+        raise ValueError("No credentials found")
+
+    # Check if token is still valid (5 min buffer)
+    if cred.expires_at and cred.expires_at > datetime.utcnow() + timedelta(minutes=5):
+        return cred.access_token
+
+    # Token expired or expiring soon — refresh it
+    if intg.provider_id in GOOGLE_PROVIDERS and cred.refresh_token:
+        settings = get_settings()
+        try:
+            new_tokens = await refresh_access_token(
+                refresh_token=cred.refresh_token,
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+            )
+            cred.access_token = new_tokens["access_token"]
+            cred.expires_at = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 3600))
+            await db.flush()
+            logger.info("Refreshed access token for integration %s", integration_id)
+            return cred.access_token
+        except Exception as e:
+            logger.error("Token refresh failed for integration %s: %s", integration_id, str(e))
+            raise ValueError(f"Token refresh failed: {str(e)}")
+
+    return cred.access_token

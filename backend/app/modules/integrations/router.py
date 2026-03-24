@@ -1,14 +1,22 @@
 """
 AEOS – Integrations Hub: API Router.
 
-GET  /api/v1/integrations           → List all providers with connection status
-POST /api/v1/integrations/connect   → Connect a provider (simulated OAuth)
-POST /api/v1/integrations/disconnect → Disconnect a provider
+GET  /api/v1/integrations                    → List all providers with connection status
+GET  /api/v1/integrations/oauth/google/authorize → Get Google OAuth authorization URL
+GET  /api/v1/integrations/oauth/google/callback  → Google OAuth callback (redirect from Google)
+GET  /api/v1/integrations/oauth/status           → Check OAuth authorization status
+POST /api/v1/integrations/connect            → Connect a provider (simulated OAuth)
+POST /api/v1/integrations/disconnect         → Disconnect a provider
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import HTMLResponse
+from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -21,8 +29,12 @@ from .schemas import (
     ConnectResponse,
     DisconnectRequest,
     DisconnectResponse,
+    OAuthAuthorizeResponse,
+    OAuthStatusResponse,
 )
 from .service import list_integrations, connect_provider, disconnect_provider
+
+logger = logging.getLogger("aeos.integrations.router")
 
 router = APIRouter(prefix="/v1/integrations", tags=["Integrations"])
 
@@ -45,6 +57,252 @@ async def get_integrations(
         connected=connected,
         integrations=[IntegrationResponse(**i) for i in items],
     )
+
+
+# ── OAuth endpoints ──────────────────────────────────────────────────
+
+
+@router.get(
+    "/oauth/google/authorize",
+    response_model=OAuthAuthorizeResponse,
+    summary="Get Google OAuth authorization URL",
+)
+async def oauth_google_authorize(
+    provider_id: str = Query(..., description="google_analytics, google_search_console, or google_ads"),
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.core.config import get_settings
+    from .providers.google_provider import (
+        GOOGLE_PROVIDERS, generate_code_verifier, generate_code_challenge,
+        generate_state_token, build_authorization_url, ALL_SCOPES,
+    )
+    from .models import OAuthState
+
+    settings = get_settings()
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=501, detail="Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.")
+
+    if provider_id not in GOOGLE_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Invalid Google provider: {provider_id}")
+
+    # Generate PKCE
+    code_verifier = generate_code_verifier()
+    code_challenge = generate_code_challenge(code_verifier)
+    state_token = generate_state_token()
+
+    # Store OAuth state
+    oauth_state = OAuthState(
+        state_token=state_token,
+        workspace_id=workspace.id,
+        user_id=workspace.id,  # We'll use workspace.id as user context
+        provider_id=provider_id,
+        scopes=ALL_SCOPES,
+        code_verifier=code_verifier,
+        expires_at=datetime.utcnow() + timedelta(minutes=10),
+    )
+    db.add(oauth_state)
+    await db.flush()
+
+    # Build authorization URL
+    auth_url = build_authorization_url(
+        client_id=settings.GOOGLE_CLIENT_ID,
+        redirect_uri=settings.GOOGLE_REDIRECT_URI,
+        state=state_token,
+        code_challenge=code_challenge,
+    )
+
+    return OAuthAuthorizeResponse(authorization_url=auth_url, state=state_token)
+
+
+@router.get(
+    "/oauth/google/callback",
+    response_class=HTMLResponse,
+    summary="Google OAuth callback (redirect from Google)",
+)
+async def oauth_google_callback(
+    code: str = Query(None),
+    state: str = Query(None),
+    error: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.core.config import get_settings
+    from .providers.google_provider import (
+        GOOGLE_PROVIDERS, exchange_code_for_tokens, get_user_info,
+    )
+    from .models import OAuthState, Integration, IntegrationCredential
+    from app.core.events import EventType, publish_event
+
+    settings = get_settings()
+    frontend_url = settings.FRONTEND_URL
+
+    def _html_response(success: bool, message: str, provider_id: str = "") -> HTMLResponse:
+        status = "connected" if success else "error"
+        return HTMLResponse(f"""<!DOCTYPE html>
+<html><head><title>AEOS OAuth</title></head>
+<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8f9fa;">
+<div style="text-align:center;padding:40px;">
+<h2 style="color:{'#10b981' if success else '#ef4444'}">{'Connected!' if success else 'Connection Failed'}</h2>
+<p style="color:#6b7280">{message}</p>
+<p style="color:#9ca3af;font-size:14px">This window will close automatically...</p>
+</div>
+<script>
+if (window.opener) {{
+    window.opener.postMessage({{
+        type: "oauth_complete",
+        status: "{status}",
+        provider_id: "{provider_id}",
+        message: "{message}"
+    }}, "{frontend_url}");
+}}
+setTimeout(function() {{ window.close(); }}, 2000);
+</script>
+</body></html>""")
+
+    if error:
+        return _html_response(False, f"Google authorization denied: {error}")
+
+    if not code or not state:
+        return _html_response(False, "Missing authorization code or state")
+
+    # Validate state
+    result = await db.execute(
+        sa_select(OAuthState).where(
+            OAuthState.state_token == state,
+            OAuthState.consumed == False,
+        )
+    )
+    oauth_state = result.scalar_one_or_none()
+
+    if not oauth_state:
+        return _html_response(False, "Invalid or expired authorization state")
+
+    if oauth_state.expires_at < datetime.utcnow():
+        return _html_response(False, "Authorization state expired")
+
+    # Mark as consumed
+    oauth_state.consumed = True
+    await db.flush()
+
+    try:
+        # Exchange code for tokens
+        tokens = await exchange_code_for_tokens(
+            code=code,
+            code_verifier=oauth_state.code_verifier,
+            redirect_uri=settings.GOOGLE_REDIRECT_URI,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+        )
+
+        # Get user info for display
+        user_info = await get_user_info(tokens["access_token"])
+        account_name = user_info.get("email") or user_info.get("name") or "Google Account"
+        account_id = user_info.get("email") or ""
+
+        expires_at = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 3600))
+
+        # Connect ALL Google providers with shared tokens
+        for pid in GOOGLE_PROVIDERS:
+            # Upsert Integration
+            intg_result = await db.execute(
+                sa_select(Integration).where(
+                    Integration.workspace_id == oauth_state.workspace_id,
+                    Integration.provider_id == pid,
+                )
+            )
+            intg = intg_result.scalar_one_or_none()
+            if not intg:
+                intg = Integration(workspace_id=oauth_state.workspace_id, provider_id=pid)
+                db.add(intg)
+                await db.flush()
+
+            intg.status = "connected"
+            intg.display_name = account_name
+            intg.connected_at = datetime.utcnow()
+            intg.error_message = ""
+
+            # Upsert Credential
+            cred_result = await db.execute(
+                sa_select(IntegrationCredential).where(
+                    IntegrationCredential.integration_id == intg.id
+                )
+            )
+            cred = cred_result.scalar_one_or_none()
+            if not cred:
+                cred = IntegrationCredential(integration_id=intg.id)
+                db.add(cred)
+
+            cred.access_token = tokens["access_token"]
+            cred.refresh_token = tokens.get("refresh_token", "")
+            cred.token_type = tokens.get("token_type", "Bearer")
+            cred.expires_at = expires_at
+            cred.scope = tokens.get("scope", "")
+            cred.external_account_id = account_id
+            cred.external_account_name = account_name
+
+            await publish_event(
+                EventType.INTEGRATION_CONNECTED,
+                workspace_id=oauth_state.workspace_id,
+                engine="integrations",
+                payload={"provider_id": pid, "display_name": account_name},
+            )
+
+        await db.commit()
+        return _html_response(True, f"Connected as {account_name}", oauth_state.provider_id)
+
+    except Exception as e:
+        logger.exception("Google OAuth callback failed")
+        await db.rollback()
+        return _html_response(False, f"Token exchange failed: {str(e)[:200]}")
+
+
+@router.get(
+    "/oauth/status",
+    response_model=OAuthStatusResponse,
+    summary="Check OAuth authorization status",
+)
+async def oauth_status(
+    state: str = Query(...),
+    workspace: Workspace = Depends(get_current_workspace),
+    db: AsyncSession = Depends(get_db),
+):
+    from .models import OAuthState, Integration
+    from .providers.google_provider import GOOGLE_PROVIDERS
+
+    result = await db.execute(
+        sa_select(OAuthState).where(
+            OAuthState.state_token == state,
+            OAuthState.workspace_id == workspace.id,
+        )
+    )
+    oauth_state = result.scalar_one_or_none()
+
+    if not oauth_state:
+        return OAuthStatusResponse(status="expired", message="State not found")
+
+    if not oauth_state.consumed:
+        if oauth_state.expires_at < datetime.utcnow():
+            return OAuthStatusResponse(status="expired", provider_id=oauth_state.provider_id, message="Authorization expired")
+        return OAuthStatusResponse(status="pending", provider_id=oauth_state.provider_id)
+
+    # Check if the integration is actually connected
+    intg_result = await db.execute(
+        sa_select(Integration).where(
+            Integration.workspace_id == workspace.id,
+            Integration.provider_id == oauth_state.provider_id,
+        )
+    )
+    intg = intg_result.scalar_one_or_none()
+
+    if intg and intg.status == "connected":
+        return OAuthStatusResponse(status="connected", provider_id=oauth_state.provider_id, message=f"Connected as {intg.display_name}")
+    elif intg and intg.status == "error":
+        return OAuthStatusResponse(status="error", provider_id=oauth_state.provider_id, message=intg.error_message)
+    else:
+        return OAuthStatusResponse(status="pending", provider_id=oauth_state.provider_id)
+
+
+# ── Existing endpoints ───────────────────────────────────────────────
 
 
 @router.post(

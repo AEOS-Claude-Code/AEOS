@@ -258,9 +258,99 @@ export default function OnboardingIntegrations() {
   const recommended = useMemo(() => getRecommendedPlatforms(industry, techStack, socialLinks), [industry, techStack, socialLinks]);
   const departments = useMemo(() => getRelevantDepartments(industry), [industry]);
 
+  // Google providers use real OAuth popup flow
+  const GOOGLE_PROVIDERS_SET = new Set(["google_analytics", "google_search_console", "google_ads"]);
+
   async function handleConnect(providerId: string) {
     setConnectingId(providerId);
     setErrors(prev => { const n = { ...prev }; delete n[providerId]; return n; });
+
+    // ── Google OAuth popup flow ──
+    if (GOOGLE_PROVIDERS_SET.has(providerId)) {
+      try {
+        // Step 1: Get authorization URL
+        const res = await api.get(`/api/v1/integrations/oauth/google/authorize?provider_id=${providerId}`);
+        const { authorization_url, state } = res.data;
+
+        // Step 2: Open popup
+        const popup = window.open(
+          authorization_url,
+          "google_oauth",
+          "width=520,height=700,scrollbars=yes,resizable=yes,left=200,top=100"
+        );
+
+        // Step 3: Listen for postMessage from callback page
+        const handler = (event: MessageEvent) => {
+          if (event.data?.type !== "oauth_complete") return;
+          window.removeEventListener("message", handler);
+          clearInterval(pollInterval);
+
+          if (event.data.status === "connected") {
+            // All Google providers share the same token
+            setConnected(prev => {
+              const n = new Set(prev);
+              GOOGLE_PROVIDERS_SET.forEach(p => n.add(p));
+              return n;
+            });
+          } else {
+            setErrors(prev => ({ ...prev, [providerId]: event.data.message || "OAuth failed" }));
+          }
+          setConnectingId(null);
+        };
+        window.addEventListener("message", handler);
+
+        // Step 4: Polling fallback (in case postMessage is blocked)
+        const pollInterval = setInterval(async () => {
+          try {
+            // Check if popup was closed without completing
+            if (popup && popup.closed) {
+              clearInterval(pollInterval);
+              window.removeEventListener("message", handler);
+              setConnectingId(null);
+              return;
+            }
+            const statusRes = await api.get(`/api/v1/integrations/oauth/status?state=${state}`);
+            if (statusRes.data.status === "connected") {
+              clearInterval(pollInterval);
+              window.removeEventListener("message", handler);
+              setConnected(prev => {
+                const n = new Set(prev);
+                GOOGLE_PROVIDERS_SET.forEach(p => n.add(p));
+                return n;
+              });
+              setConnectingId(null);
+              if (popup && !popup.closed) popup.close();
+            }
+          } catch {}
+        }, 2500);
+
+        // Timeout after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          window.removeEventListener("message", handler);
+          if (connectingId) setConnectingId(null);
+        }, 300000);
+
+        return;
+      } catch (err: any) {
+        // If OAuth not configured (501), fall back to simulation
+        if (err?.response?.status === 501) {
+          try {
+            await api.post("/api/v1/integrations/connect", { provider_id: providerId, simulated_account_name: "" });
+            setConnected(prev => new Set(prev).add(providerId));
+          } catch (simErr: any) {
+            setErrors(prev => ({ ...prev, [providerId]: simErr?.response?.data?.detail || "Connection failed" }));
+          }
+          setConnectingId(null);
+          return;
+        }
+        setErrors(prev => ({ ...prev, [providerId]: err?.response?.data?.detail || "OAuth failed" }));
+        setConnectingId(null);
+        return;
+      }
+    }
+
+    // ── Simulated flow for non-Google providers ──
     try {
       await api.post("/api/v1/integrations/connect", { provider_id: providerId, simulated_account_name: "" });
       setConnected(prev => new Set(prev).add(providerId));
