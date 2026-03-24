@@ -105,10 +105,16 @@ async def lifespan(app: FastAPI):
                     "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS detected_team JSON DEFAULT '{}'::json",
                     "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS detected_services JSON DEFAULT '[]'::json",
                     "ALTER TABLE workspace_profiles ADD COLUMN IF NOT EXISTS detected_seo_health JSON DEFAULT '{}'::json",
+                    # Fix oauth_states table: drop old version with FK constraint and let create_all rebuild it
+                    "DROP TABLE IF EXISTS oauth_states CASCADE",
                 ]
                 for sql in migrations:
                     await conn.execute(sa_text(sql))
             logger.info("Schema migrations applied")
+            # Re-run create_all to pick up any tables dropped by migrations
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Post-migration table check complete")
         except Exception as mig_exc:
             logger.warning("Migration skipped: %s", mig_exc)
     except (TimeoutError, Exception) as exc:
