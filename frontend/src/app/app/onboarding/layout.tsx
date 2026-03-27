@@ -143,8 +143,8 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* ── Left branding panel (hidden on mobile) ───────────── */}
-      <div className="relative hidden w-[420px] shrink-0 overflow-hidden bg-gradient-to-br from-slate-900 via-aeos-950 to-slate-900 xl:block">
+      {/* ── Left branding panel (hidden on mobile, sticky on scroll) ── */}
+      <div className="sticky top-0 hidden h-screen w-[420px] shrink-0 overflow-hidden bg-gradient-to-br from-slate-900 via-aeos-950 to-slate-900 xl:block">
         {/* Glow effects */}
         <div className="absolute left-1/2 top-1/4 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-aeos-500/10 blur-[100px]" />
         <div className="absolute bottom-1/4 left-1/3 h-[200px] w-[200px] rounded-full bg-violet-500/10 blur-[80px]" />
