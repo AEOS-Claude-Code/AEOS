@@ -39,3 +39,6 @@ class IntakeFromUrlResponse(BaseModel):
     detected_team: dict = {}
     detected_services: list[str] = []
     detected_seo_health: dict = {}
+    detected_description: str = ""
+    detected_address: str = ""
+    is_bot_blocked: bool = False

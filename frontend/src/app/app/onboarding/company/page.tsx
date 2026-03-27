@@ -102,6 +102,9 @@ interface IntakeResult {
   detected_services: string[];
   detected_description: string;
   detected_address: string;
+  industry_signals: string[];
+  industry_scores: Record<string, number>;
+  is_bot_blocked: boolean;
   detected_seo_health: {
     has_ssl: { status: boolean; detail: string };
     has_sitemap: { status: boolean; detail: string };
@@ -114,6 +117,37 @@ interface IntakeResult {
     has_viewport: { status: boolean; detail: string };
     score: number;
   };
+}
+
+/* ── Clipboard helper ──────────────────────────────────────────────── */
+function CopyButton({ text, className }: { text: string; className?: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      className={`shrink-0 rounded-md p-1 text-fg-hint/40 hover:text-fg-muted hover:bg-surface-secondary transition ${className || ""}`}
+      title="Copy to clipboard"
+    >
+      {copied ? <Check size={12} className="text-emerald-500" /> : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/* ── Confidence badge helper ───────────────────────────────────────── */
+function ConfBadge({ value, label }: { value: number; label?: string }) {
+  const pct = Math.round(value * 100);
+  const color = pct >= 70 ? "emerald" : pct >= 40 ? "amber" : "red";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ring-1 bg-${color}-500/10 text-${color}-500 ring-${color}-500/20`}>
+      <span className={`h-1.5 w-1.5 rounded-full bg-${color}-500`} />
+      {label || `${pct}%`}
+    </span>
+  );
 }
 
 /* ── Social media brand SVG icons ──────────────────────────────────── */
@@ -456,7 +490,10 @@ export default function OnboardingCompany() {
                   </motion.span>
                 </div>
                 <p className="mt-1 text-sm text-fg-hint">
-                  We scanned your website and built your company profile. Review the details below, then continue.
+                  {intake?.is_bot_blocked
+                    ? "Some data may be limited due to website protection. We enriched results from social profiles and search."
+                    : "We scanned your website and built your company profile. Review the details below, then continue."
+                  }
                 </p>
               </div>
               <div className="hidden lg:flex items-center gap-2">
@@ -523,6 +560,13 @@ export default function OnboardingCompany() {
                   <option value="">Select</option>
                   {INDUSTRIES.map(i => <option key={i} value={i}>{INDUSTRY_LABELS[i] || i}</option>)}
                 </select>
+                {(intake?.industry_signals?.length ?? 0) > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {intake!.industry_signals!.slice(0, 5).map((s: string) => (
+                      <span key={s} className="rounded-md bg-blue-500/8 px-1.5 py-0.5 text-[9px] font-medium text-blue-500/70">{s}</span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -633,9 +677,16 @@ export default function OnboardingCompany() {
                       {found ? (
                         <p className="break-all text-xs font-bold text-fg leading-snug">{value || "Found"}</p>
                       ) : (
-                        <p className="text-xs text-fg-hint/60">Not detected</p>
+                        <p className="text-xs text-fg-hint/60">
+                          {label === "WhatsApp" ? "Add WhatsApp Business for messaging" :
+                           label === "Contact Page" ? "No dedicated contact page found" :
+                           `No ${label.toLowerCase()} detected`}
+                        </p>
                       )}
                     </div>
+                    {found && value && !["Connected", "Detected", "Found"].includes(value) && (
+                      <CopyButton text={value} />
+                    )}
                     {found && (
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 + i * 0.08 }}>
                         <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
@@ -694,9 +745,9 @@ export default function OnboardingCompany() {
                 <p className="text-sm font-bold text-fg leading-snug line-clamp-2">{intake.page_title}</p>
               )}
 
-              {/* Meta description */}
-              {intake.meta_description && (
-                <p className="text-xs text-fg-hint leading-relaxed line-clamp-2">{intake.meta_description}</p>
+              {/* Meta description or detected description */}
+              {(intake.meta_description || intake.detected_description) && (
+                <p className="text-xs text-fg-hint leading-relaxed line-clamp-3">{intake.meta_description || intake.detected_description}</p>
               )}
 
               {/* Languages */}
@@ -772,7 +823,7 @@ export default function OnboardingCompany() {
                             <CheckCircle2 size={13} className="text-emerald-500" />
                           </motion.div>
                         ) : (
-                          <XCircle size={12} className="text-fg-hint/20" />
+                          <span className="text-[9px] text-fg-hint/30 font-medium">Add</span>
                         )}
                       </Wrapper>
                     </motion.div>
@@ -1145,6 +1196,13 @@ export default function OnboardingCompany() {
                       {city && <p className="relative text-xs text-fg-hint">{country}</p>}
                     </div>
                   </div>
+                  {intake?.detected_address && (
+                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-emerald-500/[0.04] px-3 py-2">
+                      <MapPin size={12} className="text-emerald-500 shrink-0 mt-0.5" />
+                      <p className="text-xs text-fg-muted leading-relaxed">{intake.detected_address}</p>
+                      <CopyButton text={intake.detected_address} />
+                    </div>
+                  )}
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((city ? city + ", " : "") + country)}`}
                     target="_blank"
@@ -1160,8 +1218,8 @@ export default function OnboardingCompany() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 mb-3">
                     <MapPin size={24} className="text-emerald-500/50" />
                   </div>
-                  <p className="text-xs font-medium text-fg-hint">Not detected</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Set your country above</p>
+                  <p className="text-xs font-medium text-fg-hint">Location not detected</p>
+                  <p className="text-2xs text-fg-hint/60 mt-1">Select your country and city in Company Identity</p>
                 </div>
               )}
             </div>

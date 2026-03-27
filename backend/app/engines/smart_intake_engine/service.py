@@ -2424,6 +2424,9 @@ async def intake_from_url(url: str) -> dict:
         "detected_team": team_data,
         "detected_services": detected_services,
         "detected_seo_health": seo_health,
+        "detected_description": profile.get("description", ""),
+        "detected_address": "",
+        "is_bot_blocked": len(html.strip()) < 2000,
     }
 
     # ── 9. AI Deep Extraction — fill gaps with Claude ──
