@@ -2460,6 +2460,16 @@ async def intake_from_url(url: str) -> dict:
                 len(result.get("detected_services", [])),
                 sum(1 for v in result.get("detected_social_links", {}).values() if v),
             )
+        # Merge LinkedIn employee count scraped during bot-blocked fallback
+        li_emp = result.pop("_linkedin_employee_count", None)
+        if li_emp and not result.get("detected_employee_count"):
+            try:
+                digits = re.sub(r"[^\d]", "", str(li_emp).split("-")[0])
+                if digits:
+                    result["detected_employee_count"] = int(digits)
+                    logger.info("Merged LinkedIn employee count (bot-blocked path): %s", li_emp)
+            except Exception:
+                pass
     except Exception as e:
         logger.warning("AI deep extract timed out or failed: %s", str(e)[:100])
 
@@ -2913,6 +2923,18 @@ def _merge_social_metadata(result: dict, social_data: list[dict]) -> dict:
             result["detected_address"] = location
             logger.info("Social enriched address from %s: %s", platform, location)
 
+        # Backfill employee count from LinkedIn
+        if platform == "linkedin":
+            emp = data.get("employee_count")
+            if emp and not result.get("detected_employee_count"):
+                try:
+                    digits = re.sub(r"[^\d]", "", str(emp).split("-")[0])
+                    if digits:
+                        result["detected_employee_count"] = int(digits)
+                        logger.info("Social enriched employee_count from LinkedIn: %s", emp)
+                except Exception:
+                    pass
+
     return result
 
 
@@ -3335,6 +3357,33 @@ async def _ai_deep_extract(
                 logger.info("Added search fallback data: %d chars", len(search_text))
         except Exception as e:
             logger.info("Search fallback failed: %s", str(e)[:100])
+
+        # Also scrape LinkedIn directly for bot-blocked sites (runs before social enrichment step)
+        socials = existing_data.get("detected_social_links", {})
+        linkedin_urls = socials.get("linkedin", [])
+        linkedin_url = linkedin_urls[0] if linkedin_urls else ""
+        if linkedin_url:
+            try:
+                linkedin_data = await asyncio.wait_for(
+                    _scrape_single_social("linkedin", linkedin_url),
+                    timeout=10,
+                )
+                if linkedin_data:
+                    li_parts = []
+                    if linkedin_data.get("og_description"):
+                        li_parts.append(f"Description: {linkedin_data['og_description']}")
+                    if linkedin_data.get("employee_count"):
+                        li_parts.append(f"Employees: {linkedin_data['employee_count']}")
+                        # Immediately store in existing_data so it's available to caller
+                        existing_data["_linkedin_employee_count"] = linkedin_data["employee_count"]
+                    if linkedin_data.get("og_title"):
+                        li_parts.append(f"Company: {linkedin_data['og_title']}")
+                    if li_parts:
+                        sections.append(f"=== LINKEDIN PROFILE ===\n" + "\n".join(li_parts))
+                        combined_text = "\n\n".join(sections)
+                        logger.info("Added LinkedIn fallback data for bot-blocked site: %d fields", len(li_parts))
+            except Exception as e:
+                logger.debug("LinkedIn fallback scrape failed: %s", str(e)[:80])
 
     # Truncate to fit in context window (keep it efficient)
     if len(combined_text) > 25000:

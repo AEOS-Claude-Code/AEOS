@@ -955,7 +955,40 @@ export default function OnboardingCompany() {
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_services?.length > 0 ? (
+              {(intake.service_descriptions?.length ?? 0) > 0 ? (
+                <div className="space-y-2">
+                  {intake.service_descriptions!.slice(0, 5).map((svc, i) => (
+                    <motion.div
+                      key={svc.name + i}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 + i * 0.05 }}
+                      className="rounded-lg border border-border bg-surface-secondary/30 px-3 py-2.5 hover:border-teal-500/25 hover:bg-teal-500/[0.02] transition-all"
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-teal-500/10 mt-0.5">
+                          <Briefcase size={10} className="text-teal-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-fg leading-snug">{svc.name}</p>
+                          {svc.description && (
+                            <p className="text-2xs text-fg-hint leading-relaxed mt-0.5 line-clamp-2">{svc.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                  {(intake.detected_services?.length ?? 0) > (intake.service_descriptions?.length ?? 0) && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {intake.detected_services!.slice(intake.service_descriptions!.length).map((svc) => (
+                        <span key={svc} className="rounded-md bg-teal-500/8 px-2 py-0.5 text-[10px] font-medium text-teal-700 ring-1 ring-teal-500/15">
+                          {svc}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : intake.detected_services?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {intake.detected_services.map((svc, i) => (
                     <motion.span
@@ -1253,39 +1286,110 @@ export default function OnboardingCompany() {
       )}
 
       {/* ══════════ Tech Stack (full width) ══════════ */}
-      {intake && intake.detected_tech_stack.length > 0 && (
-        <Card delay={0.3}>
-          <div className="flex items-center gap-3.5 px-5 py-4">
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 3 }}
-              className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25"
-            >
-              <Code2 size={18} className="text-white" />
-            </motion.div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-fg">Technology Stack</h3>
-            </div>
-            <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-2xs font-bold text-cyan-500 ring-1 ring-cyan-500/20">
-              {intake.detected_tech_stack.length} detected
-            </span>
-            <div className="flex flex-wrap gap-2 ml-2">
-              {intake.detected_tech_stack.map((tech, i) => (
-                <motion.span
-                  key={tech}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.35 + i * 0.05 }}
-                  whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 ring-1 ring-cyan-500/20 hover:ring-cyan-500/40 transition-all cursor-default"
+      {intake && intake.detected_tech_stack.length > 0 && (() => {
+        const TECH_CATEGORIES: Record<string, { label: string; color: string; bg: string; ring: string; techs: string[] }> = {
+          frontend: { label: "Frontend", color: "text-blue-600", bg: "bg-blue-500/8", ring: "ring-blue-500/20",
+            techs: ["React","Vue","Angular","Next.js","Nuxt","Svelte","jQuery","Bootstrap","Tailwind","Ant Design","Material UI","TypeScript","Vite","Webpack"] },
+          cms: { label: "CMS / Platform", color: "text-orange-600", bg: "bg-orange-500/8", ring: "ring-orange-500/20",
+            techs: ["WordPress","Shopify","Webflow","Wix","Squarespace","Drupal","Joomla","Magento","OpenCart","PrestaShop","WooCommerce","Ghost"] },
+          analytics: { label: "Analytics", color: "text-purple-600", bg: "bg-purple-500/8", ring: "ring-purple-500/20",
+            techs: ["Google Analytics","Google Tag Manager","Facebook Pixel","Meta Pixel","Mixpanel","Amplitude","Segment","Heap","PostHog","Hotjar","Clarity","Matomo","Plausible"] },
+          marketing: { label: "Marketing", color: "text-pink-600", bg: "bg-pink-500/8", ring: "ring-pink-500/20",
+            techs: ["HubSpot","Mailchimp","Klaviyo","SendGrid","ActiveCampaign","Brevo","ConvertKit","Drift","Intercom","Crisp","Tawk.to","LiveChat","Freshdesk","Zendesk"] },
+          payment: { label: "Payments", color: "text-emerald-600", bg: "bg-emerald-500/8", ring: "ring-emerald-500/20",
+            techs: ["Stripe","PayPal","Square","Checkout.com","Tap","Moyasar","Tamara","Tabby","Myfatoorah","HyperPay"] },
+          infra: { label: "Infrastructure", color: "text-cyan-600", bg: "bg-cyan-500/8", ring: "ring-cyan-500/20",
+            techs: ["Cloudflare","AWS","Azure","GCP","Vercel","Netlify","Docker","Nginx","Apache","Let's Encrypt","Fastly","Akamai"] },
+          backend: { label: "Backend / DB", color: "text-slate-600", bg: "bg-slate-500/8", ring: "ring-slate-500/20",
+            techs: ["Node.js","Django","Laravel","Rails","ASP.NET","Spring","Firebase","Supabase","MongoDB","PostgreSQL","MySQL","Redis","Elasticsearch"] },
+        };
+        const grouped: Record<string, string[]> = {};
+        const uncategorized: string[] = [];
+        for (const tech of intake.detected_tech_stack) {
+          let placed = false;
+          for (const [cat, cfg] of Object.entries(TECH_CATEGORIES)) {
+            if (cfg.techs.some(t => t.toLowerCase() === tech.toLowerCase())) {
+              if (!grouped[cat]) grouped[cat] = [];
+              grouped[cat].push(tech);
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) uncategorized.push(tech);
+        }
+        const hasGroups = Object.keys(grouped).length > 0;
+        return (
+          <Card delay={0.3}>
+            <div className="px-5 py-4">
+              <div className="flex items-center gap-3.5 mb-4">
+                <motion.div
+                  whileHover={{ scale: 1.05, rotate: 3 }}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25"
                 >
-                  <Code2 size={11} />
-                  {tech}
-                </motion.span>
-              ))}
+                  <Code2 size={18} className="text-white" />
+                </motion.div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-fg">Technology Stack</h3>
+                  <p className="text-2xs text-fg-hint">{hasGroups ? `Grouped by category` : `Detected technologies`}</p>
+                </div>
+                <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-2xs font-bold text-cyan-500 ring-1 ring-cyan-500/20">
+                  {intake.detected_tech_stack.length} detected
+                </span>
+              </div>
+              {hasGroups ? (
+                <div className="space-y-3">
+                  {Object.entries(grouped).map(([cat, techs]) => {
+                    const cfg = TECH_CATEGORIES[cat];
+                    return (
+                      <div key={cat} className="flex items-start gap-3">
+                        <span className={`mt-0.5 shrink-0 rounded-md ${cfg.bg} px-2 py-0.5 text-[9px] font-bold ${cfg.color} ring-1 ${cfg.ring} w-24 text-center`}>
+                          {cfg.label}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {techs.map((tech, i) => (
+                            <motion.span key={tech} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.35 + i * 0.04 }}
+                              whileHover={{ scale: 1.06, transition: { duration: 0.12 } }}
+                              className={`inline-flex items-center rounded-md ${cfg.bg} px-2 py-1 text-xs font-semibold ${cfg.color} ring-1 ${cfg.ring} cursor-default transition-all`}>
+                              {tech}
+                            </motion.span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {uncategorized.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 shrink-0 rounded-md bg-slate-500/8 px-2 py-0.5 text-[9px] font-bold text-slate-500 ring-1 ring-slate-500/20 w-24 text-center">Other</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {uncategorized.map((tech, i) => (
+                          <motion.span key={tech} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.35 + i * 0.04 }}
+                            className="inline-flex items-center rounded-md bg-slate-500/8 px-2 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-500/20 cursor-default">
+                            {tech}
+                          </motion.span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {intake.detected_tech_stack.map((tech, i) => (
+                    <motion.span key={tech} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.35 + i * 0.05 }}
+                      whileHover={{ scale: 1.08, transition: { duration: 0.15 } }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500/10 to-blue-500/10 px-3 py-1.5 text-xs font-bold text-cyan-600 ring-1 ring-cyan-500/20 hover:ring-cyan-500/40 transition-all cursor-default">
+                      <Code2 size={11} />
+                      {tech}
+                    </motion.span>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        </Card>
-      )}
+          </Card>
+        );
+      })()}
 
       {/* ══════════ CONTINUE BUTTON ══════════ */}
       <motion.div
