@@ -101,6 +101,8 @@ async def list_workspaces(db: AsyncSession, limit: int = 50, offset: int = 0) ->
         plan_tier = "starter"
         tokens_used = 0
         tokens_included = 0
+        sub = None
+        wallet = None
         try:
             from app.modules.billing.models import Subscription, PLANS as ALL_PLANS, TokenWallet
             sub = (await db.execute(
