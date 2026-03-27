@@ -3068,9 +3068,46 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
                 intake_result["detected_country"] = ai_country
                 logger.info("AI country override (misdetection fix): %s → %s", current_country, ai_country)
 
-    # City
+    # City — validate AI city against known country to avoid travel destinations
     if not intake_result.get("detected_city") and ai_data.get("city"):
-        intake_result["detected_city"] = ai_data["city"]
+        ai_city = ai_data["city"].strip()
+        detected_country = intake_result.get("detected_country", "").lower()
+
+        # Cities that are common travel destinations — NOT valid HQ cities for MENA companies
+        _travel_destination_cities = {
+            "rome", "paris", "london", "barcelona", "istanbul", "athens", "tokyo",
+            "new york", "los angeles", "bangkok", "bali", "maldives", "prague",
+            "vienna", "berlin", "amsterdam", "venice", "florence", "milan",
+            "zurich", "geneva", "singapore", "hong kong", "sydney", "melbourne",
+        }
+
+        # Valid cities per country (major ones)
+        _country_valid_cities = {
+            "jordan": {"amman", "irbid", "zarqa", "aqaba", "madaba", "salt", "jerash",
+                       "mafraq", "karak", "ajloun", "petra", "tafilah", "maan", "wadi rum"},
+            "saudi arabia": {"riyadh", "jeddah", "dammam", "mecca", "medina", "tabuk",
+                             "abha", "khobar", "dhahran", "jubail", "yanbu", "taif", "hail"},
+            "uae": {"dubai", "abu dhabi", "sharjah", "ajman", "ras al khaimah",
+                    "fujairah", "umm al quwain", "al ain"},
+            "qatar": {"doha", "al wakrah", "al khor", "lusail"},
+            "kuwait": {"kuwait city", "hawalli", "salmiya", "farwaniya"},
+            "bahrain": {"manama", "muharraq", "riffa"},
+            "oman": {"muscat", "salalah", "sohar", "nizwa"},
+            "egypt": {"cairo", "alexandria", "giza", "luxor", "aswan", "hurghada", "sharm el sheikh"},
+        }
+
+        city_lower = ai_city.lower()
+        is_travel_destination = city_lower in _travel_destination_cities
+        valid_cities = _country_valid_cities.get(detected_country, set())
+
+        if is_travel_destination and detected_country and valid_cities and city_lower not in valid_cities:
+            # This is a travel destination, not the company's actual city — skip it
+            logger.info("Rejected AI city '%s' — travel destination, not valid for %s", ai_city, detected_country)
+        elif valid_cities and city_lower not in valid_cities and detected_country:
+            # City doesn't match the country — likely a destination from the website content
+            logger.info("Rejected AI city '%s' — not a known city in %s", ai_city, detected_country)
+        else:
+            intake_result["detected_city"] = ai_city
 
     # Phone numbers — apply same validation as regex-extracted phones
     if not intake_result.get("detected_phone_numbers") and ai_data.get("phone_numbers"):
