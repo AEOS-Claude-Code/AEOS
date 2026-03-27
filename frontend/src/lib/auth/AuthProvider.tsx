@@ -254,7 +254,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-aeos-200 border-t-aeos-600" />
-          <span className="text-sm text-fg-muted">Loading\u2026</span>
+          <span className="text-sm text-fg-muted">Loading…</span>
         </div>
       </div>
     );

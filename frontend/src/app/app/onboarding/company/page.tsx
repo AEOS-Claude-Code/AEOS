@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import api from "@/lib/api";
@@ -381,51 +381,14 @@ export default function OnboardingCompany() {
   const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
   const [ogImageFailed, setOgImageFailed] = useState(false);
-  const autoScrolled = useRef(false);
 
   useEffect(() => { fetchIntakeResults(); }, []); // eslint-disable-line
 
-  /* ── Cinematic auto-scroll: reveal all detected cards after scan ── */
+  /* ── Save context for competitors page ── */
   useEffect(() => {
-    if (!loading && intake && !autoScrolled.current) {
-      autoScrolled.current = true;
-      // Save industry to sessionStorage so competitors page can read it
-      if (intake.detected_industry) {
-        sessionStorage.setItem("aeos_detected_industry", intake.detected_industry);
-        sessionStorage.setItem("aeos_detected_company", intake.detected_company_name || "");
-      }
-      // Wait for all card mount animations to start, then do a slow cinematic scroll
-      const t = setTimeout(() => {
-        // Determine the real scroll container:
-        // 1. <main> with overflow-y-auto (when it has a constrained height)
-        // 2. fallback to the document root (window scroll)
-        const mainEl = document.querySelector("main") as HTMLElement | null;
-        const scrollEl: HTMLElement | null =
-          mainEl && mainEl.scrollHeight > mainEl.clientHeight + 10
-            ? mainEl
-            : (document.documentElement as HTMLElement);
-
-        const dist = scrollEl.scrollHeight - scrollEl.clientHeight;
-        if (dist < 60) return;
-
-        const DURATION = 5500; // 5.5 s cinematic reveal
-        const startTime = performance.now();
-
-        function frame(now: number) {
-          const p = Math.min((now - startTime) / DURATION, 1);
-          // cubic ease-in-out
-          const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-          const newTop = Math.round(e * dist);
-          if (scrollEl === document.documentElement) {
-            window.scrollTo(0, newTop);
-          } else {
-            scrollEl.scrollTop = newTop;
-          }
-          if (p < 1) requestAnimationFrame(frame);
-        }
-        requestAnimationFrame(frame);
-      }, 900);
-      return () => clearTimeout(t);
+    if (!loading && intake) {
+      sessionStorage.setItem("aeos_detected_industry", intake.detected_industry || "");
+      sessionStorage.setItem("aeos_detected_company", intake.detected_company_name || "");
     }
   }, [loading, intake]);
 
@@ -1127,21 +1090,37 @@ export default function OnboardingCompany() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3">
-                    <Users size={24} className="text-violet-500/50" />
+                <div className="flex flex-col gap-3">
+                  {/* Info banner */}
+                  <div className="flex items-start gap-2.5 rounded-xl bg-violet-500/[0.06] px-3 py-3 ring-1 ring-violet-500/15">
+                    <Sparkles size={13} className="mt-0.5 shrink-0 text-violet-400" />
+                    <div>
+                      <p className="text-xs font-semibold text-fg">No team found on website</p>
+                      <p className="mt-0.5 text-2xs leading-relaxed text-fg-hint">
+                        Team pages are often hidden or behind login. You can search LinkedIn or let AEOS build your AI org chart in the next step.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs font-medium text-fg-hint">Not detected on website</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1 mb-3">Try searching on social platforms</p>
-                  <div className="flex flex-col gap-1.5 w-full">
-                    {intake.detected_team?.linkedin_search_url && (
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-1.5">
+                    {intake.detected_team?.linkedin_search_url ? (
                       <a
                         href={intake.detected_team.linkedin_search_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 rounded-lg border border-[#0A66C2]/20 bg-[#0A66C2]/5 px-3 py-2 text-2xs font-semibold text-[#0A66C2] hover:bg-[#0A66C2]/10 transition-all"
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[#0A66C2]/25 bg-[#0A66C2]/6 px-3 py-2.5 text-2xs font-semibold text-[#0A66C2] hover:bg-[#0A66C2]/12 transition-all"
                       >
-                        <LinkedInIcon className="h-3.5 w-3.5" /> Search on LinkedIn
+                        <LinkedInIcon className="h-3.5 w-3.5" /> Search team on LinkedIn
+                      </a>
+                    ) : (
+                      <a
+                        href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(companyName)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 rounded-lg border border-[#0A66C2]/25 bg-[#0A66C2]/6 px-3 py-2.5 text-2xs font-semibold text-[#0A66C2] hover:bg-[#0A66C2]/12 transition-all"
+                      >
+                        <LinkedInIcon className="h-3.5 w-3.5" /> Search team on LinkedIn
                       </a>
                     )}
                     {intake.detected_team?.team_page_url && (
@@ -1154,6 +1133,14 @@ export default function OnboardingCompany() {
                         <ExternalLink size={10} /> View team page
                       </a>
                     )}
+                  </div>
+
+                  {/* AEOS Org Chart hint */}
+                  <div className="flex items-center gap-2 rounded-lg bg-surface-secondary px-3 py-2.5">
+                    <Bot size={13} className="shrink-0 text-aeos-400" />
+                    <p className="text-2xs text-fg-hint leading-snug">
+                      <span className="font-semibold text-aeos-400">Org Chart step</span> will auto-assign AI agents to every department role
+                    </p>
                   </div>
                 </div>
               )}
