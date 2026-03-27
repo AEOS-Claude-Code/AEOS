@@ -1,20 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus,
-  X,
-  ArrowLeft,
-  ArrowRight,
-  Loader2,
-  Swords,
-  Sparkles,
-  Check,
-  Globe,
-  Search,
-  Radar,
+  Plus, X, ArrowLeft, ArrowRight, Loader2, Swords,
+  Sparkles, Check, Globe, Search,
+  Building2, BarChart3, Target, Shield,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -24,8 +16,182 @@ interface DiscoveredCompetitor {
   description: string;
 }
 
+/* ── Scan phase definitions ─────────────────────────────────────── */
+const SCAN_PHASES = [
+  { icon: Building2,  label: "Reading company profile",      color: "from-violet-500 to-purple-500",  duration: 1200 },
+  { icon: Search,     label: "Identifying industry & market", color: "from-blue-500 to-cyan-500",      duration: 1400 },
+  { icon: Globe,      label: "Scanning regional market",      color: "from-cyan-500 to-teal-500",      duration: 1600 },
+  { icon: BarChart3,  label: "Analyzing competitor websites", color: "from-orange-500 to-amber-500",   duration: 1400 },
+  { icon: Target,     label: "Ranking by relevance",          color: "from-rose-500 to-pink-500",      duration: 1000 },
+  { icon: Shield,     label: "Verifying results",             color: "from-emerald-500 to-green-500",  duration: 800  },
+];
+
+/* ── Dramatic scanning UI ───────────────────────────────────────── */
+function ScanningScreen({ detectedIndustry, detectedCompany }: { detectedIndustry: string; detectedCompany: string }) {
+  const [phase, setPhase] = useState(0);
+  const [dots, setDots] = useState(0);
+
+  // Advance through phases
+  useEffect(() => {
+    let elapsed = 0;
+    const timers = SCAN_PHASES.map((p, i) => {
+      elapsed += p.duration;
+      return setTimeout(() => setPhase(i + 1), elapsed);
+    });
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Animated dots ...
+  useEffect(() => {
+    const t = setInterval(() => setDots(d => (d + 1) % 4), 500);
+    return () => clearInterval(t);
+  }, []);
+
+  const progress = Math.round((phase / SCAN_PHASES.length) * 100);
+  const currentPhase = SCAN_PHASES[Math.min(phase, SCAN_PHASES.length - 1)];
+  const PhaseIcon = currentPhase.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col items-center gap-6 py-8"
+    >
+      {/* ── Radar circle ── */}
+      <div className="relative flex h-32 w-32 items-center justify-center">
+        {/* Outer rings */}
+        {[1, 1.4, 1.8].map((scale, i) => (
+          <motion.div
+            key={i}
+            className="absolute inset-0 rounded-full border border-blue-400/20"
+            animate={{ scale: [scale, scale * 1.08, scale], opacity: [0.4, 0.1, 0.4] }}
+            transition={{ duration: 2 + i * 0.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+          />
+        ))}
+        {/* Rotating sweep */}
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: "conic-gradient(from 0deg, transparent 75%, rgba(59,130,246,0.3) 90%, rgba(99,102,241,0.5) 100%)",
+          }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+        />
+        {/* Ping dot */}
+        <motion.div
+          className="absolute h-2 w-2 rounded-full bg-blue-400"
+          animate={{ x: [0, 38, 0, -38, 0], y: [38, 0, -38, 0, 38], opacity: [1, 0.6, 1, 0.6, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+        />
+        {/* Centre icon */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={phase}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className={`relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br ${currentPhase.color} shadow-xl`}
+          >
+            <PhaseIcon size={24} className="text-white" />
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* ── Phase label ── */}
+      <div className="text-center">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={phase}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.3 }}
+            className="text-base font-bold text-fg"
+          >
+            {phase < SCAN_PHASES.length ? SCAN_PHASES[phase].label : "Finalising results"}
+            {"...".slice(0, dots)}
+          </motion.p>
+        </AnimatePresence>
+        {detectedCompany && (
+          <p className="mt-1 text-xs text-fg-hint">
+            {detectedIndustry ? `Scanning ${detectedIndustry} market for ${detectedCompany}` : `Scanning market for ${detectedCompany}`}
+          </p>
+        )}
+      </div>
+
+      {/* ── Progress bar ── */}
+      <div className="w-full max-w-xs">
+        <div className="mb-1.5 flex justify-between text-[10px] font-semibold text-fg-hint">
+          <span>SCANNING</span>
+          <span className="text-blue-400">{progress}%</span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-secondary">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500"
+            animate={{ width: `${Math.max(4, progress)}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+          />
+        </div>
+      </div>
+
+      {/* ── Phase steps row ── */}
+      <div className="flex items-center gap-1.5">
+        {SCAN_PHASES.map((p, i) => {
+          const done = i < phase;
+          const active = i === phase;
+          return (
+            <div key={i} className="flex items-center gap-1.5">
+              <motion.div
+                animate={active ? { scale: [1, 1.15, 1] } : {}}
+                transition={{ duration: 1, repeat: Infinity }}
+                className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                  done ? "bg-emerald-400" : active ? "bg-blue-400" : "bg-surface-secondary"
+                }`}
+              />
+              {i < SCAN_PHASES.length - 1 && (
+                <div className={`h-px w-4 transition-all duration-500 ${done ? "bg-emerald-400/60" : "bg-white/10"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Animated stat counters ── */}
+      <div className="flex gap-6">
+        {[
+          { label: "COVERAGE",  value: phase >= 2 ? "Regional" : "—",     accent: phase >= 2 },
+          { label: "CONFIDENCE", value: phase >= 4 ? "90%+"   : phase >= 2 ? "..." : "—", accent: phase >= 4 },
+          { label: "STATUS",    value: phase >= SCAN_PHASES.length ? "Done" : "Scanning", accent: false },
+        ].map((s) => (
+          <div key={s.label} className="text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-hint">{s.label}</p>
+            <motion.p
+              animate={{ opacity: s.accent ? [0.7, 1, 0.7] : 1 }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className={`mt-0.5 text-sm font-bold ${s.accent ? "text-blue-400" : "text-fg-muted"}`}
+            >
+              {s.value}
+            </motion.p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── Main competitors page ──────────────────────────────────────── */
 export default function OnboardingCompetitors() {
   const router = useRouter();
+
+  // Read company context stored by the company page
+  const detectedIndustry = typeof window !== "undefined"
+    ? (sessionStorage.getItem("aeos_detected_industry") || "")
+    : "";
+  const detectedCompany = typeof window !== "undefined"
+    ? (sessionStorage.getItem("aeos_detected_company") || "")
+    : "";
 
   // AI-discovered competitors
   const [discovered, setDiscovered] = useState<DiscoveredCompetitor[]>([]);
@@ -39,12 +205,17 @@ export default function OnboardingCompetitors() {
 
   const [loading, setLoading] = useState(false);
 
-  // Auto-discover on mount
+  // Auto-discover on mount — run scan in parallel with the phase animation
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Minimum display time so the animation plays through
+      const minDelay = new Promise(r => setTimeout(r, 8000));
       try {
-        const { data } = await api.get("/api/v1/onboarding/discover-competitors");
+        const [{ data }] = await Promise.all([
+          api.get("/api/v1/onboarding/discover-competitors"),
+          minDelay,
+        ]);
         if (!cancelled && data.competitors?.length) {
           setDiscovered(data.competitors);
           setSelected(new Set(data.competitors.map((c: DiscoveredCompetitor) => c.url)));
@@ -52,6 +223,7 @@ export default function OnboardingCompetitors() {
           setShowManual(true);
         }
       } catch {
+        await minDelay;
         if (!cancelled) {
           setScanError(true);
           setShowManual(true);
@@ -132,37 +304,10 @@ export default function OnboardingCompetitors() {
             </div>
 
             {scanning ? (
-              /* Scanning animation */
-              <div className="flex flex-col items-center gap-4 py-10">
-                <div className="relative flex h-14 w-14 items-center justify-center">
-                  <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/10" />
-                  <div className="absolute inset-1 animate-pulse rounded-full bg-blue-500/5" />
-                  <Radar size={24} className="animate-pulse text-blue-400" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-fg-secondary">Scanning your industry...</p>
-                  <p className="mt-1 text-xs text-fg-hint">
-                    Finding competitors in your market
-                  </p>
-                </div>
-                {/* Fake progress stats */}
-                <div className="mt-2 flex gap-6">
-                  {[
-                    { label: "SCAN SPEED", value: "~3m" },
-                    { label: "CONFIDENCE", value: "90%+", accent: true },
-                    { label: "MARKET", value: "Local" },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-fg-hint">
-                        {stat.label}
-                      </p>
-                      <p className={`mt-0.5 text-sm font-bold ${stat.accent ? "text-blue-400" : "text-fg-muted"}`}>
-                        {stat.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ScanningScreen
+                detectedIndustry={detectedIndustry}
+                detectedCompany={detectedCompany}
+              />
             ) : discovered.length > 0 ? (
               /* Discovered competitors list */
               <div className="space-y-2">

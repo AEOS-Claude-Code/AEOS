@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import api from "@/lib/api";
@@ -381,8 +381,39 @@ export default function OnboardingCompany() {
   const [city, setCity] = useState("");
   const [saving, setSaving] = useState(false);
   const [ogImageFailed, setOgImageFailed] = useState(false);
+  const autoScrolled = useRef(false);
 
   useEffect(() => { fetchIntakeResults(); }, []); // eslint-disable-line
+
+  /* ── Cinematic auto-scroll: reveal all detected cards after scan ── */
+  useEffect(() => {
+    if (!loading && intake && !autoScrolled.current) {
+      autoScrolled.current = true;
+      // Save industry to sessionStorage so competitors page can read it
+      if (intake.detected_industry) {
+        sessionStorage.setItem("aeos_detected_industry", intake.detected_industry);
+        sessionStorage.setItem("aeos_detected_company", intake.detected_company_name || "");
+      }
+      // Wait for all card animations to start, then do a slow cinematic scroll
+      const t = setTimeout(() => {
+        const main = document.querySelector("main") as HTMLElement | null;
+        if (!main) return;
+        const dist = main.scrollHeight - main.clientHeight;
+        if (dist < 60) return;
+        const DURATION = 5500; // 5.5s cinematic reveal
+        const start = performance.now();
+        function frame(now: number) {
+          const p = Math.min((now - start) / DURATION, 1);
+          // cubic ease-in-out: slow start, steady middle, slow end
+          const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+          main!.scrollTop = e * dist;
+          if (p < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }, 900);
+      return () => clearTimeout(t);
+    }
+  }, [loading, intake]);
 
   async function fetchIntakeResults(forceRescan = false) {
     setLoading(true);
