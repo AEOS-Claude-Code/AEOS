@@ -394,19 +394,33 @@ export default function OnboardingCompany() {
         sessionStorage.setItem("aeos_detected_industry", intake.detected_industry);
         sessionStorage.setItem("aeos_detected_company", intake.detected_company_name || "");
       }
-      // Wait for all card animations to start, then do a slow cinematic scroll
+      // Wait for all card mount animations to start, then do a slow cinematic scroll
       const t = setTimeout(() => {
-        const main = document.querySelector("main") as HTMLElement | null;
-        if (!main) return;
-        const dist = main.scrollHeight - main.clientHeight;
+        // Determine the real scroll container:
+        // 1. <main> with overflow-y-auto (when it has a constrained height)
+        // 2. fallback to the document root (window scroll)
+        const mainEl = document.querySelector("main") as HTMLElement | null;
+        const scrollEl: HTMLElement | null =
+          mainEl && mainEl.scrollHeight > mainEl.clientHeight + 10
+            ? mainEl
+            : (document.documentElement as HTMLElement);
+
+        const dist = scrollEl.scrollHeight - scrollEl.clientHeight;
         if (dist < 60) return;
-        const DURATION = 5500; // 5.5s cinematic reveal
-        const start = performance.now();
+
+        const DURATION = 5500; // 5.5 s cinematic reveal
+        const startTime = performance.now();
+
         function frame(now: number) {
-          const p = Math.min((now - start) / DURATION, 1);
-          // cubic ease-in-out: slow start, steady middle, slow end
+          const p = Math.min((now - startTime) / DURATION, 1);
+          // cubic ease-in-out
           const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-          main!.scrollTop = e * dist;
+          const newTop = Math.round(e * dist);
+          if (scrollEl === document.documentElement) {
+            window.scrollTo(0, newTop);
+          } else {
+            scrollEl.scrollTop = newTop;
+          }
           if (p < 1) requestAnimationFrame(frame);
         }
         requestAnimationFrame(frame);
