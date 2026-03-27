@@ -115,7 +115,7 @@ async def list_workspaces(db: AsyncSession, limit: int = 50, offset: int = 0) ->
                 select(TokenWallet).where(TokenWallet.workspace_id == ws.id)
             )).scalar_one_or_none()
             if wallet:
-                tokens_used = wallet.used
+                tokens_used = wallet.used_tokens or 0
         except Exception:
             pass
 
@@ -143,10 +143,10 @@ async def list_workspaces(db: AsyncSession, limit: int = 50, offset: int = 0) ->
         overage_rate = 0.002
         overage_tokens = 0
         try:
-            if sub:
+            if sub is not None:
                 allow_overage = getattr(sub, 'allow_overage', False) or False
                 overage_rate = getattr(sub, 'overage_rate', 0.002) or 0.002
-            if wallet:
+            if wallet is not None:
                 overage_tokens = getattr(wallet, 'overage_tokens', 0) or 0
         except Exception:
             pass
