@@ -152,9 +152,9 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
         {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(46,121,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(46,121,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-        <div className="relative flex h-full flex-col justify-between p-8">
+        <div className="relative flex h-full flex-col p-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="mb-8 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-400 to-aeos-600 shadow-lg shadow-aeos-500/20">
               <Zap size={18} className="text-white" />
             </div>
@@ -205,7 +205,7 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
           </AnimatePresence>
 
           {/* Bottom: progress + quote */}
-          <div className="space-y-4">
+          <div className="mt-auto space-y-4">
             {/* Step progress indicators */}
             <div className="flex items-center gap-2">
               {STEPS.map((step, i) => {
