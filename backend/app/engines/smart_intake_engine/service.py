@@ -2593,6 +2593,37 @@ async def intake_from_url(url: str) -> dict:
     except Exception as e:
         logger.info("Social verification step failed: %s", str(e)[:100])
 
+    # ── 12. Social profile data enrichment ──
+    # Scrape detected social pages (Facebook, Instagram, LinkedIn) for metadata
+    # to backfill gaps: description, image, contacts, location, hours
+    try:
+        import asyncio as _aio
+        social_metadata = await _aio.wait_for(
+            _scrape_social_profiles(result.get("detected_social_links", {}), result),
+            timeout=20,
+        )
+        if social_metadata:
+            _before = {
+                "desc": bool(result.get("detected_description") or result.get("meta_description")),
+                "img": bool(result.get("og_image")),
+                "phones": len(result.get("detected_phone_numbers", [])),
+                "emails": len(result.get("detected_emails", [])),
+                "city": bool(result.get("detected_city")),
+            }
+            result = _merge_social_metadata(result, social_metadata)
+            _after = {
+                "desc": bool(result.get("detected_description") or result.get("meta_description")),
+                "img": bool(result.get("og_image")),
+                "phones": len(result.get("detected_phone_numbers", [])),
+                "emails": len(result.get("detected_emails", [])),
+                "city": bool(result.get("detected_city")),
+            }
+            enriched = [k for k in _before if _before[k] != _after[k]]
+            if enriched:
+                logger.info("Social enrichment filled: %s", ", ".join(enriched))
+    except Exception as e:
+        logger.info("Social profile scraping failed: %s", str(e)[:100])
+
     logger.info(
         "Intake COMPLETE for %s: company=%s, industry=%s, country=%s, city=%s, phones=%d, emails=%d, services=%d, socials=%d",
         url,
@@ -2605,6 +2636,218 @@ async def intake_from_url(url: str) -> dict:
         len(result.get("detected_services", [])),
         sum(1 for v in result.get("detected_social_links", {}).values() if v),
     )
+
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Social profile scraping — extract metadata from FB/IG/LinkedIn pages
+# ─────────────────────────────────────────────────────────────────────
+
+async def _scrape_single_social(platform: str, url: str) -> dict | None:
+    """Fetch a single social profile page and extract OG/meta data."""
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.get(url, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                              "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+            })
+            if resp.status_code >= 400:
+                return None
+
+            html = resp.text
+            if len(html) < 500:
+                return None
+
+            data: dict = {"platform": platform, "url": url}
+
+            # ── Extract OG meta tags ──
+            og_patterns = {
+                "og_description": r'<meta\s+(?:property|name)=["\']og:description["\']\s+content=["\']([^"\']+)["\']',
+                "og_image": r'<meta\s+(?:property|name)=["\']og:image["\']\s+content=["\']([^"\']+)["\']',
+                "og_title": r'<meta\s+(?:property|name)=["\']og:title["\']\s+content=["\']([^"\']+)["\']',
+            }
+            # Also check reversed attribute order (content before property)
+            og_patterns_rev = {
+                "og_description": r'<meta\s+content=["\']([^"\']+)["\']\s+(?:property|name)=["\']og:description["\']',
+                "og_image": r'<meta\s+content=["\']([^"\']+)["\']\s+(?:property|name)=["\']og:image["\']',
+                "og_title": r'<meta\s+content=["\']([^"\']+)["\']\s+(?:property|name)=["\']og:title["\']',
+            }
+
+            for key, pattern in og_patterns.items():
+                m = re.search(pattern, html, re.IGNORECASE)
+                if not m:
+                    m = re.search(og_patterns_rev[key], html, re.IGNORECASE)
+                if m:
+                    val = m.group(1).strip()
+                    if val and len(val) > 5:
+                        data[key] = val
+
+            # ── Extract JSON-LD structured data ──
+            import json as _json
+            jsonld_matches = re.findall(
+                r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+                html, re.DOTALL | re.IGNORECASE
+            )
+            for jm in jsonld_matches[:3]:
+                try:
+                    jd = _json.loads(jm.strip())
+                    if isinstance(jd, list):
+                        jd = jd[0] if jd else {}
+                    if isinstance(jd, dict):
+                        if jd.get("description") and not data.get("og_description"):
+                            data["og_description"] = str(jd["description"])[:500]
+                        if jd.get("image") and not data.get("og_image"):
+                            img = jd["image"]
+                            if isinstance(img, dict):
+                                img = img.get("url", "")
+                            if isinstance(img, list):
+                                img = img[0] if img else ""
+                            if isinstance(img, str) and img.startswith("http"):
+                                data["og_image"] = img
+                        if jd.get("address"):
+                            addr = jd["address"]
+                            if isinstance(addr, dict):
+                                parts = [addr.get("streetAddress", ""), addr.get("addressLocality", ""),
+                                         addr.get("addressRegion", ""), addr.get("addressCountry", "")]
+                                data["location"] = ", ".join(p for p in parts if p)
+                                if addr.get("addressLocality"):
+                                    data["city"] = addr["addressLocality"]
+                            elif isinstance(addr, str):
+                                data["location"] = addr
+                        if jd.get("telephone"):
+                            data["phone"] = str(jd["telephone"])
+                        if jd.get("email"):
+                            data["email"] = str(jd["email"])
+                except Exception:
+                    pass
+
+            # ── Platform-specific extraction ──
+            if platform == "facebook":
+                # Follower/likes count
+                likes_m = re.search(r'([\d,.\s]+)\s*(?:likes?|people like this)', html, re.IGNORECASE)
+                if likes_m:
+                    data["followers"] = likes_m.group(1).strip()
+                followers_m = re.search(r'([\d,.\s]+)\s*followers?', html, re.IGNORECASE)
+                if followers_m:
+                    data["followers"] = followers_m.group(1).strip()
+
+                # Phone from tel: links
+                tel_m = re.findall(r'href=["\']tel:([^"\']+)["\']', html)
+                if tel_m and not data.get("phone"):
+                    from urllib.parse import unquote
+                    data["phone"] = unquote(tel_m[0]).strip()
+
+                # Email from mailto: links
+                mailto_m = re.findall(r'href=["\']mailto:([^"\'?]+)["\']', html)
+                if mailto_m and not data.get("email"):
+                    data["email"] = mailto_m[0].strip()
+
+            elif platform == "instagram":
+                # Instagram OG description format: "X Followers, Y Following, Z Posts - Bio text"
+                desc = data.get("og_description", "")
+                followers_m = re.search(r'([\d,.]+[KkMm]?)\s*Followers', desc)
+                if followers_m:
+                    data["followers"] = followers_m.group(1)
+                # Extract bio (after the stats)
+                bio_m = re.search(r'\d+\s*Posts?\s*[-–—]\s*(.+)', desc)
+                if bio_m:
+                    data["bio"] = bio_m.group(1).strip()
+
+            elif platform == "linkedin":
+                # LinkedIn follower count
+                followers_m = re.search(r'([\d,]+)\s*followers?', html, re.IGNORECASE)
+                if followers_m:
+                    data["followers"] = followers_m.group(1).strip()
+                # Employee count
+                emp_m = re.search(r'([\d,]+(?:-[\d,]+)?)\s*employees?', html, re.IGNORECASE)
+                if emp_m:
+                    data["employee_count"] = emp_m.group(1).strip()
+
+            # Only return if we got something useful
+            if len(data) > 2:  # more than just platform + url
+                logger.info("Social scrape %s: got %d fields from %s", platform, len(data) - 2, url)
+                return data
+            return None
+
+    except Exception as e:
+        logger.debug("Social scrape failed for %s: %s", platform, str(e)[:80])
+        return None
+
+
+async def _scrape_social_profiles(socials: dict, existing_data: dict) -> list[dict]:
+    """Scrape all detected social profiles in parallel."""
+    import asyncio as _aio
+
+    # Only scrape platforms that have URLs
+    platforms_to_scrape = ["facebook", "instagram", "linkedin"]
+    tasks = []
+    for platform in platforms_to_scrape:
+        urls = socials.get(platform, [])
+        if urls and isinstance(urls, list) and urls[0]:
+            tasks.append(_scrape_single_social(platform, urls[0]))
+
+    if not tasks:
+        return []
+
+    results = await _aio.gather(*tasks, return_exceptions=True)
+    scraped = []
+    for r in results:
+        if isinstance(r, dict) and r:
+            scraped.append(r)
+    return scraped
+
+
+def _merge_social_metadata(result: dict, social_data: list[dict]) -> dict:
+    """Merge scraped social metadata into intake result — only backfill empty fields."""
+    for data in social_data:
+        platform = data.get("platform", "")
+
+        # Backfill description
+        desc = data.get("og_description") or data.get("bio")
+        if desc and not result.get("meta_description") and not result.get("detected_description"):
+            # Clean up social platform boilerplate
+            if platform == "instagram" and re.match(r'[\d,.]+\s*Followers', desc):
+                # Use bio portion only
+                desc = data.get("bio", "")
+            if desc and len(desc) > 20:
+                result["meta_description"] = desc[:500]
+                result["detected_description"] = desc[:500]
+                logger.info("Social enriched description from %s (%d chars)", platform, len(desc))
+
+        # Backfill OG image
+        img = data.get("og_image")
+        if img and not result.get("og_image") and img.startswith("http"):
+            result["og_image"] = img
+            logger.info("Social enriched og_image from %s", platform)
+
+        # Backfill phone
+        phone = data.get("phone")
+        if phone and not result.get("detected_phone_numbers"):
+            digits = re.sub(r"[^\d]", "", phone)
+            if 7 <= len(digits) <= 15:
+                result["detected_phone_numbers"] = [phone]
+                logger.info("Social enriched phone from %s: %s", platform, phone)
+
+        # Backfill email
+        email = data.get("email")
+        if email and not result.get("detected_emails") and "@" in email:
+            result["detected_emails"] = [email]
+            logger.info("Social enriched email from %s: %s", platform, email)
+
+        # Backfill city from social location
+        city = data.get("city")
+        if city and not result.get("detected_city"):
+            result["detected_city"] = city
+            logger.info("Social enriched city from %s: %s", platform, city)
+
+        # Backfill location/address
+        location = data.get("location")
+        if location and not result.get("detected_address"):
+            result["detected_address"] = location
+            logger.info("Social enriched address from %s: %s", platform, location)
 
     return result
 
