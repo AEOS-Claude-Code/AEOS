@@ -2129,12 +2129,13 @@ async def intake_from_url(url: str) -> dict:
         except Exception as e:
             logger.info("Social profile search failed: %s", str(e)[:100])
 
-    # 6. Detect country/city
+    # 6. Detect country/city — use ALL collected HTML (homepage + subpages)
+    #    so address info from /contact-us pages is included
     corpus = " ".join([
         profile.get("title", ""),
         profile.get("description", ""),
         " ".join(profile.get("headings", [])),
-        html[:10000],  # First 10K chars of HTML for address patterns
+        html[:50000],  # First 50K of all collected HTML (homepage + subpages)
     ])
     location = detect_location(
         url=url,

@@ -292,8 +292,8 @@ CITY_PATTERNS: dict[str, list[str]] = {
         "fujairah", "umm al quwain", "al ain",
     ],
     "Jordan": [
-        "amman", "aqaba", "irbid", "zarqa", "petra", "jerash", "madaba",
-        "salt", "karak", "mafraq",
+        "amman", "aqaba", "irbid", "zarqa", "petra", "wadi musa", "wadi rum",
+        "jerash", "madaba", "salt", "karak", "mafraq", "ajloun", "tafilah", "maan",
     ],
     "Qatar": ["doha", "al wakrah", "al khor", "lusail"],
     "Kuwait": ["kuwait city", "hawalli", "salmiya", "farwaniya"],
