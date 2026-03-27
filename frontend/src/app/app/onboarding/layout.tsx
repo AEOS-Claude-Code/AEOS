@@ -204,55 +204,115 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
             </motion.div>
           </AnimatePresence>
 
-          {/* Bottom: progress + quote */}
+          {/* Bottom: progress wizard + quote */}
           <div className="mt-auto space-y-4">
-            {/* Step progress indicators */}
-            <div className="flex items-center gap-2">
-              {STEPS.map((step, i) => {
-                const done = i < currentIdx;
-                const active = i === currentIdx;
-                return (
-                  <div key={step.num} className="flex items-center gap-2">
-                    <div
-                      className={`flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold transition-all ${
-                        done
-                          ? "bg-emerald-500/15 text-emerald-400"
-                          : active
-                            ? "bg-aeos-500/15 text-aeos-400 ring-1 ring-aeos-500/30"
-                            : "text-slate-600"
-                      }`}
-                    >
-                      {done ? (
-                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500">
-                          <Check size={10} className="text-white" />
-                        </div>
-                      ) : (
-                        <span
-                          className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold ${
-                            active
-                              ? "bg-aeos-500 text-white"
-                              : "bg-white/5 text-slate-600 ring-1 ring-white/10"
+
+            {/* ── Animated Wizard Step Tracker ── */}
+            <div className="rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/[0.07]">
+              {/* Header */}
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Onboarding Progress</span>
+                <span className="text-[10px] font-bold text-aeos-400">{currentIdx + 1} / {STEPS.length}</span>
+              </div>
+
+              {/* Overall progress bar */}
+              <div className="mb-4 h-1 w-full overflow-hidden rounded-full bg-white/5">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-aeos-400 to-violet-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((currentIdx) / (STEPS.length - 1)) * 100}%` }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                />
+              </div>
+
+              {/* Step nodes */}
+              <div className="relative flex items-start justify-between">
+                {/* Connecting track behind nodes */}
+                <div className="absolute left-4 right-4 top-4 h-px bg-white/8" />
+                {/* Filled segment */}
+                <motion.div
+                  className="absolute left-4 top-4 h-px bg-gradient-to-r from-aeos-500 to-violet-500 origin-left"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: currentIdx === 0 ? 0 : currentIdx / (STEPS.length - 1) }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  style={{ right: "1rem", transformOrigin: "left" }}
+                />
+
+                {STEPS.map((step, i) => {
+                  const done = i < currentIdx;
+                  const active = i === currentIdx;
+                  const StepIcon = [Building2, Target, Plug, GitBranch, Rocket][i];
+                  return (
+                    <div key={step.num} className="relative flex flex-col items-center gap-1.5 z-10">
+                      {/* Node circle */}
+                      <div className="relative">
+                        {/* Pulse ring for active step */}
+                        {active && (
+                          <>
+                            <motion.div
+                              className="absolute inset-0 rounded-full bg-aeos-500/30"
+                              animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            <motion.div
+                              className="absolute inset-0 rounded-full ring-2 ring-aeos-400/50"
+                              animate={{ scale: [1, 1.4], opacity: [1, 0] }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                            />
+                          </>
+                        )}
+                        <motion.div
+                          initial={{ scale: 0.6, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: i * 0.08, duration: 0.35 }}
+                          className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 ${
+                            done
+                              ? "bg-emerald-500 shadow-lg shadow-emerald-500/30"
+                              : active
+                                ? "bg-gradient-to-br from-aeos-400 to-violet-500 shadow-lg shadow-aeos-500/40"
+                                : "bg-white/5 ring-1 ring-white/10"
                           }`}
                         >
-                          {step.num}
-                        </span>
-                      )}
-                      <span className="hidden min-[1400px]:inline">{step.label}</span>
+                          {done ? (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
+                              <Check size={13} className="text-white" />
+                            </motion.div>
+                          ) : (
+                            <StepIcon size={13} className={active ? "text-white" : "text-slate-600"} />
+                          )}
+                        </motion.div>
+                      </div>
+
+                      {/* Step label */}
+                      <motion.span
+                        animate={{ opacity: active ? 1 : done ? 0.7 : 0.35 }}
+                        className={`text-[9px] font-semibold leading-tight text-center max-w-[48px] ${
+                          active ? "text-aeos-300" : done ? "text-emerald-400" : "text-slate-600"
+                        }`}
+                      >
+                        {step.label}
+                      </motion.span>
                     </div>
-                    {i < STEPS.length - 1 && (
-                      <div className={`h-px w-3 ${done ? "bg-emerald-500/40" : "bg-white/10"}`} />
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             {/* Quote */}
-            <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
-              <p className="text-sm italic text-slate-500">
-                &ldquo;{currentStep.panel.quote}&rdquo;
-              </p>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep.path + "-quote"}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35 }}
+                className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
+              >
+                <p className="text-sm italic text-slate-500">
+                  &ldquo;{currentStep.panel.quote}&rdquo;
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
