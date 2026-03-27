@@ -105,6 +105,19 @@ interface IntakeResult {
   industry_signals: string[];
   industry_scores: Record<string, number>;
   is_bot_blocked: boolean;
+  // Company intelligence (#9-20)
+  detected_employee_count: number | null;
+  company_stage: string;
+  target_audience: string;
+  audience_keywords: string[];
+  logo_url: string;
+  office_locations: string[];
+  service_descriptions: { name: string; description: string }[];
+  certifications: string[];
+  growth_signals: { hiring?: boolean; funding_mention?: string | null; recent_launches?: string[] };
+  competitive_positioning: string;
+  content_maturity: { has_blog?: boolean; appears_active?: boolean; blog_post_count?: number | null };
+  financial_indicators: { funding_stage?: string | null; revenue_range?: string | null };
   detected_seo_health: {
     has_ssl: { status: boolean; detail: string };
     has_sitemap: { status: boolean; detail: string };
@@ -1069,99 +1082,111 @@ export default function OnboardingCompany() {
             </div>
           </Card>
 
-          {/* AI Quick Summary */}
+          {/* Company Intelligence */}
           <Card delay={0.42} className="h-full">
             <CardHeader
               icon={Bot}
               iconGradient="from-violet-500 to-purple-600 shadow-violet-500/25"
-              title="AI Quick Summary"
-              subtitle="Auto-generated company brief"
-              badge={intake.detected_description ? (
-                <span className="rounded-full px-2.5 py-1 text-2xs font-bold ring-1 bg-violet-500/10 text-violet-500 ring-violet-500/20">
-                  AI Generated
+              title="Company Intelligence"
+              subtitle="AI-powered company analysis"
+              badge={intake.company_stage ? (
+                <span className={`rounded-full px-2.5 py-1 text-2xs font-bold ring-1 ${
+                  intake.company_stage === "enterprise" ? "bg-blue-500/10 text-blue-500 ring-blue-500/20" :
+                  intake.company_stage === "smb" ? "bg-emerald-500/10 text-emerald-500 ring-emerald-500/20" :
+                  intake.company_stage === "growth" ? "bg-amber-500/10 text-amber-500 ring-amber-500/20" :
+                  "bg-violet-500/10 text-violet-500 ring-violet-500/20"
+                }`}>
+                  {intake.company_stage === "smb" ? "SMB" : (intake.company_stage || "").charAt(0).toUpperCase() + (intake.company_stage || "").slice(1)}
                 </span>
               ) : undefined}
             />
             <div className="flex-1 p-5">
-              {intake.detected_description || intake.detected_industry ? (
-                <div className="space-y-3">
-                  {/* Description */}
-                  {intake.detected_description && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.44 }}
-                      className="rounded-xl bg-violet-500/[0.06] border border-violet-500/10 p-3"
-                    >
-                      <p className="text-xs leading-relaxed text-fg/90">{intake.detected_description}</p>
-                    </motion.div>
-                  )}
-
-                  {/* Quick Facts */}
-                  <div className="space-y-1.5">
-                    {[
-                      intake.detected_industry && {
-                        label: "Industry",
-                        value: INDUSTRY_LABELS[intake.detected_industry] || intake.detected_industry,
-                        icon: Briefcase,
-                        color: "text-blue-500",
-                      },
-                      intake.detected_country && {
-                        label: "Headquarters",
-                        value: [intake.detected_city, intake.detected_country].filter(Boolean).join(", "),
-                        icon: MapPin,
-                        color: "text-emerald-500",
-                      },
-                      intake.detected_services?.length > 0 && {
-                        label: "Key Offerings",
-                        value: intake.detected_services.slice(0, 3).join(", "),
-                        icon: Zap,
-                        color: "text-amber-500",
-                      },
-                      intake.detected_keywords?.length > 0 && {
-                        label: "Focus Areas",
-                        value: intake.detected_keywords.slice(0, 4).join(", "),
-                        icon: Search,
-                        color: "text-cyan-500",
-                      },
-                      (intake.detected_team?.members?.length > 0) && {
-                        label: "Team Size Signal",
-                        value: `${intake.detected_team.members.length} key people identified`,
-                        icon: Users,
-                        color: "text-pink-500",
-                      },
-                    ]
-                      .filter(Boolean)
-                      .map((fact: any, i: number) => (
-                        <motion.div
-                          key={fact.label}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.46 + i * 0.04 }}
-                          className="flex items-start gap-2.5 rounded-lg px-2.5 py-1.5"
-                        >
-                          <fact.icon size={13} className={`${fact.color} mt-0.5 shrink-0`} />
-                          <div className="min-w-0">
-                            <p className="text-2xs font-semibold text-fg-hint uppercase tracking-wider">{fact.label}</p>
-                            <p className="text-xs text-fg/80 truncate">{fact.value}</p>
-                          </div>
-                        </motion.div>
-                      ))}
+              <div className="space-y-2.5">
+                {/* Description */}
+                {intake.detected_description && (
+                  <div className="rounded-lg bg-violet-500/[0.04] border border-violet-500/10 px-3 py-2">
+                    <p className="text-xs leading-relaxed text-fg/80 line-clamp-3">{intake.detected_description}</p>
                   </div>
+                )}
+
+                {/* Intelligence grid */}
+                <div className="space-y-1">
+                  {[
+                    intake.target_audience && {
+                      label: "Audience", value: intake.target_audience, icon: Users, color: "text-blue-500",
+                    },
+                    intake.detected_employee_count && {
+                      label: "Employees", value: `~${intake.detected_employee_count.toLocaleString()}`, icon: Users, color: "text-pink-500",
+                    },
+                    intake.competitive_positioning && {
+                      label: "Market Position",
+                      value: intake.competitive_positioning.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+                      icon: Trophy, color: "text-amber-500",
+                    },
+                    (intake.financial_indicators?.revenue_range) && {
+                      label: "Est. Revenue", value: intake.financial_indicators.revenue_range, icon: TrendingUp, color: "text-emerald-500",
+                    },
+                    intake.content_maturity?.has_blog && {
+                      label: "Content", value: intake.content_maturity.appears_active ? "Active blog" : "Blog present", icon: Globe, color: "text-cyan-500",
+                    },
+                    (intake.office_locations?.length ?? 0) > 1 && {
+                      label: "Offices", value: intake.office_locations!.slice(0, 3).join(", "), icon: MapPin, color: "text-orange-500",
+                    },
+                    (intake.financial_indicators?.funding_stage) && {
+                      label: "Funding", value: intake.financial_indicators.funding_stage, icon: TrendingUp, color: "text-violet-500",
+                    },
+                  ]
+                    .filter(Boolean)
+                    .map((fact: any, i: number) => (
+                      <motion.div key={fact.label} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.44 + i * 0.03 }}
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-secondary/50 transition">
+                        <fact.icon size={12} className={`${fact.color} shrink-0`} />
+                        <span className="text-2xs font-medium text-fg-hint w-20 shrink-0">{fact.label}</span>
+                        <span className="text-xs font-semibold text-fg/80 truncate">{fact.value}</span>
+                      </motion.div>
+                    ))}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <motion.div
-                    animate={{ opacity: [0.4, 0.8, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 mb-3"
-                  >
-                    <Bot size={24} className="text-violet-500/50" />
-                  </motion.div>
-                  <p className="text-xs font-medium text-fg-hint">Analyzing...</p>
-                  <p className="text-2xs text-fg-hint/60 mt-1">Generating company brief</p>
-                </div>
-              )}
+
+                {/* Certifications */}
+                {(intake.certifications?.length ?? 0) > 0 && (
+                  <div className="pt-1">
+                    <p className="text-2xs font-semibold text-fg-hint uppercase tracking-wider mb-1.5">Certifications</p>
+                    <div className="flex flex-wrap gap-1">
+                      {intake.certifications!.slice(0, 6).map((c: string) => (
+                        <span key={c} className="rounded-full bg-emerald-500/8 px-2 py-0.5 text-[9px] font-semibold text-emerald-600 ring-1 ring-emerald-500/15">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Audience keywords */}
+                {(intake.audience_keywords?.length ?? 0) > 0 && (
+                  <div className="pt-1">
+                    <p className="text-2xs font-semibold text-fg-hint uppercase tracking-wider mb-1.5">Target Customers</p>
+                    <div className="flex flex-wrap gap-1">
+                      {intake.audience_keywords!.slice(0, 5).map((k: string) => (
+                        <span key={k} className="rounded-full bg-blue-500/8 px-2 py-0.5 text-[9px] font-semibold text-blue-600 ring-1 ring-blue-500/15">
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Growth signals */}
+                {intake.growth_signals?.hiring && (
+                  <div className="flex items-center gap-1.5 rounded-md bg-green-500/[0.06] px-2.5 py-1.5">
+                    <TrendingUp size={11} className="text-green-500" />
+                    <span className="text-[10px] font-semibold text-green-600">Actively hiring</span>
+                    {intake.growth_signals.funding_mention && (
+                      <span className="text-[10px] text-green-500/70 ml-1">({intake.growth_signals.funding_mention})</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
 

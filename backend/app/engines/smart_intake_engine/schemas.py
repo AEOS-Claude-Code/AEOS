@@ -42,3 +42,16 @@ class IntakeFromUrlResponse(BaseModel):
     detected_description: str = ""
     detected_address: str = ""
     is_bot_blocked: bool = False
+    # Company intelligence (#9-20)
+    detected_employee_count: Optional[int] = None
+    company_stage: str = ""
+    target_audience: str = ""
+    audience_keywords: list[str] = []
+    logo_url: str = ""
+    office_locations: list[str] = []
+    service_descriptions: list[dict] = []
+    certifications: list[str] = []
+    growth_signals: dict = {}
+    competitive_positioning: str = ""
+    content_maturity: dict = {}
+    financial_indicators: dict = {}

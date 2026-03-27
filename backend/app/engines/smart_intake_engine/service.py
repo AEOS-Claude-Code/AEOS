@@ -2427,6 +2427,19 @@ async def intake_from_url(url: str) -> dict:
         "detected_description": profile.get("description", ""),
         "detected_address": "",
         "is_bot_blocked": len(html.strip()) < 2000,
+        # Company intelligence (#9-20)
+        "detected_employee_count": None,
+        "company_stage": "",
+        "target_audience": "",
+        "audience_keywords": [],
+        "logo_url": "",
+        "office_locations": [],
+        "service_descriptions": [],
+        "certifications": [],
+        "growth_signals": {},
+        "competitive_positioning": "",
+        "content_maturity": {},
+        "financial_indicators": {},
     }
 
     # ── 9. AI Deep Extraction — fill gaps with Claude ──
@@ -2626,6 +2639,54 @@ async def intake_from_url(url: str) -> dict:
                 logger.info("Social enrichment filled: %s", ", ".join(enriched))
     except Exception as e:
         logger.info("Social profile scraping failed: %s", str(e)[:100])
+
+    # ── 13. Company intelligence post-processing ──
+    # Run regex-based detection and inference functions
+    try:
+        # Certifications from HTML
+        if not result.get("certifications"):
+            html_certs = _detect_certifications(html)
+            if html_certs:
+                result["certifications"] = html_certs
+                logger.info("Detected %d certifications from HTML", len(html_certs))
+
+        # Logo URL
+        if not result.get("logo_url"):
+            result["logo_url"] = _extract_logo_url(
+                html, url, result.get("og_image", ""), result.get("favicon_url", "")
+            )
+
+        # Content maturity
+        if not result.get("content_maturity"):
+            result["content_maturity"] = _analyze_content_maturity(html, url)
+
+        # Company stage inference
+        if not result.get("company_stage"):
+            funding = (result.get("financial_indicators") or {}).get("funding_stage")
+            result["company_stage"] = _infer_company_stage(
+                result.get("detected_employee_count"),
+                result.get("detected_tech_stack", []),
+                funding,
+            )
+
+        # Financial indicators inference
+        if not (result.get("financial_indicators") or {}).get("revenue_range"):
+            stage = result.get("company_stage", "")
+            industry = result.get("detected_industry", "")
+            funding = (result.get("financial_indicators") or {}).get("funding_stage")
+            result["financial_indicators"] = _infer_financials(stage, industry, funding)
+
+        logger.info(
+            "Company intelligence: stage=%s, audience=%s, employees=%s, certs=%d, locations=%d, positioning=%s",
+            result.get("company_stage", ""),
+            result.get("target_audience", ""),
+            result.get("detected_employee_count", ""),
+            len(result.get("certifications", [])),
+            len(result.get("office_locations", [])),
+            result.get("competitive_positioning", ""),
+        )
+    except Exception as e:
+        logger.info("Company intelligence post-processing failed: %s", str(e)[:100])
 
     logger.info(
         "Intake COMPLETE for %s: company=%s, industry=%s, country=%s, city=%s, phones=%d, emails=%d, services=%d, socials=%d",
@@ -2855,6 +2916,176 @@ def _merge_social_metadata(result: dict, social_data: list[dict]) -> dict:
     return result
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Company intelligence helpers (#9-20)
+# ─────────────────────────────────────────────────────────────────────
+
+def _detect_certifications(html: str) -> list[str]:
+    """Detect certifications and compliance badges from HTML."""
+    certs = []
+    lower = html.lower()
+    patterns = [
+        (r"iso\s*9001", "ISO 9001"),
+        (r"iso\s*27001", "ISO 27001"),
+        (r"iso\s*14001", "ISO 14001"),
+        (r"iso\s*22000", "ISO 22000"),
+        (r"iso\s*45001", "ISO 45001"),
+        (r"soc\s*2|soc\s*ii", "SOC 2"),
+        (r"soc\s*1|soc\s*i(?!\s*2)", "SOC 1"),
+        (r"hipaa", "HIPAA"),
+        (r"gdpr\s*complian", "GDPR Compliant"),
+        (r"ccpa", "CCPA"),
+        (r"pci[\s-]*dss", "PCI DSS"),
+        (r"google\s*partner", "Google Partner"),
+        (r"meta\s*partner|facebook\s*partner", "Meta Partner"),
+        (r"aws\s*partner", "AWS Partner"),
+        (r"microsoft\s*partner|azure\s*partner", "Microsoft Partner"),
+        (r"hubspot\s*partner", "HubSpot Partner"),
+        (r"shopify\s*partner", "Shopify Partner"),
+        (r"halal\s*certif", "Halal Certified"),
+        (r"fair\s*trade", "Fair Trade"),
+        (r"b[\s-]*corp", "B Corp"),
+        (r"leed\s*certif", "LEED Certified"),
+    ]
+    seen = set()
+    for pattern, label in patterns:
+        if re.search(pattern, lower) and label not in seen:
+            certs.append(label)
+            seen.add(label)
+    return certs
+
+
+def _extract_logo_url(html: str, url: str, og_image: str, favicon_url: str) -> str:
+    """Extract the best logo URL from HTML."""
+    from urllib.parse import urljoin
+
+    # 1. JSON-LD Organization.logo
+    import json as _json
+    jsonld_matches = re.findall(
+        r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+        html, re.DOTALL | re.IGNORECASE,
+    )
+    for jm in jsonld_matches[:5]:
+        try:
+            jd = _json.loads(jm.strip())
+            if isinstance(jd, list):
+                jd = jd[0] if jd else {}
+            if isinstance(jd, dict):
+                logo = jd.get("logo")
+                if isinstance(logo, str) and logo.startswith("http"):
+                    return logo
+                if isinstance(logo, dict) and logo.get("url"):
+                    return logo["url"]
+        except Exception:
+            pass
+
+    # 2. Header img with "logo" in attributes
+    logo_imgs = re.findall(
+        r'<img[^>]+(?:class|id|alt|src)=["\'][^"\']*logo[^"\']*["\'][^>]*src=["\']([^"\']+)["\']',
+        html[:20000], re.IGNORECASE,
+    )
+    if not logo_imgs:
+        logo_imgs = re.findall(
+            r'<img[^>]+src=["\']([^"\']*logo[^"\']*)["\']',
+            html[:20000], re.IGNORECASE,
+        )
+    for img_src in logo_imgs[:3]:
+        full_url = urljoin(url, img_src) if not img_src.startswith("http") else img_src
+        if full_url and len(full_url) > 10:
+            return full_url
+
+    # 3. Fallback to favicon
+    return favicon_url or ""
+
+
+def _analyze_content_maturity(html: str, url: str) -> dict:
+    """Analyze content maturity: blog presence, activity, freshness."""
+    lower = html.lower()
+    result: dict = {"has_blog": False, "appears_active": False, "blog_post_count": None}
+
+    # Check for blog/news links
+    blog_patterns = ["/blog", "/news", "/press", "/articles", "/insights", "/resources"]
+    for bp in blog_patterns:
+        if bp in lower:
+            result["has_blog"] = True
+            break
+
+    # Count article-like elements
+    article_count = lower.count("<article")
+    if article_count > 0:
+        result["has_blog"] = True
+        result["blog_post_count"] = article_count
+
+    # Check for recent dates (2024, 2025, 2026)
+    import datetime
+    current_year = datetime.datetime.now().year
+    recent_years = [str(current_year), str(current_year - 1)]
+    for year in recent_years:
+        if year in html:
+            result["appears_active"] = True
+            break
+
+    return result
+
+
+def _infer_company_stage(employee_count: int | None, tech_stack: list[str], funding_stage: str | None) -> str:
+    """Infer company stage from available signals."""
+    if employee_count:
+        if employee_count >= 500:
+            return "enterprise"
+        if employee_count >= 50:
+            return "smb"
+        return "startup"
+    if funding_stage:
+        fl = funding_stage.lower()
+        if "series c" in fl or "series d" in fl or "ipo" in fl:
+            return "enterprise"
+        if "series a" in fl or "series b" in fl:
+            return "growth"
+        if "seed" in fl or "pre-seed" in fl:
+            return "startup"
+    enterprise_tech = {"Salesforce", "Workday", "SAP", "Oracle", "ServiceNow"}
+    if any(t in enterprise_tech for t in tech_stack):
+        return "enterprise"
+    return ""
+
+
+_REVENUE_RANGES: dict[tuple[str, str], str] = {
+    ("startup", "saas"): "$0–$1M",
+    ("startup", "ecommerce"): "$0–$500K",
+    ("startup", "agency"): "$0–$500K",
+    ("smb", "saas"): "$1M–$10M",
+    ("smb", "retail"): "$5M–$50M",
+    ("smb", "restaurant"): "$1M–$10M",
+    ("smb", "travel"): "$1M–$10M",
+    ("smb", "construction"): "$5M–$50M",
+    ("smb", "healthcare"): "$5M–$50M",
+    ("smb", "finance"): "$10M–$100M",
+    ("smb", "education"): "$1M–$10M",
+    ("growth", "saas"): "$10M–$50M",
+    ("growth", "ecommerce"): "$10M–$100M",
+    ("enterprise", "saas"): "$50M+",
+    ("enterprise", "telecom"): "$100M+",
+    ("enterprise", "finance"): "$100M+",
+    ("enterprise", "retail"): "$100M+",
+    ("enterprise", "logistics"): "$50M+",
+    ("enterprise", "construction"): "$50M+",
+}
+
+
+def _infer_financials(stage: str, industry: str, funding_stage: str | None) -> dict:
+    """Infer revenue range from company stage and industry."""
+    result: dict = {"funding_stage": funding_stage, "revenue_range": None}
+    key = (stage, industry)
+    if key in _REVENUE_RANGES:
+        result["revenue_range"] = _REVENUE_RANGES[key]
+    elif stage:
+        # Generic fallback by stage
+        fallback = {"startup": "$0–$1M", "smb": "$1M–$50M", "growth": "$10M–$100M", "enterprise": "$50M+"}
+        result["revenue_range"] = fallback.get(stage)
+    return result
+
+
 def _detect_tech_stack(html: str, url: str) -> list[str]:
     """Reuse scanner's tech detection."""
     try:
@@ -3060,9 +3291,8 @@ async def _ai_deep_extract(
     if not has_socials: gaps.append("social_profiles")
     if not has_whatsapp: gaps.append("whatsapp")
 
-    if len(gaps) < 2:
-        logger.info("AI deep extract skipped — only %d gaps: %s", len(gaps), gaps)
-        return {}
+    # Always run AI extraction for company intelligence fields even if basic gaps are few
+    gaps.append("company_intelligence")  # Always extract intelligence data
 
     logger.info("AI deep extract starting for %s — gaps: %s", url, gaps)
 
@@ -3151,6 +3381,7 @@ async def _ai_deep_extract(
         f'    "snapchat": "Snapchat username (e.g. designzoneksa)"\n'
         f'  }},\n'
         f'  "services": ["Service 1", "Service 2", "...up to 12 main services/products"],\n'
+        f'  "service_descriptions": [{{"name": "Service Name", "description": "1-2 sentence description"}}],\n'
         f'  "team_members": [\n'
         f'    {{"name": "Full Name", "role": "Job Title"}}\n'
         f'  ],\n'
@@ -3161,7 +3392,16 @@ async def _ai_deep_extract(
         f'government, telecom, other",\n'
         f'  "country": "Country where company is headquartered",\n'
         f'  "company_description": "One-sentence company description",\n'
-        f'  "address": "Full physical address if found"\n'
+        f'  "address": "Full physical address if found",\n'
+        f'  "employee_count": "Estimated number of employees (integer or null)",\n'
+        f'  "target_audience": "B2B, B2C, B2B2C, or B2G",\n'
+        f'  "audience_keywords": ["target customer type 1", "target customer type 2"],\n'
+        f'  "certifications": ["ISO 9001", "Google Partner", "...any certifications/badges found"],\n'
+        f'  "office_locations": ["City 1", "City 2", "...all office/branch cities mentioned"],\n'
+        f'  "growth_signals": {{"hiring": true/false, "funding_mention": "Series B" or null, "recent_launches": ["Product X"]}},\n'
+        f'  "competitive_positioning": "market_leader, challenger, niche_player, or emerging",\n'
+        f'  "content_maturity": {{"has_blog": true/false, "appears_active": true/false, "blog_post_count": null or integer}},\n'
+        f'  "financial_indicators": {{"funding_stage": "Series A" or null, "revenue_range": "$1M-$10M" or null}}\n'
         f'}}\n\n'
         f"RULES:\n"
         f"- Extract ONLY real data found in the website content above\n"
@@ -3192,7 +3432,7 @@ async def _ai_deep_extract(
                 },
                 json={
                     "model": "claude-sonnet-4-20250514",
-                    "max_tokens": 2000,
+                    "max_tokens": 3000,
                     "system": (
                         "You are the AEOS Company Intelligence Engine. You extract structured "
                         "company data from website content. You ONLY return facts explicitly "
@@ -3464,5 +3704,89 @@ def _merge_ai_results(intake_result: dict, ai_data: dict) -> dict:
     # Company description
     if ai_data.get("company_description"):
         intake_result["detected_description"] = ai_data["company_description"]
+
+    # ── Company intelligence fields (#9-20) ──
+
+    # Employee count (#9)
+    if not intake_result.get("detected_employee_count") and ai_data.get("employee_count"):
+        try:
+            count = ai_data["employee_count"]
+            if isinstance(count, (int, float)):
+                intake_result["detected_employee_count"] = int(count)
+            elif isinstance(count, str):
+                digits = re.sub(r"[^\d]", "", count)
+                if digits:
+                    intake_result["detected_employee_count"] = int(digits)
+        except (ValueError, TypeError):
+            pass
+
+    # Target audience (#11)
+    if not intake_result.get("target_audience") and ai_data.get("target_audience"):
+        audience = str(ai_data["target_audience"]).upper().strip()
+        if audience in ("B2B", "B2C", "B2B2C", "B2G"):
+            intake_result["target_audience"] = audience
+
+    # Audience keywords (#11)
+    if not intake_result.get("audience_keywords") and ai_data.get("audience_keywords"):
+        kws = ai_data["audience_keywords"]
+        if isinstance(kws, list):
+            intake_result["audience_keywords"] = [str(k) for k in kws if k][:10]
+
+    # Certifications (#15)
+    if not intake_result.get("certifications") and ai_data.get("certifications"):
+        certs = ai_data["certifications"]
+        if isinstance(certs, list):
+            intake_result["certifications"] = [str(c) for c in certs if c][:15]
+
+    # Office locations (#13)
+    if not intake_result.get("office_locations") and ai_data.get("office_locations"):
+        locs = ai_data["office_locations"]
+        if isinstance(locs, list):
+            intake_result["office_locations"] = [str(l) for l in locs if l][:10]
+
+    # Service descriptions (#14)
+    if not intake_result.get("service_descriptions") and ai_data.get("service_descriptions"):
+        svc_descs = ai_data["service_descriptions"]
+        if isinstance(svc_descs, list):
+            valid = []
+            for sd in svc_descs:
+                if isinstance(sd, dict) and sd.get("name"):
+                    valid.append({"name": sd["name"], "description": sd.get("description", "")})
+            intake_result["service_descriptions"] = valid[:12]
+
+    # Growth signals (#16)
+    if not intake_result.get("growth_signals") and ai_data.get("growth_signals"):
+        gs = ai_data["growth_signals"]
+        if isinstance(gs, dict):
+            intake_result["growth_signals"] = {
+                "hiring": bool(gs.get("hiring")),
+                "funding_mention": str(gs["funding_mention"]) if gs.get("funding_mention") else None,
+                "recent_launches": [str(r) for r in (gs.get("recent_launches") or []) if r][:5],
+            }
+
+    # Competitive positioning (#18)
+    if not intake_result.get("competitive_positioning") and ai_data.get("competitive_positioning"):
+        pos = str(ai_data["competitive_positioning"]).lower().strip()
+        if pos in ("market_leader", "challenger", "niche_player", "emerging"):
+            intake_result["competitive_positioning"] = pos
+
+    # Content maturity (#19)
+    if not intake_result.get("content_maturity") and ai_data.get("content_maturity"):
+        cm = ai_data["content_maturity"]
+        if isinstance(cm, dict):
+            intake_result["content_maturity"] = {
+                "has_blog": bool(cm.get("has_blog")),
+                "appears_active": bool(cm.get("appears_active")),
+                "blog_post_count": int(cm["blog_post_count"]) if cm.get("blog_post_count") else None,
+            }
+
+    # Financial indicators (#20)
+    if not intake_result.get("financial_indicators") and ai_data.get("financial_indicators"):
+        fi = ai_data["financial_indicators"]
+        if isinstance(fi, dict):
+            intake_result["financial_indicators"] = {
+                "funding_stage": str(fi["funding_stage"]) if fi.get("funding_stage") else None,
+                "revenue_range": str(fi["revenue_range"]) if fi.get("revenue_range") else None,
+            }
 
     return intake_result
