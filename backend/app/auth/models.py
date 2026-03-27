@@ -14,6 +14,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum as SAEnum,
+    Float,
     ForeignKey,
     Integer,
     JSON,
@@ -128,6 +129,34 @@ class WorkspaceProfile(Base):
     detected_team = Column(JSON, default=dict)  # {team_page_url, members: [{name, role}], count}
     detected_services = Column(JSON, default=list)  # list of service/product names
     detected_seo_health = Column(JSON, default=dict)  # SEO health check results
+
+    # ── Extended intake fields (Company Intelligence) ──────────────────
+    page_title           = Column(String(500), default="")
+    meta_description     = Column(Text, default="")
+    detected_description = Column(Text, default="")
+    detected_address     = Column(String(500), default="")
+    is_bot_blocked       = Column(Boolean, default=False)
+    industry_confidence  = Column(Float, default=0.0)
+    industry_scores      = Column(JSON, default=dict)   # {industry: score, ...}
+    industry_signals     = Column(JSON, default=list)   # ["keyword:travel", ...]
+    phone_numbers        = Column(JSON, default=list)   # all detected phones
+    whatsapp_links       = Column(JSON, default=list)   # all detected WA links
+    contact_pages        = Column(JSON, default=list)   # all detected contact URLs
+    booking_pages        = Column(JSON, default=list)   # all detected booking URLs
+
+    # Company Intelligence (#9-20)
+    detected_employee_count  = Column(Integer, nullable=True)
+    company_stage            = Column(String(100), default="")
+    target_audience          = Column(String(100), default="")
+    audience_keywords        = Column(JSON, default=list)
+    logo_url                 = Column(String(1000), default="")
+    office_locations         = Column(JSON, default=list)
+    service_descriptions     = Column(JSON, default=list)  # [{name, description}, ...]
+    certifications           = Column(JSON, default=list)
+    growth_signals           = Column(JSON, default=dict)  # {hiring, funding_mention, ...}
+    competitive_positioning  = Column(String(100), default="")
+    content_maturity         = Column(JSON, default=dict)  # {has_blog, appears_active, ...}
+    financial_indicators     = Column(JSON, default=dict)  # {funding_stage, revenue_range}
 
     competitor_urls = Column(JSON, default=list)  # list of strings
 

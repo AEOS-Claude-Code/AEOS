@@ -104,6 +104,61 @@ async def intake_from_url(
         if result.get("detected_seo_health"):
             profile.detected_seo_health = result["detected_seo_health"]
 
+        # ── Extended company intelligence fields ──────────────────────
+        if result.get("page_title"):
+            profile.page_title = result["page_title"]
+        if result.get("meta_description"):
+            profile.meta_description = result["meta_description"]
+        if result.get("detected_description"):
+            profile.detected_description = result["detected_description"]
+        if result.get("detected_address"):
+            profile.detected_address = result["detected_address"]
+
+        profile.is_bot_blocked = bool(result.get("is_bot_blocked", False))
+
+        if result.get("industry_confidence") is not None:
+            profile.industry_confidence = float(result["industry_confidence"])
+        if result.get("industry_scores"):
+            profile.industry_scores = result["industry_scores"]
+        if result.get("industry_signals"):
+            profile.industry_signals = result["industry_signals"]
+
+        # Store ALL phone numbers / contact pages (not just first)
+        if result.get("detected_phone_numbers"):
+            profile.phone_numbers = result["detected_phone_numbers"]
+        if result.get("detected_whatsapp_links"):
+            profile.whatsapp_links = result["detected_whatsapp_links"]
+        if result.get("detected_contact_pages"):
+            profile.contact_pages = result["detected_contact_pages"]
+        if result.get("detected_booking_pages"):
+            profile.booking_pages = result["detected_booking_pages"]
+
+        # Company Intelligence (#9-20)
+        if result.get("detected_employee_count") is not None:
+            profile.detected_employee_count = result["detected_employee_count"]
+        if result.get("company_stage"):
+            profile.company_stage = result["company_stage"]
+        if result.get("target_audience"):
+            profile.target_audience = result["target_audience"]
+        if result.get("audience_keywords"):
+            profile.audience_keywords = result["audience_keywords"]
+        if result.get("logo_url"):
+            profile.logo_url = result["logo_url"]
+        if result.get("office_locations"):
+            profile.office_locations = result["office_locations"]
+        if result.get("service_descriptions"):
+            profile.service_descriptions = result["service_descriptions"]
+        if result.get("certifications"):
+            profile.certifications = result["certifications"]
+        if result.get("growth_signals"):
+            profile.growth_signals = result["growth_signals"]
+        if result.get("competitive_positioning"):
+            profile.competitive_positioning = result["competitive_positioning"]
+        if result.get("content_maturity"):
+            profile.content_maturity = result["content_maturity"]
+        if result.get("financial_indicators"):
+            profile.financial_indicators = result["financial_indicators"]
+
         await db.flush()
         await db.commit()
         logger.info("Intake results saved to workspace profile for %s", body.url)
