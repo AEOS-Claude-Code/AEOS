@@ -152,13 +152,13 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
         {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(46,121,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(46,121,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-        <div className="relative flex h-full flex-col p-8">
+        <div className="relative flex h-full flex-col px-6 py-5">
           {/* Logo */}
-          <Link href="/" className="mb-8 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-400 to-aeos-600 shadow-lg shadow-aeos-500/20">
-              <Zap size={18} className="text-white" />
+          <Link href="/" className="mb-5 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-aeos-400 to-aeos-600 shadow-lg shadow-aeos-500/20">
+              <Zap size={16} className="text-white" />
             </div>
-            <span className="text-lg font-bold text-white">AEOS</span>
+            <span className="text-base font-bold text-white">AEOS</span>
           </Link>
 
           {/* Step-specific content */}
@@ -170,34 +170,34 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-aeos-500/10 px-3 py-1 text-xs font-medium text-aeos-400">
-                <Sparkles size={12} />
+              <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-aeos-500/10 px-3 py-1 text-[11px] font-medium text-aeos-400">
+                <Sparkles size={11} />
                 {currentStep.panel.badge}
               </div>
-              <h2 className="text-2xl font-bold leading-tight text-white">
+              <h2 className="text-[22px] font-bold leading-snug text-white">
                 {currentStep.panel.title}{" "}
                 <span className="bg-gradient-to-r from-aeos-400 to-violet-400 bg-clip-text text-transparent">
                   {currentStep.panel.highlight}
                 </span>
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-slate-400">
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">
                 {currentStep.panel.subtitle}
               </p>
 
               {/* Feature list */}
-              <div className="mt-8 space-y-3">
+              <div className="mt-5 space-y-2">
                 {currentStep.panel.features.map((f, i) => (
                   <motion.div
                     key={f.label}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4, delay: 0.2 + i * 0.08 }}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-2.5"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
-                      <f.icon size={14} className="text-aeos-400" />
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
+                      <f.icon size={13} className="text-aeos-400" />
                     </div>
-                    <span className="text-sm text-slate-400">{f.label}</span>
+                    <span className="text-xs text-slate-400">{f.label}</span>
                   </motion.div>
                 ))}
               </div>
@@ -205,18 +205,18 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
           </AnimatePresence>
 
           {/* Bottom: progress wizard + quote */}
-          <div className="mt-auto space-y-4">
+          <div className="mt-auto space-y-3">
 
             {/* ── Animated Wizard Step Tracker ── */}
-            <div className="rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/[0.07]">
+            <div className="rounded-2xl bg-white/[0.03] p-3 ring-1 ring-white/[0.07]">
               {/* Header */}
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Onboarding Progress</span>
                 <span className="text-[10px] font-bold text-aeos-400">{currentIdx + 1} / {STEPS.length}</span>
               </div>
 
               {/* Overall progress bar */}
-              <div className="mb-4 h-1 w-full overflow-hidden rounded-full bg-white/5">
+              <div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-white/5">
                 <motion.div
                   className="h-full rounded-full bg-gradient-to-r from-aeos-400 to-violet-400"
                   initial={{ width: 0 }}
@@ -228,14 +228,14 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
               {/* Step nodes */}
               <div className="relative flex items-start justify-between">
                 {/* Connecting track behind nodes */}
-                <div className="absolute left-4 right-4 top-4 h-px bg-white/8" />
+                <div className="absolute left-3.5 right-3.5 top-3.5 h-px bg-white/[0.08]" />
                 {/* Filled segment */}
                 <motion.div
-                  className="absolute left-4 top-4 h-px bg-gradient-to-r from-aeos-500 to-violet-500 origin-left"
+                  className="absolute left-3.5 top-3.5 h-px bg-gradient-to-r from-aeos-500 to-violet-500 origin-left"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: currentIdx === 0 ? 0 : currentIdx / (STEPS.length - 1) }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
-                  style={{ right: "1rem", transformOrigin: "left" }}
+                  style={{ right: "0.875rem", transformOrigin: "left" }}
                 />
 
                 {STEPS.map((step, i) => {
@@ -265,7 +265,7 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
                           initial={{ scale: 0.6, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ delay: i * 0.08, duration: 0.35 }}
-                          className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300 ${
+                          className={`relative flex h-7 w-7 items-center justify-center rounded-full transition-all duration-300 ${
                             done
                               ? "bg-emerald-500 shadow-lg shadow-emerald-500/30"
                               : active
@@ -275,10 +275,10 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
                         >
                           {done ? (
                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 20 }}>
-                              <Check size={13} className="text-white" />
+                              <Check size={11} className="text-white" />
                             </motion.div>
                           ) : (
-                            <StepIcon size={13} className={active ? "text-white" : "text-slate-600"} />
+                            <StepIcon size={11} className={active ? "text-white" : "text-slate-600"} />
                           )}
                         </motion.div>
                       </div>
@@ -306,9 +306,9 @@ function OnboardingShell({ children }: { children: React.ReactNode }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.35 }}
-                className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10"
+                className="rounded-xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10"
               >
-                <p className="text-sm italic text-slate-500">
+                <p className="text-xs italic text-slate-500">
                   &ldquo;{currentStep.panel.quote}&rdquo;
                 </p>
               </motion.div>
