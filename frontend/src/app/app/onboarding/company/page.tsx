@@ -369,7 +369,14 @@ export default function OnboardingCompany() {
     setCompanyName(data.detected_company_name || workspace?.name || "");
     setIndustry(data.detected_industry || "other");
     if (data.detected_country) setCountry(data.detected_country);
-    if (data.detected_city) setCity(data.detected_city);
+    if (data.detected_city) {
+      // Validate city against country — reject invalid cities (e.g. "Rome" for Jordan)
+      const validCities = COUNTRY_CITIES[data.detected_country] || [];
+      if (validCities.length === 0 || validCities.includes(data.detected_city)) {
+        setCity(data.detected_city);
+      }
+      // else: invalid city for this country — leave city empty for user to select
+    }
   }
 
   async function handleConfirm() {
@@ -537,8 +544,9 @@ export default function OnboardingCompany() {
                     <option value="">Select</option>
                     {(() => {
                       const cities = COUNTRY_CITIES[country] || [];
-                      // Include detected city if not already in the list
-                      if (city && !cities.includes(city)) {
+                      // Include detected city only if this country has no predefined list
+                      // (avoids adding travel destinations like "Rome" to Jordan)
+                      if (city && !cities.includes(city) && cities.length === 0) {
                         return [city, ...cities].map(c => <option key={c} value={c}>{c}</option>);
                       }
                       return cities.map(c => <option key={c} value={c}>{c}</option>);
@@ -650,37 +658,48 @@ export default function OnboardingCompany() {
               subtitle="Open Graph & meta info"
             />
             <div className="flex-1 p-5 space-y-3">
-              {intake.og_image && !ogImageFailed ? (
-                <a href={intake.url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl border border-border hover:border-indigo-500/30 transition-colors group">
+              {/* Website screenshot / OG image */}
+              <a href={intake.url} target="_blank" rel="noopener noreferrer"
+                className="block overflow-hidden rounded-xl border border-border hover:border-indigo-500/30 transition-colors group relative">
+                {intake.og_image && !ogImageFailed ? (
                   <img
                     src={intake.og_image}
                     alt="Website preview"
-                    className="h-36 w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
+                    className="h-40 w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                     onError={() => setOgImageFailed(true)}
                   />
-                </a>
-              ) : (
-                <a href={intake.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-surface-secondary/50 px-4 py-6 hover:border-indigo-500/30 hover:bg-surface-secondary/80 transition-all group">
-                  {intake.favicon_url ? (
-                    <img src={intake.favicon_url} alt="" className="h-8 w-8 rounded-lg" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20">
-                      <Globe size={16} className="text-indigo-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-medium text-fg-hint truncate block">{intake.url || "No preview available"}</span>
-                    <span className="text-2xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity">Open website →</span>
+                ) : (
+                  <div className="h-40 w-full bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-blue-500/5 flex flex-col items-center justify-center gap-3">
+                    {intake.favicon_url ? (
+                      <img src={intake.favicon_url} alt="" className="h-12 w-12 rounded-xl shadow-md" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 shadow-md">
+                        <Globe size={22} className="text-indigo-400" />
+                      </div>
+                    )}
+                    <span className="text-xs font-medium text-fg-hint/60">
+                      {new URL(intake.url || "https://example.com").hostname}
+                    </span>
                   </div>
-                  <ExternalLink size={14} className="text-fg-hint/30 group-hover:text-blue-400 transition-colors shrink-0" />
-                </a>
-              )}
+                )}
+                {/* Overlay with URL */}
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2 flex items-center gap-2">
+                  <span className="text-[10px] text-white/80 truncate flex-1">{intake.url}</span>
+                  <ExternalLink size={10} className="text-white/60 shrink-0 group-hover:text-white transition-colors" />
+                </div>
+              </a>
+
+              {/* Page title */}
               {intake.page_title && (
-                <p className="text-sm font-bold text-fg leading-snug">{intake.page_title}</p>
+                <p className="text-sm font-bold text-fg leading-snug line-clamp-2">{intake.page_title}</p>
               )}
+
+              {/* Meta description */}
               {intake.meta_description && (
-                <p className="text-xs text-fg-hint leading-relaxed line-clamp-3">{intake.meta_description}</p>
+                <p className="text-xs text-fg-hint leading-relaxed line-clamp-2">{intake.meta_description}</p>
               )}
+
+              {/* Languages */}
               {intake.detected_languages?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   <span className="text-2xs text-fg-hint/60 font-medium">Languages:</span>
